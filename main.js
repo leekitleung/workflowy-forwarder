@@ -52,6 +52,9 @@
         padding: 12px;
         flex-shrink: 0;
     }
+        .panel-header h1{
+            margin:0 0 12px 0;
+        }
 
     .panel-content {
         flex: 1;
@@ -140,7 +143,6 @@
         background: #2a3135;
         border-radius: 10px;
         padding: 6px;
-        margin-bottom: 12px;
     }
 
     .mode-btn {
@@ -216,16 +218,23 @@
 
     .reminder-item.completed .reminder-item-name {
         text-decoration: line-through;
-        color: #808080;
+        color: #9ea1a2;
     }
 
-    .reminder-checkbox-wrapper {
+    .collect-mode .reminder-checkbox-wrapper {
         position: absolute;
-        left: 10px;
-        top: 14px;
+        left: 0px;
+        top: 3px;
         display: flex;
         align-items: center;
     }
+        .reminder-checkbox-wrapper {
+            position: absolute;
+            left: 10px;
+            top: 15px;
+            display: flex;
+            align-items: center;
+        }
 
     .reminder-checkbox {
         appearance: none;
@@ -249,11 +258,11 @@
         content: '';
         position: absolute;
         left: 4px;
-        top: 1px;
+        top: 0px;
         width: 4px;
         height: 8px;
         border: solid white;
-        border-width: 0 2px 2px 0;
+        border-width: 0 1px 1px 0;
         transform: rotate(45deg);
     }
 
@@ -367,7 +376,16 @@
         word-break: break-word;
         cursor: pointer;
         padding-left: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        position: relative;
     }
+        .collect-mode .single-content-item,.collect-mode .children-content-item {
+            
+            color: #e8e8e8;
+            
+        }
 
     .collect-mode.reminder-item:hover {
         border-color: #4a9eff;
@@ -427,7 +445,7 @@
 
     .clear-all-container {
         padding: 12px;
-        background: #353c3f;
+        background: #2c3135;
         border-top: 1px solid #444;
         flex-shrink: 0;
     }
@@ -644,17 +662,20 @@
             <div class="reminder-item collect-mode ${isCompleted ? 'completed' : ''}"
                  data-id="${reminder.id}"
                  data-mode="${reminder.mode}">
-                <div class="reminder-checkbox-wrapper">
-                    <input type="checkbox"
-                        class="reminder-checkbox"
-                        ${isCompleted ? 'checked' : ''}
-                        data-id="${reminder.id}">
-                </div>
+
                 ${parentName ? `<div class="parent-title">${parentName}</div>` : ''}
+                <div class="children-content">
+                    <div class="reminder-checkbox-wrapper">
+                        <input type="checkbox"
+                            class="reminder-checkbox"
+                            ${isCompleted ? 'checked' : ''}
+                            data-id="${reminder.id}">
+                    </div>
                 ${childrenContent ?
-                    `<div class="children-content">${childrenContent}</div>` :
-                    `<div class="single-content">${parentName}</div>`
+                    `<div class="children-content-item">${childrenContent}</div>` :
+                    `<div class="single-content-item">${parentName}</div>`
                 }
+                </div>
                 <div class="reminder-actions">
                     <button class="reminder-action-btn open" data-id="${reminder.id}">打开</button>
                     <button class="reminder-action-btn remove" data-id="${reminder.id}">移除</button>
