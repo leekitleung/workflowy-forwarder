@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.3.1
+// @version      3.3.3
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -352,7 +352,7 @@
         padding-bottom: 4px;
         border-bottom: 1px solid #444;
         color: #8a8a8a;
-        font-size: 14px;
+        font-size: 10px;
     }
 
     .collect-mode .children-content {
@@ -387,8 +387,8 @@
             
         }
 
-    .collect-mode.reminder-item:hover {
-        border-color: #4a9eff;
+    .reminder-item:hover {
+        border-color: #3c88af;
         background: #32373c;
     }
 
@@ -475,17 +475,18 @@
     }
 
     .version-tag {
-        font-size: 12px;
+        font-size: 8px;
         color: #8b9398;
         font-weight: normal;
         margin-left: 8px;
-        padding: 2px 6px;
+        padding: 0px 2px;
         background: #2a3135;
-        border-radius: 10px;
+        border-radius: 4px;
         display: inline-block;
         vertical-align: middle;
         line-height: 1.5;
-    }
+        border: 1px solid #444;
+        }
 
     .no-reminders {
         text-align: center;
