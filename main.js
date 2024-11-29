@@ -202,15 +202,12 @@
         margin-bottom: 12px;
         border-radius: 8px;
         position: relative;
-        border: 1px solid #555;
+        border: 1px solid #42484b;
         transition: opacity 0.3s ease;
         font-size: 14px;
     }
 
-    .reminder-item:hover {
-        background: #2a3135;
-        border-color: #2a3135;
-    }
+    
 
     .reminder-item.completed {
         opacity: 0.6;
