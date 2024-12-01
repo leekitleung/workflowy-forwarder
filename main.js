@@ -306,11 +306,17 @@
         opacity: 0;  /* 默认隐藏 */
         transition: opacity 0.2s ease;
         z-index: 2;
+        padding: 4px 8px;
+        border-radius: 4px;
+        
     }
 
 
     .reminder-item:hover .reminder-actions {
+         
         opacity: 1;
+        background: linear-gradient(to right, transparent, rgba(56, 70, 81, 0.8) 50%, rgba(56, 70, 81, 0.8));
+    
     }
 
     .reminder-action-btn {
@@ -362,8 +368,8 @@
     .collect-mode.reminder-item {
         background: rgba(53, 60, 63, 1);
         border: 1px solid rgba(58, 67, 71, 1);
-        padding: 12px;
-        margin-bottom: 12px;
+        padding: 10px;
+        margin-bottom: 10px;
         position: relative;
     }
 
@@ -386,6 +392,7 @@
         gap: 4px;
         right: 10px;
         top: 10px;  
+        
     }
 
     .collect-mode .single-content,
