@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.3.4
+// @version      3.3.5
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -737,15 +737,20 @@
             e.stopPropagation();
             const id = this.dataset.id;
             if (reminders[id]) {
+                // 存储移除记录，包含模式信息
+                const removedItems = JSON.parse(localStorage.getItem(`workflowy_removed_${currentMode}`) || '[]');
+                removedItems.push(id);
+                localStorage.setItem(`workflowy_removed_${currentMode}`, JSON.stringify(removedItems));
+                
                 delete reminders[id];
                 saveReminders();
-
+    
                 const reminderItem = this.closest('.reminder-item');
                 const feedback = document.createElement('div');
                 feedback.className = 'action-feedback';
                 feedback.textContent = '已移除';
                 reminderItem.appendChild(feedback);
-
+    
                 setTimeout(() => {
                     feedback.remove();
                     reminderItem.style.opacity = '0';
@@ -760,7 +765,6 @@
             }
         });
     }
-
     function showFeedback(element, message) {
         const reminderItem = element.closest('.reminder-item');
         const feedback = document.createElement('div');
@@ -833,6 +837,14 @@
             .trim();
     }
 
+    function filterRemovedItems(newReminders, mode) {
+        const removedItems = JSON.parse(localStorage.getItem(`workflowy_removed_${mode}`) || '[]');
+        return Object.fromEntries(
+            Object.entries(newReminders).filter(([id]) => !removedItems.includes(id))
+        );
+    }
+
+
     // 扫描模式收集函数
     function scanReminders() {
         const targetNode = WF.getItemById(TARGET_NODE_ID);
@@ -883,9 +895,11 @@
             }
         });
 
+        const filteredReminders = filterRemovedItems(newReminders, 'scan');
+
         reminders = {
             ...Object.fromEntries(Object.entries(reminders).filter(([_, r]) => r.mode !== 'scan')),
-            ...newReminders
+            ...filteredReminders
         };
         saveReminders();
         updateReminderList();
@@ -948,9 +962,11 @@
             newReminders[reminder.id] = reminder;
         }
 
+        const filteredReminders = filterRemovedItems(newReminders, 'scan');
+
         reminders = {
-            ...Object.fromEntries(Object.entries(reminders).filter(([_, r]) => r.mode !== 'follow')),
-            ...newReminders
+            ...Object.fromEntries(Object.entries(reminders).filter(([_, r]) => r.mode !== 'scan')),
+            ...filteredReminders
         };
         saveReminders();
         updateReminderList();
@@ -1012,9 +1028,11 @@
             }
         });
 
+        const filteredReminders = filterRemovedItems(newReminders, 'scan');
+
         reminders = {
-            ...Object.fromEntries(Object.entries(reminders).filter(([_, r]) => r.mode !== 'collect')),
-            ...newReminders
+            ...Object.fromEntries(Object.entries(reminders).filter(([_, r]) => r.mode !== 'scan')),
+            ...filteredReminders
         };
         saveReminders();
         updateReminderList();
@@ -1211,18 +1229,30 @@
 
         // 初始化事件监听
         document.getElementById('scan-reminders').onclick = () => {
+            if (currentMode === 'scan') {
+                // 如果点击当前模式，清除该模式的移除记录
+                localStorage.removeItem('workflowy_removed_scan');
+            }
             currentMode = 'scan';
             scanReminders();
             updateButtonStyles();
         };
-
+        
         document.getElementById('follow-reminders').onclick = () => {
+            if (currentMode === 'follow') {
+                // 如果点击当前模式，清除该模式的移除记录
+                localStorage.removeItem('workflowy_removed_follow');
+            }
             currentMode = 'follow';
             followReminders();
             updateButtonStyles();
         };
-
+        
         document.getElementById('collect-reminders').onclick = () => {
+            if (currentMode === 'collect') {
+                // 如果点击当前模式，清除该模式的移除记录
+                localStorage.removeItem('workflowy_removed_collect');
+            }
             currentMode = 'collect';
             collectReminders();
             updateButtonStyles();
@@ -1263,6 +1293,17 @@
 
     // 清除所有提醒
     function clearAllReminders() {
+        // 获取当前模式下的所有项目ID
+        const currentModeItems = Object.entries(reminders)
+            .filter(([_, r]) => r.mode === currentMode)
+            .map(([id]) => id);
+        
+        // 添加到移除记录中
+        const removedItems = JSON.parse(localStorage.getItem(`workflowy_removed_${currentMode}`) || '[]');
+        const updatedRemovedItems = [...new Set([...removedItems, ...currentModeItems])];
+        localStorage.setItem(`workflowy_removed_${currentMode}`, JSON.stringify(updatedRemovedItems));
+    
+        // 清除当前模式的提醒
         reminders = Object.fromEntries(
             Object.entries(reminders).filter(([_, r]) => r.mode !== currentMode)
         );
@@ -1274,3 +1315,4 @@
     console.log('WorkFlowy DAILY PLANNER 助手启动...');
     waitForWF();
 })();
+
