@@ -358,7 +358,7 @@
     }
 
     .collect-mode .parent-title {
-        margin-bottom: 8px;
+        margin-bottom: 2px;
         padding-bottom: 4px;
         color: rgba(144, 147, 149, 0.5);
         font-size: 10px;
