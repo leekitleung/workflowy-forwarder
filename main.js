@@ -14,6 +14,9 @@
 
     // 保持原有样式定义
     GM_addStyle(`
+
+    <link href="https://fonts.googleapis.com/css2?family=Aclonica&display=swap" rel="stylesheet">
+
     .right-bar div:nth-child(1) {
         width: 300px;
     }
@@ -49,7 +52,7 @@
     }
 
     .panel-header {
-        padding: 12px;
+        padding: 24px 12px 0px;
         flex-shrink: 0;
     }
         .panel-header h1{
@@ -140,8 +143,8 @@
 
     .mode-switch {
         display: flex;
-        background: #2a3135;
-        border-radius: 10px;
+        background: rgba(39, 45, 50, 1);
+        border-radius: 6px;
         padding: 6px;
     }
 
@@ -158,21 +161,25 @@
         margin: 2px;
     }
 
-    .mode-btn.active,
-    .mode-btn:hover {
-        background: #3A3F42;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    .mode-btn.active {
+        background: rgba(56, 70, 81, 1);
+        
     }
 
+    .mode-btn:hover {
+        background: rgba(53, 125, 166, 1);
+        color:rgba(255, 255, 255, 1);
+    }
+    
+
     .planner-link {
-        display: block;
+        display: flex;  
+        justify-content: flex-end;
         color: #a8a8a8;
         font-size: 12px;
         text-decoration: none;
         padding: 6px;
         border-radius: 4px;
-        margin-bottom: 12px;
-        background: #2a3135;
         transition: all 0.3s;
     }
 
@@ -182,27 +189,30 @@
     }
 
     .reminder-block {
-        margin-bottom: 16px;
+        margin-bottom: 8px;
         position: relative;
         z-index: 1;
     }
 
     .reminder-block-title {
+        font-family: "Aclonica", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+        font-style: italic;
         color: #d9dbdb;
         font-size: 14px;
-        margin-bottom: 8px;
-        padding: 8px;
-        background: #363b3e;
-        border-radius: 4px;
+        margin-bottom: 4px;
+        padding: 4px;
         font-weight: bold;
     }
 
     .reminder-item {
         padding: 12px;
-        margin-bottom: 12px;
-        border-radius: 8px;
+        margin-bottom: 8px;
+        border-radius: 6px;
         position: relative;
-        border: 1px solid #42484b;
+        background:rgba(53, 60, 63, 1);
+        border: 1px solid rgba(58, 67, 71, 1);
         transition: opacity 0.3s ease;
         font-size: 14px;
     }
@@ -269,8 +279,8 @@
 
     .reminder-item-name {
         font-size: 14px;
-        color: #e8e8e8;
-        line-height: 1.5;
+        color: rgba(158, 161, 162, 1);
+        line-height: 1.2;
         word-break: break-word;
         cursor: pointer;
     }
@@ -304,41 +314,55 @@
     }
 
     .reminder-action-btn {
-        padding: 2px 6px;
-        font-size: 10px;
-        background: rgba(43, 49, 53, 0.95);
-        color: #9ea1a2;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: all 0.2s;
-        white-space: nowrap;
-        line-height: 1.2;
     }
 
     .reminder-action-btn:hover {
-        background: #4a4f52;
+    }
+
+    .reminder-action-btn.copy,.reminder-action-btn.open,.reminder-action-btn.remove  {
+        background-size: 14px 14px;
+        background-position: center;
+        background-repeat: no-repeat;
+        width: 14px;
+        height: 14px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 2px;
+    }
+
+    .reminder-action-btn.copy{
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234C5861'/%3E%3Cpath d='M5.34119 10.6494L7.33176 8.65881L7.99529 9.32233L6.00472 11.3129C5.08858 12.229 3.60323 12.229 2.6871 11.3129C1.77097 10.3968 1.77097 8.91142 2.6871 7.99528L4.67767 6.00472L5.34119 6.66824L3.35062 8.65881C2.80094 9.20849 2.80094 10.0997 3.35062 10.6494C3.9003 11.1991 4.79151 11.1991 5.34119 10.6494Z' fill='%239EA1A2'/%3E%3Cpath d='M9.32233 7.99528L8.65881 7.33176L10.6494 5.34119C11.1991 4.79151 11.1991 3.9003 10.6494 3.35062C10.0997 2.80094 9.20849 2.80094 8.65881 3.35062L6.66824 5.34119L6.00472 4.67767L7.99528 2.6871C8.91142 1.77097 10.3968 1.77097 11.3129 2.6871C12.229 3.60323 12.229 5.08858 11.3129 6.00472L9.32233 7.99528Z' fill='%239EA1A2'/%3E%3Cpath d='M7.99543 5.34121L8.65895 6.00473L6.00486 8.65883L5.34133 7.9953L7.99543 5.34121Z' fill='%239EA1A2'/%3E%3C/svg%3E");
+        background-position: center;
     }
 
     .reminder-action-btn.open {
-        color: #4a9eff;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234C5861'/%3E%3Cpath d='M4 3.01014L5.00844 2L10 7L5.00844 12L4 10.9899L7.98312 7L4 3.01014Z' fill='%239EA1A2'/%3E%3C/svg%3E");
+        
     }
 
     .reminder-action-btn.remove {
-        color: #dc3545;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect opacity='0.2' width='14' height='14' rx='2' fill='%239EA1A2'/%3E%3Cpath d='M7.00001 7.92035L10.0796 11L11 10.0796L7.92037 7L11 3.92038L10.0796 3.00003L7.00001 6.07965L3.92035 3L3 3.92035L6.07966 7L3 10.0796L3.92035 11L7.00001 7.92035Z' fill='%239EA1A2'/%3E%3C/svg%3E");
     }
 
     .reminder-action-btn.copy:hover {
-        color: #4a9eff;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234988B1'/%3E%3Cpath d='M5.34119 10.6494L7.33176 8.65881L7.99529 9.32233L6.00472 11.3129C5.08858 12.229 3.60323 12.229 2.6871 11.3129C1.77097 10.3968 1.77097 8.91142 2.6871 7.99528L4.67767 6.00472L5.34119 6.66824L3.35062 8.65881C2.80094 9.20849 2.80094 10.0997 3.35062 10.6494C3.9003 11.1991 4.79151 11.1991 5.34119 10.6494Z' fill='white'/%3E%3Cpath d='M9.32233 7.99528L8.65881 7.33176L10.6494 5.34119C11.1991 4.79151 11.1991 3.9003 10.6494 3.35062C10.0997 2.80094 9.20849 2.80094 8.65881 3.35062L6.66824 5.34119L6.00472 4.67767L7.99528 2.6871C8.91142 1.77097 10.3968 1.77097 11.3129 2.6871C12.229 3.60323 12.229 5.08858 11.3129 6.00472L9.32233 7.99528Z' fill='white'/%3E%3Cpath d='M7.99543 5.34121L8.65895 6.00473L6.00486 8.65883L5.34133 7.9953L7.99543 5.34121Z' fill='white'/%3E%3C/svg%3E");    }
+    }
+
+    .reminder-action-btn.open:hover {
+
+       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%2346A753'/%3E%3Cpath d='M4 3.01014L5.00844 2L10 7L5.00844 12L4 10.9899L7.98312 7L4 3.01014Z' fill='white'/%3E%3C/svg%3E");
     }
 
     .reminder-action-btn.remove:hover {
-        color: #dc3545;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%23B04042'/%3E%3Cpath d='M7.00001 7.92035L10.0796 11L11 10.0796L7.92037 7L11 3.92038L10.0796 3.00003L7.00001 6.07965L3.92035 3L3 3.92035L6.07966 7L3 10.0796L3.92035 11L7.00001 7.92035Z' fill='white'/%3E%3C/svg%3E");
+
     }
 
     .collect-mode.reminder-item {
-        background: #2B3135;
-        border: 1px solid #5c6062;
+        background: rgba(53, 60, 63, 1);
+        border: 1px solid rgba(58, 67, 71, 1);
         padding: 12px;
         margin-bottom: 12px;
         position: relative;
@@ -347,15 +371,14 @@
     .collect-mode .parent-title {
         margin-bottom: 8px;
         padding-bottom: 4px;
-        border-bottom: 1px solid #444;
-        color: #8a8a8a;
+        color: rgba(144, 147, 149, 0.5);
         font-size: 10px;
     }
 
     .collect-mode .children-content {
         white-space: pre-wrap;
         font-size: 14px;
-        color: #e8e8e8;
+        color: rgba(158, 161, 162, 1);
         line-height: 1.5;
     }
 
@@ -380,18 +403,22 @@
     }
         .collect-mode .single-content-item,.collect-mode .children-content-item {
             
-            color: #e8e8e8;
+            color: rgba(158, 161, 162, 1);
+            line-height:1.2;
             
         }
 
     .reminder-item:hover {
-        border-color: #3c88af;
-        background: #32373c;
+        border-color: rgba(68, 80, 88, 1);
+        background: rgba(56, 70, 81, 1);
     }
+        .reminder-item:hover .reminder-item-name{
+            color:rgba(217, 217, 217, 1);
+        }
 
-    .collect-mode.reminder-item:hover .single-content,
-    .collect-mode.reminder-item:hover .children-content {
-        color: #e8e8e8;
+    .collect-mode.reminder-item:hover .single-content-item,
+    .collect-mode.reminder-item:hover .children-content-item {
+        color: rgba(217, 217, 217, 1);
     }
 
     .collect-mode.reminder-item.completed {
@@ -629,10 +656,13 @@
                 </div>
                 <div class="reminder-item-content">
                     <span class="reminder-item-name" onclick="WF.getItemById('${reminder.id}') && WF.zoomTo(WF.getItemById('${reminder.id}'))">${displayText}</span>
-                </div>
-                <div class="reminder-actions">
-                    <button class="reminder-action-btn copy" data-content="${fullUrl}">复制链接</button>
-                    <button class="reminder-action-btn remove" data-id="${reminder.id}">移除</button>
+                
+                    <div class="reminder-actions">
+                        <button class="reminder-action-btn copy" data-content="${fullUrl}">
+                        </button>
+                        <button class="reminder-action-btn remove" data-id="${reminder.id}">
+                        </button>
+                    </div>
                 </div>
             </div>`;
     }
@@ -675,8 +705,12 @@
                 }
                 </div>
                 <div class="reminder-actions">
-                    <button class="reminder-action-btn open" data-id="${reminder.id}">打开</button>
-                    <button class="reminder-action-btn remove" data-id="${reminder.id}">移除</button>
+                    <button class="reminder-action-btn open" data-id="${reminder.id}">
+                        
+                    </button>
+                    <button class="reminder-action-btn remove" data-id="${reminder.id}">
+                    
+                    </button>
                 </div>
             </div>`;
     }
@@ -778,7 +812,7 @@
     function cleanContent(text) {
         return text
             .replace(/@\d{1,2}:\d{2}/g, '')
-            .replace(/#稍后处理/g, '')
+            .replace(/#稍��处理/g, '')
             .trim();
     }
 
