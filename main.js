@@ -300,7 +300,7 @@
     .reminder-actions {
         position: absolute;
         right: 10px;
-        top: 13px;  
+        top: 9px;  
         display: flex;
         gap: 4px;
         opacity: 0;  /* 默认隐藏 */
@@ -390,8 +390,8 @@
     .collect-mode .reminder-actions {
         display: flex;
         gap: 4px;
-        right: 10px;
-        top: 10px;  
+        right: 2px;
+        top: 4px;  
         
     }
 
