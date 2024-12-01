@@ -150,7 +150,7 @@
 
     .mode-btn:hover {
         background: rgba(53, 125, 166, 1);
-        color:rgba(255, 255, 255, 1);
+        color:rgba(185, 207, 221, 1);
     }
     
 
