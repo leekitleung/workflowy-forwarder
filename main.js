@@ -135,7 +135,7 @@
         padding: 6px 10px;
         border: none;
         background: transparent;
-        color: #e8e8e8;
+        color: #9EA1A2;
         cursor: pointer;
         border-radius: 4px;
         transition: all 0.3s;
@@ -145,7 +145,7 @@
 
     .mode-btn.active {
         background: rgba(56, 70, 81, 1);
-        
+        color:rgba(207, 234, 249, 1);
     }
 
     .mode-btn:hover {
