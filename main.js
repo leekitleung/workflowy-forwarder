@@ -52,11 +52,13 @@
     }
 
     .panel-header {
-        padding: 24px 12px 0px;
+        padding: 24px 12px 12px;
         flex-shrink: 0;
     }
         .panel-header h1{
-            margin:0 0 12px 0;
+            font-size: 20px;
+            margin: 0 0 12px 0;
+            color: rgba(231, 239, 251, 1);
         }
 
     .panel-content {
@@ -96,27 +98,7 @@
         transition: all 0.3s ease;
     }
 
-    card-toggle {
-        position: fixed;
-        right: 20px;
-        bottom: 20px;
-        background: #2B3135;
-        border: none;
-        padding: 8px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        z-index: 101;
-        font-size: 10px;
-        color: #e8e8e8;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
-    }
 
-    .card-toggle:hover {
-        background: #363b3f;
-    }
 
     .reminder-toggle:hover {
         background: #363b3f;
@@ -137,7 +119,7 @@
     .toggle-arrow {
         width: 16px;
         height: 16px;
-        color: #e8e8e8;
+        color: rgba(158, 161, 162, 1);
         transition: transform 0.3s ease;
     }
 
@@ -175,18 +157,25 @@
     .planner-link {
         display: flex;  
         justify-content: flex-end;
-        color: #a8a8a8;
+        color: rgba(144, 147, 149, 0.5);
         font-size: 12px;
         text-decoration: none;
-        padding: 6px;
+        padding: 8px 16px 8px;
+        margin-right: 8px;
         border-radius: 4px;
         transition: all 0.3s;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23909395' fill-opacity='0.5'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23909395' fill-opacity='0.5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 8px;
+        background-size: 12px;
     }
 
-    .planner-link:hover {
-        background: #33373A;
-        color: #e8e8e8;
+    .planner-link:hover{
+        color: rgba(53, 125, 166, 1);
+        text-decoration: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23357DA6'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23357DA6'/%3E%3C/svg%3E");
     }
+
 
     .reminder-block {
         margin-bottom: 8px;
@@ -231,14 +220,14 @@
     .collect-mode .reminder-checkbox-wrapper {
         position: absolute;
         left: 0px;
-        top: 3px;
+        top: 0px;
         display: flex;
         align-items: center;
     }
         .reminder-checkbox-wrapper {
             position: absolute;
             left: 10px;
-            top: 15px;
+            top: 13px;
             display: flex;
             align-items: center;
         }
@@ -297,10 +286,11 @@
         opacity: 0.6;
     }
 
+
     .reminder-actions {
         position: absolute;
-        right: 6px;
-        top: 6px;  /* 改为右上角 */
+        right: 10px;
+        top: 13px;  
         display: flex;
         gap: 4px;
         opacity: 0;  /* 默认隐藏 */
@@ -337,22 +327,21 @@
         background-position: center;
     }
 
-    .reminder-action-btn.open {
+    .reminder-action-btn.open{
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234C5861'/%3E%3Cpath d='M4 3.01014L5.00844 2L10 7L5.00844 12L4 10.9899L7.98312 7L4 3.01014Z' fill='%239EA1A2'/%3E%3C/svg%3E");
-        
     }
 
-    .reminder-action-btn.remove {
+    .reminder-action-btn.remove{
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect opacity='0.2' width='14' height='14' rx='2' fill='%239EA1A2'/%3E%3Cpath d='M7.00001 7.92035L10.0796 11L11 10.0796L7.92037 7L11 3.92038L10.0796 3.00003L7.00001 6.07965L3.92035 3L3 3.92035L6.07966 7L3 10.0796L3.92035 11L7.00001 7.92035Z' fill='%239EA1A2'/%3E%3C/svg%3E");
     }
 
     .reminder-action-btn.copy:hover {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234988B1'/%3E%3Cpath d='M5.34119 10.6494L7.33176 8.65881L7.99529 9.32233L6.00472 11.3129C5.08858 12.229 3.60323 12.229 2.6871 11.3129C1.77097 10.3968 1.77097 8.91142 2.6871 7.99528L4.67767 6.00472L5.34119 6.66824L3.35062 8.65881C2.80094 9.20849 2.80094 10.0997 3.35062 10.6494C3.9003 11.1991 4.79151 11.1991 5.34119 10.6494Z' fill='white'/%3E%3Cpath d='M9.32233 7.99528L8.65881 7.33176L10.6494 5.34119C11.1991 4.79151 11.1991 3.9003 10.6494 3.35062C10.0997 2.80094 9.20849 2.80094 8.65881 3.35062L6.66824 5.34119L6.00472 4.67767L7.99528 2.6871C8.91142 1.77097 10.3968 1.77097 11.3129 2.6871C12.229 3.60323 12.229 5.08858 11.3129 6.00472L9.32233 7.99528Z' fill='white'/%3E%3Cpath d='M7.99543 5.34121L8.65895 6.00473L6.00486 8.65883L5.34133 7.9953L7.99543 5.34121Z' fill='white'/%3E%3C/svg%3E");    }
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234988B1'/%3E%3Cpath d='M5.34119 10.6494L7.33176 8.65881L7.99529 9.32233L6.00472 11.3129C5.08858 12.229 3.60323 12.229 2.6871 11.3129C1.77097 10.3968 1.77097 8.91142 2.6871 7.99528L4.67767 6.00472L5.34119 6.66824L3.35062 8.65881C2.80094 9.20849 2.80094 10.0997 3.35062 10.6494C3.9003 11.1991 4.79151 11.1991 5.34119 10.6494Z' fill='white'/%3E%3Cpath d='M9.32233 7.99528L8.65881 7.33176L10.6494 5.34119C11.1991 4.79151 11.1991 3.9003 10.6494 3.35062C10.0997 2.80094 9.20849 2.80094 8.65881 3.35062L6.66824 5.34119L6.00472 4.67767L7.99528 2.6871C8.91142 1.77097 10.3968 1.77097 11.3129 2.6871C12.229 3.60323 12.229 5.08858 11.3129 6.00472L9.32233 7.99528Z' fill='white'/%3E%3Cpath d='M7.99543 5.34121L8.65895 6.00473L6.00486 8.65883L5.34133 7.9953L7.99543 5.34121Z' fill='white'/%3E%3C/svg%3E");    
+
     }
 
     .reminder-action-btn.open:hover {
-
-       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%2346A753'/%3E%3Cpath d='M4 3.01014L5.00844 2L10 7L5.00844 12L4 10.9899L7.98312 7L4 3.01014Z' fill='white'/%3E%3C/svg%3E");
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%2346A753'/%3E%3Cpath d='M4 3.01014L5.00844 2L10 7L5.00844 12L4 10.9899L7.98312 7L4 3.01014Z' fill='white'/%3E%3C/svg%3E");
     }
 
     .reminder-action-btn.remove:hover {
@@ -385,6 +374,8 @@
     .collect-mode .reminder-actions {
         display: flex;
         gap: 4px;
+        right: 10px;
+        top: 10px;  
     }
 
     .collect-mode .single-content,
@@ -611,7 +602,7 @@
 
         const plannerLink = document.querySelector('.planner-link');
         if (plannerLink) {
-            plannerLink.style.display = currentMode === 'scan' ? 'block' : 'none';
+            plannerLink.style.display = currentMode === 'scan' ? 'flex' : 'none';
         }
     }
 
@@ -629,7 +620,7 @@
         }
     }
 
-    // 提醒项创建和事件处理函数
+    // 提醒项创建和事件��理函数
 
     function createReminderItem(reminder) {
         const isCompleted = reminder.completed || false;
@@ -812,7 +803,7 @@
     function cleanContent(text) {
         return text
             .replace(/@\d{1,2}:\d{2}/g, '')
-            .replace(/#稍��处理/g, '')
+            .replace(/#稍后处理/g, '')
             .trim();
     }
 
@@ -1135,7 +1126,8 @@
         panel.innerHTML = `
             <div class="panel-header">
                 <h1>
-                    Workflowy Forwarder
+                    Workflowy<br/>
+                    Forwarder Plus  
                     <span class="version-tag">v${SCRIPT_VERSION}</span>
                 </h1>
                 <div class="mode-switch">
@@ -1144,7 +1136,7 @@
                     <button class="mode-btn" id="collect-reminders">Collector</button>
                 </div>
                 <a href="https://workflowy.com/#/${TARGET_NODE_ID}" class="planner-link">
-                    🔗 进入计划
+                    进入节点
                 </a>
             </div>
             <div class="panel-content">
@@ -1157,15 +1149,6 @@
 
         document.body.appendChild(panel);
 
-         // 添加卡片按钮到右下角
-        const cardBtn = document.createElement('button');
-        cardBtn.className = 'card-toggle';
-        cardBtn.textContent = '卡片';
-        document.body.appendChild(cardBtn);
-
-        // 添加卡片按钮点击事件
-         cardBtn.onclick = function() {
-        };
 
         // 添加面板切换按钮
         const toggleBtn = document.createElement('button');
