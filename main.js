@@ -15,10 +15,10 @@
     // 保持原有样式定义
     GM_addStyle(`
 
-    <link href="https://fonts.googleapis.com/css2?family=Aclonica&display=swap" rel="stylesheet">
+    @import url('https://fonts.googleapis.com/css2?family=Aclonica&display=swap');
 
-    .right-bar div:nth-child(1) {
-        width: 300px;
+    .right-bar > div:first-child {
+        width: 300px !important;
     }
 
     .reminder-panel {
