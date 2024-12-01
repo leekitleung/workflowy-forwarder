@@ -176,6 +176,16 @@
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23357DA6'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23357DA6'/%3E%3C/svg%3E");
     }
 
+    .follow-links-wrapper {
+        display: flex;
+        gap: 0px;  /* 将间距从12px减小到4px */
+        justify-content: flex-end; 
+    }
+
+    .follow-links-wrapper .follow-link {
+        
+    }
+
 
     .reminder-block {
         margin-bottom: 8px;
@@ -512,6 +522,12 @@
     }
 `);
 
+    const MODE_NODES = {
+        scan: '8220a888febe',  // DailyPlanner节点
+        follow: ['6280897d3c65', '3b7e610683fe'],  // Target模式的两个节点
+        collect: '17cfc44d9b20'  // Collector节点
+    };
+
     const SCRIPT_VERSION = GM_info.script.version;
     const TARGET_NODE_ID = '8220a888febe';
     let reminders = JSON.parse(localStorage.getItem('workflowy_reminders') || '{}');
@@ -595,14 +611,24 @@
         const scanBtn = document.getElementById('scan-reminders');
         const followBtn = document.getElementById('follow-reminders');
         const collectBtn = document.getElementById('collect-reminders');
-
+    
         scanBtn.classList.toggle('active', currentMode === 'scan');
         followBtn.classList.toggle('active', currentMode === 'follow');
         collectBtn.classList.toggle('active', currentMode === 'collect');
-
-        const plannerLink = document.querySelector('.planner-link');
-        if (plannerLink) {
-            plannerLink.style.display = currentMode === 'scan' ? 'flex' : 'none';
+    
+        // 更新链接显示
+        document.querySelectorAll('.planner-link').forEach(link => {
+            link.style.display = 'none';
+        });
+        
+        if (currentMode === 'scan') {
+            document.querySelector('.scan-link').style.display = 'flex';
+        } else if (currentMode === 'follow') {
+            document.querySelectorAll('.follow-link').forEach(link => {
+                link.style.display = 'flex';
+            });
+        } else if (currentMode === 'collect') {
+            document.querySelector('.collect-link').style.display = 'flex';
         }
     }
 
@@ -1118,6 +1144,9 @@
         return formattedContent;
     }
 
+
+    
+
     function initReminder() {
         // 创建提醒面板
 
@@ -1135,9 +1164,23 @@
                     <button class="mode-btn" id="follow-reminders">Target</button>
                     <button class="mode-btn" id="collect-reminders">Collector</button>
                 </div>
-                <a href="https://workflowy.com/#/${TARGET_NODE_ID}" class="planner-link">
-                    进入节点
-                </a>
+                <div class="planner-links">
+                    <a href="https://workflowy.com/#/${MODE_NODES.scan}" class="planner-link scan-link">
+                        DailyPlanner
+                    </a>
+                    <div class="follow-links-wrapper">
+                        <a href="https://workflowy.com/#/${MODE_NODES.follow[0]}" class="planner-link follow-link">
+                            ForwardLogs
+                        </a>
+                        <a href="https://workflowy.com/#/${MODE_NODES.follow[1]}" class="planner-link follow-link">
+                            Working
+                        </a>
+                    </div>
+                    <a href="https://workflowy.com/#/${MODE_NODES.collect}" class="planner-link collect-link">
+                        Collector
+                    </a>
+                </div>
+
             </div>
             <div class="panel-content">
                 <div class="reminder-list" id="reminder-list"></div>
