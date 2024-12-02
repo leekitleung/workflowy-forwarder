@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.4.2
+// @version      3.4.3
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -1197,8 +1197,7 @@
                 .join('\n');
         };
     
-        // 内容区域点击事件
-        // ... existing code ...
+
 
 // 内容区域点击事件
 listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .single-content').forEach(content => {
@@ -1243,28 +1242,32 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                         }
                     }
                     // 情况2：直接是链接
-                    else if (firstLine.includes('http')) {
-                        const rawContent = children[0].getName();
-                        const linkMatch = rawContent.match(/href="([^"]+)"/);
-                        if (linkMatch) {
-                            const url = linkMatch[1];
-                            await navigator.clipboard.writeText(url);
-                            copied = true;
-                        }
-                    }
-                    // 情况3：文本内容
                     else {
                         const wfItemContent = wfItem.getNameInPlainText();
                         const splitContent = wfItemContent.match(/^([\d-]+\s+[\d:]+)\s*\|\s*(.+)$/);
                         
-                        if (splitContent && children.length === 0) {
-                            // 如果是特殊格式且没有子节点，将分隔符前的日期时间作为父节点，后面的内容作为子节点
+                        // 收集所有子节点中的链接
+                        const links = [];
+                        children.forEach(child => {
+                            const rawContent = child.getName();
+                            const linkMatch = rawContent.match(/href="([^"]+)"/);
+                            if (linkMatch) {
+                                links.push(linkMatch[1]);
+                            }
+                        });
+                        
+                        if (links.length > 0) {
+                            // 如果找到链接，将所有链接组合起来
+                            await navigator.clipboard.writeText(links.join('\n'));
+                            copied = true;
+                        } else if (splitContent && children.length === 0) {
+                            // 处理特殊格式的单节点
                             const [_, dateTime, content] = splitContent;
                             const fullContent = `${dateTime}\n  - ${content.replace(/#稍后处理/g, '').trim()}`;
                             await navigator.clipboard.writeText(fullContent);
                             copied = true;
                         } else {
-                            // 原有的处理逻辑
+                            // 处理普通文本内容
                             const processedParentContent = processRichText(wfItem, true);
                             const childrenContent = processChildrenWithIndent(children);
                             
@@ -1277,7 +1280,7 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                         }
                     }
                 } else {
-                    // 情况4：处理单节点的情况
+                    // 情况3：处理单节点的情况
                     const wfItemContent = wfItem.getNameInPlainText()
                         .replace(/#稍后处理/g, '')
                         .replace(/@\d{1,2}:\d{2}/g, '')
