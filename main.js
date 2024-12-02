@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.3.7
+// @version      3.4.2
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -1124,137 +1124,202 @@
                 }
             });
         });
-
-       // 辅助函数：处理富文本内容
-       function processRichText(item) {
-        // 获取完整的节点数据
-        const nodeData = item.data;
-        const rawName = nodeData.nm || '';
-        let processedContent = rawName;
-
-        // 处理内嵌的链接
-        if (nodeData.ct) {
-            const contentLinks = Array.isArray(nodeData.ct) ? nodeData.ct : [];
-            contentLinks.forEach(link => {
-                if (link.url) {
-                    // 使用链接的文本和URL创建markdown链接
-                    const linkText = link.text || link.url;
-                    const markdownLink = `[${linkText}](${link.url})`;
-                    // 替换原始文本中的URL
-                    processedContent = processedContent.replace(link.url, markdownLink);
-                }
-            });
-        }
-
-        return processedContent;
-        }
-
-        // 内容区域点击事件
-        listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .single-content').forEach(content => {
-            content.addEventListener('click', async function(e) {
-                if (e.target.closest('.reminder-checkbox-wrapper')) {
-                    return;
-                }
-
-                e.stopPropagation();
-                const reminderItem = this.closest('.reminder-item');
-                const id = reminderItem.dataset.id;
-                const reminder = reminders[id];
-
-                if (reminder) {
-                    try {
-                        const wfItem = WF.getItemById(id);
-                        const children = wfItem.getChildren();
-                        let copied = false;
-
-
-                        if (children.length > 0) {
-                            const firstLine = children[0].getNameInPlainText();
-                            const datePattern = /^\d{4}-\d{1,2}-\d{1,2}/;
-
-                            // 情况1：第一个子节点与父节点重复，标题+链接格式
-                            if (datePattern.test(firstLine) && children.length >= 3) {
-                                const titleLine = children[1].getNameInPlainText();
-                                const linkLine = children[2].getNameInPlainText();
-
-                                const titleMatch = titleLine.match(/标题[：:]\s*(.+)/);
-                                const urlMatch = linkLine.match(/链接[：:]\s*(.+)/);
-
-                                if (titleMatch && urlMatch) {
-                                    const title = titleMatch[1].trim();
-                                    const url = urlMatch[1].trim();
-
-                                    const clipboardItem = new ClipboardItem({
-                                        'text/html': new Blob([`<a href="${url}">${title}</a>`], { type: 'text/html' }),
-                                        'text/plain': new Blob([url], { type: 'text/plain' })
-                                    });
-                                    await navigator.clipboard.write([clipboardItem]);
-                                    copied = true;
-                                }
-                            }
-                            // 情况2：直接是链接
-                            else if (firstLine.includes('http')) {
-                                const rawContent = children[0].getName();
-                                const linkMatch = rawContent.match(/href="([^"]+)"/);
-                                if (linkMatch) {
-                                    const url = linkMatch[1];
-                                    await navigator.clipboard.writeText(url);
-                                    copied = true;
-                                }
-                            }
-                            // 情况3：文本内容
-                            else {
-                                // 获取父节点内容
-                                const parentContent = processRichText(wfItem);
-
-                                // 获取所有子节点内容（带层级缩进）
-                                const processChildrenWithIndent = (children, level = 1) => {
-                                    return children.map(child => {
-                                        const content = processRichText(child);
-                                        const indent = '  '.repeat(level); // 每层缩进两个空格
-                                        const childContent = `${indent}- ${content}`;
-
-                                        // 递归处理子节点的子节点
-                                        const grandChildren = child.getChildren();
-                                        if (grandChildren.length > 0) {
-                                            const nestedContent = processChildrenWithIndent(grandChildren, level + 1);
-                                            return `${childContent}\n${nestedContent}`;
-                                        }
-
-                                        return childContent;
-                                    }).join('\n');
-                                };
-
-                                // 组合内容，添加父节点和所有层级的子节点
-                                const childrenContent = processChildrenWithIndent(children);
-                                const fullContent = `${parentContent}\n${childrenContent}`;
-                                await navigator.clipboard.writeText(fullContent);
-                                copied = true;
-                            }
-                            // 只有在成功复制后才更新状态
-                            if (copied) {
-                                showFeedback(this, '已复制');
-
-                                // 更新完成状态
-                                reminderItem.classList.add('completed');
-                                const checkbox = reminderItem.querySelector('.reminder-checkbox');
-                                if (checkbox) {
-                                    checkbox.checked = true;
-                                }
-                                reminder.completed = true;
-                                saveReminders();
-                                syncWorkflowyState(id, true);
-                            }
+    
+        // 辅助函数：处理富文本内容
+        function processRichText(item, isParent = false) {
+            const nodeData = item.data;
+            let processedContent = (nodeData.nm || '').trim();
+            
+            // 处理特殊格式：日期时间|内容
+            const splitContent = processedContent.match(/^([\d-]+\s+[\d:]+)\s*\|\s*(.+)$/);
+            if (splitContent && !isParent) {
+                processedContent = splitContent[2];
+            }
+            
+            // 处理标签和内容
+            processedContent = processedContent
+                // 移除 #稍后处理 标签
+                .replace(/#稍后处理/g, '')
+                // 移除 @时间 标签
+                .replace(/@\d{1,2}:\d{2}/g, '')
+                // 只对非父节点移除日期时间
+                .replace(isParent ? '' : /\d{4}-\d{1,2}-\d{1,2}\s+\d{2}:\d{2}/g, '')
+                // 移除其他 HTML span 标签
+                .replace(/<span[^>]*>(.*?)<\/span>/g, '$1')
+                // 处理链接
+                .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/g, (match, url, text) => {
+                    if (text === url || text === url + ' »') {
+                        return url;
+                    }
+                    return `${text.replace(' »', '')} ${url}`;
+                })
+                // 移除多余空格
+                .replace(/\s+/g, ' ')
+                .trim();
+        
+            // 处理内嵌的链接
+            if (nodeData.ct) {
+                const contentLinks = Array.isArray(nodeData.ct) ? nodeData.ct : [];
+                contentLinks.forEach(link => {
+                    if (link.url) {
+                        const linkText = link.text || new URL(link.url).hostname;
+                        if (linkText === link.url) {
+                            processedContent = processedContent.replace(link.url, link.url);
+                        } else {
+                            processedContent = processedContent.replace(link.url, `${linkText} ${link.url}`);
                         }
-                    } catch (error) {
-                        console.error('复制操作失败:', error);
-                        console.log('节点数据:', wfItem.data);
-                        showFeedback(this, '复制失败');
+                    }
+                });
+            }
+        
+            return processedContent;
+        }
+        
+        const processChildrenWithIndent = (children, level = 1) => {
+            return children
+                .map(child => {
+                    const content = processRichText(child, false); // 子节点不保留时间戳
+                    // 跳过空内容
+                    if (!content.trim()) return '';
+                    
+                    const indent = '  '.repeat(level);
+                    const childContent = `${indent}- ${content}`;
+    
+                    const grandChildren = child.getChildren();
+                    if (grandChildren.length > 0) {
+                        const nestedContent = processChildrenWithIndent(grandChildren, level + 1);
+                        return nestedContent ? `${childContent}\n${nestedContent}` : childContent;
+                    }
+    
+                    return childContent;
+                })
+                .filter(line => line.trim()) // 过滤空行
+                .join('\n');
+        };
+    
+        // 内容区域点击事件
+        // ... existing code ...
+
+// 内容区域点击事件
+listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .single-content').forEach(content => {
+    content.addEventListener('click', async function(e) {
+        if (e.target.closest('.reminder-checkbox-wrapper')) {
+            return;
+        }
+
+        e.stopPropagation();
+        const reminderItem = this.closest('.reminder-item');
+        const id = reminderItem.dataset.id;
+        const reminder = reminders[id];
+
+        if (reminder) {
+            try {
+                const wfItem = WF.getItemById(id);
+                const children = wfItem.getChildren();
+                let copied = false;
+
+                if (children.length > 0) {
+                    const firstLine = children[0].getNameInPlainText();
+                    const datePattern = /^\d{4}-\d{1,2}-\d{1,2}/;
+
+                    // 情况1：第一个子节点与父节点重复，标题+链接格式
+                    if (datePattern.test(firstLine) && children.length >= 3) {
+                        const titleLine = children[1].getNameInPlainText();
+                        const linkLine = children[2].getNameInPlainText();
+
+                        const titleMatch = titleLine.match(/标题[：:]\s*(.+)/);
+                        const urlMatch = linkLine.match(/链接[：:]\s*(.+)/);
+
+                        if (titleMatch && urlMatch) {
+                            const title = titleMatch[1].trim();
+                            const url = urlMatch[1].trim();
+
+                            const clipboardItem = new ClipboardItem({
+                                'text/html': new Blob([`<a href="${url}">${title}</a>`], { type: 'text/html' }),
+                                'text/plain': new Blob([url], { type: 'text/plain' })
+                            });
+                            await navigator.clipboard.write([clipboardItem]);
+                            copied = true;
+                        }
+                    }
+                    // 情况2：直接是链接
+                    else if (firstLine.includes('http')) {
+                        const rawContent = children[0].getName();
+                        const linkMatch = rawContent.match(/href="([^"]+)"/);
+                        if (linkMatch) {
+                            const url = linkMatch[1];
+                            await navigator.clipboard.writeText(url);
+                            copied = true;
+                        }
+                    }
+                    // 情况3：文本内容
+                    else {
+                        const wfItemContent = wfItem.getNameInPlainText();
+                        const splitContent = wfItemContent.match(/^([\d-]+\s+[\d:]+)\s*\|\s*(.+)$/);
+                        
+                        if (splitContent && children.length === 0) {
+                            // 如果是特殊格式且没有子节点，将分隔符前的日期时间作为父节点，后面的内容作为子节点
+                            const [_, dateTime, content] = splitContent;
+                            const fullContent = `${dateTime}\n  - ${content.replace(/#稍后处理/g, '').trim()}`;
+                            await navigator.clipboard.writeText(fullContent);
+                            copied = true;
+                        } else {
+                            // 原有的处理逻辑
+                            const processedParentContent = processRichText(wfItem, true);
+                            const childrenContent = processChildrenWithIndent(children);
+                            
+                            const fullContent = childrenContent 
+                                ? `${processedParentContent}\n${childrenContent}`
+                                : processedParentContent;
+                                
+                            await navigator.clipboard.writeText(fullContent);
+                            copied = true;
+                        }
+                    }
+                } else {
+                    // 情况4：处理单节点的情况
+                    const wfItemContent = wfItem.getNameInPlainText()
+                        .replace(/#稍后处理/g, '')
+                        .replace(/@\d{1,2}:\d{2}/g, '')
+                        .trim();
+                    const splitContent = wfItemContent.match(/^([\d-]+\s+[\d:]+)\s*\|\s*(.+)$/);
+                    
+                    if (splitContent) {
+                        // 如果是特殊格式的单节点
+                        const [_, dateTime, content] = splitContent;
+                        const fullContent = `${dateTime}\n  - ${content}`;
+                        await navigator.clipboard.writeText(fullContent);
+                        copied = true;
+                    } else {
+                        // 如果是普通单节点，使用原有的处理方式
+                        const processedParentContent = processRichText(wfItem, true);
+                        await navigator.clipboard.writeText(processedParentContent);
+                        copied = true;
                     }
                 }
-            });
-        });
 
+                if (copied) {
+                    showFeedback(this, '已复制');
+                    
+                    // 复制成功后标记为完成
+                    const checkbox = reminderItem.querySelector('.reminder-checkbox');
+                    if (checkbox && !checkbox.checked) {
+                        checkbox.checked = true;
+                        reminderItem.classList.add('completed');
+                        reminder.completed = true;
+                        saveReminders();
+                        syncWorkflowyState(id, true);
+                    }
+                }
+            } catch (error) {
+                console.error('复制操作失败:', error);
+                console.log('节点数据:', wfItem.data);
+                showFeedback(this, '复制失败');
+            }
+        }
+    });
+});
+    
         // 使用通用事件监听器处理其他功能
         addEventListeners(listElement);
     }
