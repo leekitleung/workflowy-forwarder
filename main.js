@@ -1444,6 +1444,8 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
             if (currentMode === 'scan') {
                 // 如果点击当前模式，清除该模式的移除记录
                 localStorage.removeItem('workflowy_removed_scan');
+                // 检查并清理已删除的节点
+                cleanDeletedNodes('scan');
             }
             currentMode = 'scan';
             scanReminders();
@@ -1454,6 +1456,8 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
             if (currentMode === 'follow') {
                 // 如果点击当前模式，清除该模式的移除记录
                 localStorage.removeItem('workflowy_removed_follow');
+                // 检查并清理已删除的节点
+                cleanDeletedNodes('follow');
             }
             currentMode = 'follow';
             followReminders();
@@ -1464,6 +1468,8 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
             if (currentMode === 'collect') {
                 // 如果点击当前模式，清除该模式的移除记录
                 localStorage.removeItem('workflowy_removed_collect');
+                // 检查并清理已删除的节点
+                cleanDeletedNodes('collect');
             }
             currentMode = 'collect';
             collectReminders();
@@ -1482,6 +1488,37 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                 scanReminders();
             }
         }, 60000);
+    }
+
+    function cleanDeletedNodes(mode) {
+        const currentReminders = { ...reminders };
+        let hasChanges = false;
+    
+        // 检查每个提醒项
+        for (const [id, reminder] of Object.entries(currentReminders)) {
+            if (reminder.mode === mode) {
+                try {
+                    // 尝试获取节点，如果节点不存在会抛出异常
+                    const node = WF.getItemById(id);
+                    if (!node) {
+                        // 如果节点不存在，删除这个提醒
+                        delete reminders[id];
+                        hasChanges = true;
+                    }
+                } catch (e) {
+                    // 如果获取节点时出错，说明节点已被删除
+                    delete reminders[id];
+                    hasChanges = true;
+                }
+            }
+        }
+    
+        // 如果有变更，保存更新后的提醒列表
+        if (hasChanges) {
+            saveReminders();
+            // 更新显示
+            updateReminderList();
+        }
     }
 
     // 辅助函数
