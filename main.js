@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.3.5
+// @version      3.3.7
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -152,10 +152,10 @@
         background: rgba(53, 125, 166, 1);
         color:rgba(185, 207, 221, 1);
     }
-    
+
 
     .planner-link {
-        display: flex;  
+        display: flex;
         justify-content: flex-end;
         color: rgba(144, 147, 149, 0.5);
         font-size: 12px;
@@ -179,11 +179,11 @@
     .follow-links-wrapper {
         display: flex;
         gap: 0px;  /* 将间距从12px减小到4px */
-        justify-content: flex-end; 
+        justify-content: flex-end;
     }
 
     .follow-links-wrapper .follow-link {
-        
+
     }
 
 
@@ -216,7 +216,7 @@
         font-size: 14px;
     }
 
-    
+
 
     .reminder-item.completed {
         opacity: 0.6;
@@ -300,7 +300,7 @@
     .reminder-actions {
         position: absolute;
         right: 10px;
-        top: 9px;  
+        top: 9px;
         display: flex;
         gap: 4px;
         opacity: 0;  /* 默认隐藏 */
@@ -308,15 +308,15 @@
         z-index: 2;
         padding: 4px 8px;
         border-radius: 4px;
-        
+
     }
 
 
     .reminder-item:hover .reminder-actions {
-         
+
         opacity: 1;
         background: linear-gradient(to right, transparent, rgba(56, 70, 81, 0.8) 50%, rgba(56, 70, 81, 0.8));
-    
+
     }
 
     .reminder-action-btn {
@@ -352,7 +352,7 @@
     }
 
     .reminder-action-btn.copy:hover {
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234988B1'/%3E%3Cpath d='M5.34119 10.6494L7.33176 8.65881L7.99529 9.32233L6.00472 11.3129C5.08858 12.229 3.60323 12.229 2.6871 11.3129C1.77097 10.3968 1.77097 8.91142 2.6871 7.99528L4.67767 6.00472L5.34119 6.66824L3.35062 8.65881C2.80094 9.20849 2.80094 10.0997 3.35062 10.6494C3.9003 11.1991 4.79151 11.1991 5.34119 10.6494Z' fill='white'/%3E%3Cpath d='M9.32233 7.99528L8.65881 7.33176L10.6494 5.34119C11.1991 4.79151 11.1991 3.9003 10.6494 3.35062C10.0997 2.80094 9.20849 2.80094 8.65881 3.35062L6.66824 5.34119L6.00472 4.67767L7.99528 2.6871C8.91142 1.77097 10.3968 1.77097 11.3129 2.6871C12.229 3.60323 12.229 5.08858 11.3129 6.00472L9.32233 7.99528Z' fill='white'/%3E%3Cpath d='M7.99543 5.34121L8.65895 6.00473L6.00486 8.65883L5.34133 7.9953L7.99543 5.34121Z' fill='white'/%3E%3C/svg%3E");    
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234988B1'/%3E%3Cpath d='M5.34119 10.6494L7.33176 8.65881L7.99529 9.32233L6.00472 11.3129C5.08858 12.229 3.60323 12.229 2.6871 11.3129C1.77097 10.3968 1.77097 8.91142 2.6871 7.99528L4.67767 6.00472L5.34119 6.66824L3.35062 8.65881C2.80094 9.20849 2.80094 10.0997 3.35062 10.6494C3.9003 11.1991 4.79151 11.1991 5.34119 10.6494Z' fill='white'/%3E%3Cpath d='M9.32233 7.99528L8.65881 7.33176L10.6494 5.34119C11.1991 4.79151 11.1991 3.9003 10.6494 3.35062C10.0997 2.80094 9.20849 2.80094 8.65881 3.35062L6.66824 5.34119L6.00472 4.67767L7.99528 2.6871C8.91142 1.77097 10.3968 1.77097 11.3129 2.6871C12.229 3.60323 12.229 5.08858 11.3129 6.00472L9.32233 7.99528Z' fill='white'/%3E%3Cpath d='M7.99543 5.34121L8.65895 6.00473L6.00486 8.65883L5.34133 7.9953L7.99543 5.34121Z' fill='white'/%3E%3C/svg%3E");
 
     }
 
@@ -391,8 +391,8 @@
         display: flex;
         gap: 4px;
         right: 2px;
-        top: 4px;  
-        
+        top: 4px;
+
     }
 
     .collect-mode .single-content,
@@ -410,10 +410,10 @@
         position: relative;
     }
         .collect-mode .single-content-item,.collect-mode .children-content-item {
-            
+
             color: rgba(158, 161, 162, 1);
             line-height:1.2;
-            
+
         }
 
     .reminder-item:hover {
@@ -618,16 +618,16 @@
         const scanBtn = document.getElementById('scan-reminders');
         const followBtn = document.getElementById('follow-reminders');
         const collectBtn = document.getElementById('collect-reminders');
-    
+
         scanBtn.classList.toggle('active', currentMode === 'scan');
         followBtn.classList.toggle('active', currentMode === 'follow');
         collectBtn.classList.toggle('active', currentMode === 'collect');
-    
+
         // 更新链接显示
         document.querySelectorAll('.planner-link').forEach(link => {
             link.style.display = 'none';
         });
-        
+
         if (currentMode === 'scan') {
             document.querySelector('.scan-link').style.display = 'flex';
         } else if (currentMode === 'follow') {
@@ -680,7 +680,7 @@
                 </div>
                 <div class="reminder-item-content">
                     <span class="reminder-item-name" onclick="WF.getItemById('${reminder.id}') && WF.zoomTo(WF.getItemById('${reminder.id}'))">${displayText}</span>
-                
+
                     <div class="reminder-actions">
                         <button class="reminder-action-btn copy" data-content="${fullUrl}">
                         </button>
@@ -730,10 +730,10 @@
                 </div>
                 <div class="reminder-actions">
                     <button class="reminder-action-btn open" data-id="${reminder.id}">
-                        
+
                     </button>
                     <button class="reminder-action-btn remove" data-id="${reminder.id}">
-                    
+
                     </button>
                 </div>
             </div>`;
@@ -748,16 +748,16 @@
                 const removedItems = JSON.parse(localStorage.getItem(`workflowy_removed_${currentMode}`) || '[]');
                 removedItems.push(id);
                 localStorage.setItem(`workflowy_removed_${currentMode}`, JSON.stringify(removedItems));
-                
+
                 delete reminders[id];
                 saveReminders();
-    
+
                 const reminderItem = this.closest('.reminder-item');
                 const feedback = document.createElement('div');
                 feedback.className = 'action-feedback';
                 feedback.textContent = '已移除';
                 reminderItem.appendChild(feedback);
-    
+
                 setTimeout(() => {
                     feedback.remove();
                     reminderItem.style.opacity = '0';
@@ -1106,9 +1106,56 @@
     }
 
     function addCollectModeEventListeners(listElement) {
-        // 内容区域点击复制功能
+        // 处理复选框的点击事件
+        listElement.querySelectorAll('.reminder-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const id = this.dataset.id;
+                const reminderItem = this.closest('.reminder-item');
+                if (reminderItem) {
+                    const isCompleted = this.checked;
+                    reminderItem.classList.toggle('completed', isCompleted);
+                    syncWorkflowyState(id, isCompleted);
+                    const reminder = reminders[id];
+                    if (reminder) {
+                        reminder.completed = isCompleted;
+                        saveReminders();
+                    }
+                }
+            });
+        });
+
+       // 辅助函数：处理富文本内容
+       function processRichText(item) {
+        // 获取完整的节点数据
+        const nodeData = item.data;
+        const rawName = nodeData.nm || '';
+        let processedContent = rawName;
+
+        // 处理内嵌的链接
+        if (nodeData.ct) {
+            const contentLinks = Array.isArray(nodeData.ct) ? nodeData.ct : [];
+            contentLinks.forEach(link => {
+                if (link.url) {
+                    // 使用链接的文本和URL创建markdown链接
+                    const linkText = link.text || link.url;
+                    const markdownLink = `[${linkText}](${link.url})`;
+                    // 替换原始文本中的URL
+                    processedContent = processedContent.replace(link.url, markdownLink);
+                }
+            });
+        }
+
+        return processedContent;
+        }
+
+        // 内容区域点击事件
         listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .single-content').forEach(content => {
             content.addEventListener('click', async function(e) {
+                if (e.target.closest('.reminder-checkbox-wrapper')) {
+                    return;
+                }
+
                 e.stopPropagation();
                 const reminderItem = this.closest('.reminder-item');
                 const id = reminderItem.dataset.id;
@@ -1116,14 +1163,79 @@
 
                 if (reminder) {
                     try {
-                        const formattedContent = formatCollectContent(reminder);
-                        await navigator.clipboard.writeText(formattedContent);
-                        showFeedback(this, '已复制内容');
+                        const wfItem = WF.getItemById(id);
+                        const children = wfItem.getChildren();
+                        let copied = false;
 
-                        // 调试用，可以在控制台查看格式化后的内容
-                        console.log('Formatted content:', formattedContent);
+
+                        if (children.length > 0) {
+                            const firstLine = children[0].getNameInPlainText();
+                            const datePattern = /^\d{4}-\d{1,2}-\d{1,2}/;
+
+                            // 情况1：第一个子节点与父节点重复，标题+链接格式
+                            if (datePattern.test(firstLine) && children.length >= 3) {
+                                const titleLine = children[1].getNameInPlainText();
+                                const linkLine = children[2].getNameInPlainText();
+
+                                const titleMatch = titleLine.match(/标题[：:]\s*(.+)/);
+                                const urlMatch = linkLine.match(/链接[：:]\s*(.+)/);
+
+                                if (titleMatch && urlMatch) {
+                                    const title = titleMatch[1].trim();
+                                    const url = urlMatch[1].trim();
+
+                                    const clipboardItem = new ClipboardItem({
+                                        'text/html': new Blob([`<a href="${url}">${title}</a>`], { type: 'text/html' }),
+                                        'text/plain': new Blob([url], { type: 'text/plain' })
+                                    });
+                                    await navigator.clipboard.write([clipboardItem]);
+                                    copied = true;
+                                }
+                            }
+                            // 情况2：直接是链接
+                            else if (firstLine.includes('http')) {
+                                const rawContent = children[0].getName();
+                                const linkMatch = rawContent.match(/href="([^"]+)"/);
+                                if (linkMatch) {
+                                    const url = linkMatch[1];
+                                    await navigator.clipboard.writeText(url);
+                                    copied = true;
+                                }
+                            }
+                            // 情况3：文本内容
+                            else {
+                                // 获取父节点内容
+                                const parentContent = processRichText(wfItem);
+
+                                // 获取所有子节点内容（带缩进）
+                                const childrenContent = children.map(child => {
+                                    const content = processRichText(child);
+                                    return `  ${content}`; // 添加两个空格作为缩进
+                                }).join('\n');
+
+                                // 组合内容
+                                const fullContent = `${parentContent}\n${childrenContent}`;
+                                await navigator.clipboard.writeText(fullContent);
+                                copied = true;
+                            }
+                            // 只有在成功复制后才更新状态
+                            if (copied) {
+                                showFeedback(this, '已复制');
+
+                                // 更新完成状态
+                                reminderItem.classList.add('completed');
+                                const checkbox = reminderItem.querySelector('.reminder-checkbox');
+                                if (checkbox) {
+                                    checkbox.checked = true;
+                                }
+                                reminder.completed = true;
+                                saveReminders();
+                                syncWorkflowyState(id, true);
+                            }
+                        }
                     } catch (error) {
-                        console.error('复制失败:', error);
+                        console.error('复制操作失败:', error);
+                        console.log('节点数据:', wfItem.data);
                         showFeedback(this, '复制失败');
                     }
                 }
@@ -1132,6 +1244,21 @@
 
         // 使用通用事件监听器处理其他功能
         addEventListeners(listElement);
+    }
+
+    // 辅助函数：标记为完成
+    function markAsCompleted(reminderItem, reminder, id) {
+        reminderItem.classList.add('completed');
+        const checkbox = reminderItem.querySelector('.reminder-checkbox');
+        if (checkbox) {
+            checkbox.checked = true;
+        }
+
+        reminder.completed = true;
+        saveReminders();
+
+        // 同步到 WorkFlowy
+        syncWorkflowyState(id, true);
     }
 
     function formatCollectContent(reminder) {
@@ -1170,7 +1297,7 @@
     }
 
 
-    
+
 
     function initReminder() {
         // 创建提醒面板
@@ -1181,7 +1308,7 @@
             <div class="panel-header">
                 <h1>
                     Workflowy<br/>
-                    Forwarder Plus  
+                    Forwarder Plus
                     <span class="version-tag">v${SCRIPT_VERSION}</span>
                 </h1>
                 <div class="mode-switch">
@@ -1244,7 +1371,7 @@
             scanReminders();
             updateButtonStyles();
         };
-        
+
         document.getElementById('follow-reminders').onclick = () => {
             if (currentMode === 'follow') {
                 // 如果点击当前模式，清除该模式的移除记录
@@ -1254,7 +1381,7 @@
             followReminders();
             updateButtonStyles();
         };
-        
+
         document.getElementById('collect-reminders').onclick = () => {
             if (currentMode === 'collect') {
                 // 如果点击当前模式，清除该模式的移除记录
@@ -1304,12 +1431,12 @@
         const currentModeItems = Object.entries(reminders)
             .filter(([_, r]) => r.mode === currentMode)
             .map(([id]) => id);
-        
+
         // 添加到移除记录中
         const removedItems = JSON.parse(localStorage.getItem(`workflowy_removed_${currentMode}`) || '[]');
         const updatedRemovedItems = [...new Set([...removedItems, ...currentModeItems])];
         localStorage.setItem(`workflowy_removed_${currentMode}`, JSON.stringify(updatedRemovedItems));
-    
+
         // 清除当前模式的提醒
         reminders = Object.fromEntries(
             Object.entries(reminders).filter(([_, r]) => r.mode !== currentMode)
