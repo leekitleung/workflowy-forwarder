@@ -1166,24 +1166,23 @@
                         const wfItem = WF.getItemById(id);
                         const children = wfItem.getChildren();
                         let copied = false;
-
-
+                
                         if (children.length > 0) {
                             const firstLine = children[0].getNameInPlainText();
                             const datePattern = /^\d{4}-\d{1,2}-\d{1,2}/;
-
-                            // 情况1：第一个子节点与父节点重复，标题+链接格式
+                
+                            // Case 1: First child node is a duplicate of the parent, title + link format
                             if (datePattern.test(firstLine) && children.length >= 3) {
                                 const titleLine = children[1].getNameInPlainText();
                                 const linkLine = children[2].getNameInPlainText();
-
+                
                                 const titleMatch = titleLine.match(/标题[：:]\s*(.+)/);
                                 const urlMatch = linkLine.match(/链接[：:]\s*(.+)/);
-
+                
                                 if (titleMatch && urlMatch) {
                                     const title = titleMatch[1].trim();
                                     const url = urlMatch[1].trim();
-
+                
                                     const clipboardItem = new ClipboardItem({
                                         'text/html': new Blob([`<a href="${url}">${title}</a>`], { type: 'text/html' }),
                                         'text/plain': new Blob([url], { type: 'text/plain' })
@@ -1204,43 +1203,42 @@
                             }
                             // 情况3：文本内容
                             else {
-                                // 获取父节点内容
-                                const parentContent = processRichText(wfItem);
-
-                                // 获取所有子节点内容（带缩进）
-                                const childrenContent = children.map(child => {
-                                    const content = processRichText(child);
-                                    return `  ${content}`; // 添加两个空格作为缩进
-                                }).join('\n');
-
-                                // 组合内容
-                                const fullContent = `${parentContent}\n${childrenContent}`;
-                                await navigator.clipboard.writeText(fullContent);
-                                copied = true;
-                            }
-                            // 只有在成功复制后才更新状态
-                            if (copied) {
-                                showFeedback(this, '已复制');
-
-                                // 更新完成状态
-                                reminderItem.classList.add('completed');
-                                const checkbox = reminderItem.querySelector('.reminder-checkbox');
-                                if (checkbox) {
-                                    checkbox.checked = true;
+                                try {
+                                    // 获取父节点内容
+                                    const parentContent = processRichText(wfItem);
+                                    
+                                    // 递归处理子节点，保持层级缩进
+                                    const processChildrenWithIndent = (children, level = 1) => {
+                                        return children.map(child => {
+                                            const content = processRichText(child);
+                                            const indent = '  '.repeat(level); // 每层缩进两个空格
+                                            const childContent = `${indent}- ${content}`;
+                                            
+                                            // 递归处理子节点的子节点
+                                            const grandChildren = child.getChildren();
+                                            if (grandChildren && grandChildren.length > 0) {
+                                                const nestedContent = processChildrenWithIndent(grandChildren, level + 1);
+                                                return `${childContent}\n${nestedContent}`;
+                                            }
+                                            
+                                            return childContent;
+                                        }).join('\n');
+                                    };
+                            
+                                    // 组合内容，添加父节点和所有层级的子节点
+                                    const childrenContent = processChildrenWithIndent(children);
+                                    const fullContent = `${parentContent}\n${childrenContent}`;
+                                    
+                                    // 使用剪贴板API复制内容
+                                    await navigator.clipboard.writeText(fullContent);
+                                    copied = true;
+                                    console.log('复制成功:', fullContent);
+                                } catch (error) {
+                                    console.error('复制过程出错:', error);
+                                    showFeedback(this, '复制失败');
+                                    copied = false;
                                 }
-                                reminder.completed = true;
-                                saveReminders();
-                                syncWorkflowyState(id, true);
                             }
-                        }
-                    } catch (error) {
-                        console.error('复制操作失败:', error);
-                        console.log('节点数据:', wfItem.data);
-                        showFeedback(this, '复制失败');
-                    }
-                }
-            });
-        });
 
         // 使用通用事件监听器处理其他功能
         addEventListeners(listElement);
