@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.4.3
+// @version      3.4.4
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -168,12 +168,30 @@
         background-repeat: no-repeat;
         background-position: right 8px;
         background-size: 12px;
+        flex-direction: column;
+        gap: 4px;
     }
 
     .planner-link:hover{
         color: rgba(53, 125, 166, 1);
         text-decoration: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23357DA6'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23357DA6'/%3E%3C/svg%3E");
+    }
+
+
+    .today-link {
+        color: #357DA6 !important;
+        justify-content: flex-start !important;  /* 左对齐 */
+        padding-left: 0 !important;  /* 移除左边距 */
+    }
+
+    .today-link:hover {
+        color: #4988B1 !important;
+    }
+
+    .planner-links-row {
+        display: flex;
+        justify-content: flex-end;  /* 右对齐其他链接 */
     }
 
     .follow-links-wrapper {
@@ -1398,9 +1416,14 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                     <button class="mode-btn" id="collect-reminders">Collector</button>
                 </div>
                 <div class="planner-links">
-                    <a href="https://workflowy.com/#/${MODE_NODES.scan}" class="planner-link scan-link">
-                        DailyPlanner
+                    <a href="#" class="planner-link today-link" id="goto-today">
+                        Today
                     </a>
+                    <div class="planner-links-row">
+                        <a href="https://workflowy.com/#/${MODE_NODES.scan}" class="planner-link scan-link">
+                            DailyPlanner
+                        </a>
+                    </div>
                     <div class="follow-links-wrapper">
                         <a href="https://workflowy.com/#/${MODE_NODES.follow[0]}" class="planner-link follow-link">
                             ForwardLogs
@@ -1424,7 +1447,11 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
         `;
 
         document.body.appendChild(panel);
-
+        document.getElementById('goto-today').onclick = (e) => {
+            e.preventDefault();
+            const goToToday = new Function(`(${goToToday_0_6.toString()})("35a73627730b","日历 CALENDAR","1",false)`);
+            goToToday();
+        };
 
         // 添加面板切换按钮
         const toggleBtn = document.createElement('button');
