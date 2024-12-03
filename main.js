@@ -178,15 +178,30 @@
 
     .planner-links-row {
         display: flex;
-        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
     }
 
     .today-link {
-        color: #357DA6 !important;
+        display: flex !important; /* 强制显示 */
+        align-items: center;
+        margin-right: 8px;
     }
 
-    .today-link:hover {
-        color: #4988B1 !important;
+    .today-link::before {
+        content: '';
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        margin-right: 4px;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M8.5 1H8V0H7V1H3V0H2V1H1.5C0.67 1 0 1.67 0 2.5V9.5C0 10.33 0.67 11 1.5 11H8.5C9.33 11 10 10.33 10 9.5V2.5C10 1.67 9.33 1 8.5 1ZM9 9.5C9 9.78 8.78 10 8.5 10H1.5C1.22 10 1 9.78 1 9.5V4H9V9.5ZM9 3H1V2.5C1 2.22 1.22 2 1.5 2H2V3H3V2H7V3H8V2H8.5C8.78 2 9 2.22 9 2.5V3Z' fill='%23909395' fill-opacity='0.5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: center;
+        vertical-align: middle;
+    }
+
+    .today-link:hover::before {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M8.5 1H8V0H7V1H3V0H2V1H1.5C0.67 1 0 1.67 0 2.5V9.5C0 10.33 0.67 11 1.5 11H8.5C9.33 11 10 10.33 10 9.5V2.5C10 1.67 9.33 1 8.5 1ZM9 9.5C9 9.78 8.78 10 8.5 10H1.5C1.22 10 1 9.78 1 9.5V4H9V9.5ZM9 3H1V2.5C1 2.22 1.22 2 1.5 2H2V3H3V2H7V3H8V2H8.5C8.78 2 9 2.22 9 2.5V3Z' fill='%23357DA6'/%3E%3C/svg%3E");
     }
 
     .follow-links-wrapper {
@@ -627,6 +642,7 @@
         }
     }
 
+    // 在 updateButtonStyles 函数中添加显示逻辑
     function updateButtonStyles() {
         const scanBtn = document.getElementById('scan-reminders');
         const followBtn = document.getElementById('follow-reminders');
@@ -643,6 +659,7 @@
 
         if (currentMode === 'scan') {
             document.querySelector('.scan-link').style.display = 'flex';
+            document.querySelector('.today-link').style.display = 'flex';  // 只在scan模式显示
         } else if (currentMode === 'follow') {
             document.querySelectorAll('.follow-link').forEach(link => {
                 link.style.display = 'flex';
@@ -656,7 +673,7 @@
         const panel = document.querySelector('.reminder-panel');
         const toggleBtn = document.querySelector('.reminder-toggle');
         const content = document.getElementById('content');
-
+    
         if (panel && toggleBtn) {
             panel.classList.toggle('visible');
             toggleBtn.classList.toggle('active');
@@ -1395,12 +1412,6 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
 
     function initReminder() {
         // 创建提醒面板
-        document.getElementById('goto-today').onclick = (e) => {
-            e.preventDefault();
-            const goToToday = new Function(`(${goToToday_0_6.toString()})("35a73627730b","日历 CALENDAR","1",false)`);
-            goToToday();
-        };
-
         const panel = document.createElement('div');
         panel.className = 'reminder-panel';
         panel.innerHTML = `
@@ -1417,8 +1428,8 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                 </div>
                 <div class="planner-links">
                     <div class="planner-links-row">
-                        <a href="#" class="planner-link today-link" id="goto-today">
-                            Today
+                       <a href="#" class="planner-link today-link" id="goto-today">
+                            Today's Plan
                         </a>
                         <a href="https://workflowy.com/#/${MODE_NODES.scan}" class="planner-link scan-link">
                             DailyPlanner
@@ -1448,24 +1459,109 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
 
         document.body.appendChild(panel);
 
+    // 添加面板切换按钮 - 这部分需要确保在正确位置
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'reminder-toggle';
+    toggleBtn.innerHTML = `
+        <svg aria-hidden="true" focusable="false" class="toggle-arrow" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+            <path fill="currentColor" d="M4.7 244.7c-6.2 6.2-6.2 16.4 0 22.6l176 176c6.2 6.2 16.4 6.2 22.6 0s6.2-16.4 0-22.6L54.6 272 432 272c8.8 0 16-7.2 16-16s-7.2-16-16-16L54.6 240 203.3 91.3c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0l-176 176z"></path>
+        </svg>
+    `;
+    document.body.appendChild(toggleBtn);
 
+    // 添加点击事件
+    toggleBtn.onclick = togglePanel;
 
+    // 添加键盘快捷键监听
+    document.addEventListener('keydown', handleKeyPress, false);
 
-        // 添加面板切换按钮
-        const toggleBtn = document.createElement('button');
-        toggleBtn.className = 'reminder-toggle';
-        toggleBtn.innerHTML = `
-            <svg aria-hidden="true" focusable="false" class="toggle-arrow" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-                <path fill="currentColor" d="M4.7 244.7c-6.2 6.2-6.2 16.4 0 22.6l176 176c6.2 6.2 16.4 6.2 22.6 0s6.2-16.4 0-22.6L54.6 272 432 272c8.8 0 16-7.2 16-16s-7.2-16-16-16L54.6 240 203.3 91.3c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0l-176 176z"></path>
-            </svg>
-        `;
-        document.body.appendChild(toggleBtn);
+    document.getElementById('goto-today').onclick = (e) => {
+        e.preventDefault();
+        
+        try {
+            // 缓存今天的时间戳
+            const todayKey = new Date().toDateString();
+            const cachedNode = sessionStorage.getItem(todayKey);
+            
+            if (cachedNode) {
+                // 尝试使用缓存的节点ID
+                try {
+                    const node = WF.getItemById(cachedNode);
+                    if (node) {
+                        WF.zoomTo(node);
+                        return;
+                    }
+                } catch (e) {
+                    sessionStorage.removeItem(todayKey);
+                }
+            }
+    
+            // 获取日历根节点
+            const calendarNode = WF.getItemById(WF.shortIdToId('35a73627730b'));
+            if (!calendarNode) {
+                WF.showMessage('未找到日历节点', true);
+                return;
+            }
+    
+            // 优化的时间戳获取函数
+            const parser = new DOMParser();
+            function getMsFromItemName(item) {
+                const name = item.getName();
+                // 快速检查是否包含time标签
+                if (!name.includes('<time')) return null;
+                
+                const time = parser.parseFromString(name, 'text/html').querySelector("time");
+                if (!time) return null;
+                
+                const ta = time.attributes;
+                if (!ta || !ta.startyear || ta.starthour || ta.endyear) return null;
+                
+                return Date.parse(`${ta.startyear.value}/${ta.startmonth.value}/${ta.startday.value}`);
+            }
+    
+            // 优化的查找函数：增加年份预检查
+            function findFirstMatchingItem(targetTimestamp, parent) {
+                // 获取节点名称
+                const name = parent.getName();
+                
+                // 快速预检查：如果节点名包含年份信息，检查是否匹配
+                const currentYear = new Date(targetTimestamp).getFullYear();
+                if (name.includes('Plan of') && !name.includes(currentYear.toString())) {
+                    return null;
+                }
+                
+                // 检查当前节点
+                const nodeTimestamp = getMsFromItemName(parent);
+                if (nodeTimestamp === targetTimestamp) return parent;
+                
+                // 递归检查子节点
+                for (let child of parent.getChildren()) {
+                    const match = findFirstMatchingItem(targetTimestamp, child);
+                    if (match) return match;
+                }
+                
+                return null;
+            }
+    
+            // 获取今天凌晨的时间戳
+            const todayTimestamp = new Date((new Date).setHours(0,0,0,0)).valueOf();
+            
+            // 查找匹配今天日期的节点
+            const found = findFirstMatchingItem(todayTimestamp, calendarNode);
+    
+            if (found) {
+                // 缓存找到的节点ID
+                sessionStorage.setItem(todayKey, found.getId());
+                WF.zoomTo(found);
+            } else {
+                WF.showMessage('未找到今天的日期节点', true);
+            }
+        } catch (error) {
+            console.error('导航到今天的日期时出错:', error);
+            WF.showMessage('导航失败', true);
+        }
+    };
 
-        // 添加点击事件
-        toggleBtn.onclick = togglePanel;
-
-        // 添加键盘快捷键监听
-        document.addEventListener('keydown', handleKeyPress, false);
 
         // 初始化事件监听
         document.getElementById('scan-reminders').onclick = () => {
