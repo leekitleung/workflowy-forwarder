@@ -153,6 +153,11 @@
         color:rgba(185, 207, 221, 1);
     }
 
+    .planner-links {
+        display: flex;
+        flex-direction: column;
+        gap: 0px;  /* 减小链接之间的间距 */
+    }
 
     .planner-link {
         display: flex;
@@ -178,15 +183,20 @@
 
     .planner-links-row {
         display: flex;
-        align-items: center;
-        margin-bottom: 8px;
+        justify-content: space-between;  /* 改为两端对齐 */
+        flex-direction: row;
+        gap: 8px;
+        width: 100%;                     /* 确保占满整个容器宽度 */
+    }
+    
+
+    .planner-links-row .today-link {
+        display: flex !important;        /* 强制显示 */
+        margin-right: auto;             /* 让元素左对齐 */
+        background-image: none;
+        padding-left: 4px;
     }
 
-    .today-link {
-        display: flex !important; /* 强制显示 */
-        align-items: center;
-        margin-right: 8px;
-    }
 
     .today-link::before {
         content: '';
@@ -655,17 +665,19 @@
         // 更新链接显示
         document.querySelectorAll('.planner-link').forEach(link => {
             link.style.display = 'none';
+            // 移除之前可能添加的 !important
+            link.style.setProperty('display', 'none', 'important');
         });
 
         if (currentMode === 'scan') {
-            document.querySelector('.scan-link').style.display = 'flex';
-            document.querySelector('.today-link').style.display = 'flex';  // 只在scan模式显示
+            document.querySelector('.scan-link').style.setProperty('display', 'flex', 'important');
+            document.querySelector('.today-link').style.setProperty('display', 'flex', 'important');
         } else if (currentMode === 'follow') {
             document.querySelectorAll('.follow-link').forEach(link => {
-                link.style.display = 'flex';
+                link.style.setProperty('display', 'flex', 'important');
             });
         } else if (currentMode === 'collect') {
-            document.querySelector('.collect-link').style.display = 'flex';
+            document.querySelector('.collect-link').style.setProperty('display', 'flex', 'important');
         }
     }
 
@@ -1428,7 +1440,7 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                 </div>
                 <div class="planner-links">
                     <div class="planner-links-row">
-                       <a href="#" class="planner-link today-link" id="goto-today">
+                        <a href="#" class="planner-link today-link" id="goto-today">
                             Today's Plan
                         </a>
                         <a href="https://workflowy.com/#/${MODE_NODES.scan}" class="planner-link scan-link">
