@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.4.4
+// @version      3.4.5
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
