@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         WorkFlowy Color Test (Enhanced)
+// @name         WorkFlowy Node Collector with Color (Enhanced)
 // @namespace    http://tampermonkey.net/
-// @version      0.4
-// @description  Test both types of color detection in WorkFlowy
+// @version      0.2
+// @description  Collect nodes and display them as colored cards with proper color support
 // @author       You
 // @match        https://workflowy.com/*
 // @grant        GM_addStyle
@@ -11,8 +11,10 @@
 (function() {
     'use strict';
 
+    const TARGET_NODE_ID = 'dfd2b14ce43b';
+
     GM_addStyle(`
-        .color-test-panel {
+        .collector-panel {
             position: fixed;
             right: 20px;
             top: 60px;
@@ -21,47 +23,11 @@
             border-radius: 8px;
             color: white;
             z-index: 9999;
-            width: 450px;
+            width: 350px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .color-test-item {
-            margin: 10px 0;
-            padding: 10px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            font-size: 12px;
-        }
-
-        .has-color {
-            border-left: 3px solid #ff4444;
-        }
-
-        .test-button {
-            background: #4a9eff;
-            border: none;
-            padding: 8px 16px;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 10px;
-            width: 100%;
-        }
-
-        .test-button:hover {
-            background: #357DA6;
-        }
-
-        .color-details {
-            margin-top: 5px;
-            padding: 5px;
-            background: rgba(0,0,0,0.2);
-            border-radius: 3px;
-            font-family: monospace;
-            font-size: 11px;
-            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
         }
 
         .panel-header {
@@ -69,11 +35,15 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            flex-shrink: 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
         .panel-title {
             margin: 0;
             font-size: 16px;
+            font-weight: 500;
         }
 
         .close-button {
@@ -84,71 +54,64 @@
             font-size: 20px;
             padding: 0;
             line-height: 1;
+            transition: color 0.2s ease;
         }
 
         .close-button:hover {
             color: #fff;
         }
 
-        .node-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
+        .cards-container {
+            overflow-y: auto;
+            flex-grow: 1;
+            padding-right: 5px;
         }
 
-        .node-text {
-            flex: 1;
-            margin-right: 10px;
-            word-break: break-all;
+        .node-card {
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            background: rgba(53, 60, 63, 1);
+            border: 1px solid rgba(58, 67, 71, 1);
+            transition: all 0.3s ease;
+            font-size: 14px;
+            cursor: pointer;
+            line-height: 1.4;
+            position: relative;
         }
 
-        .color-status {
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 10px;
-            text-transform: uppercase;
-            white-space: nowrap;
-            margin-left: 8px;
+        .node-card.colored {
+            background: var(--node-color, rgba(53, 60, 63, 1));
+            border: 1px solid var(--node-border-color, rgba(58, 67, 71, 1));
+            color: var(--text-color, inherit);
         }
 
-        .status-yes {
-            background: #46a753;
+        .node-card.highlighted {
+            background: var(--highlight-color, rgba(53, 60, 63, 1));
+            border: 1px solid var(--highlight-border-color, rgba(58, 67, 71, 1));
         }
 
-        .status-no {
-            background: #666;
+        .node-card:hover {
+            transform: translateX(-3px);
+            opacity: 0.9;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
         }
 
-        .color-type-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 3px;
-            margin-right: 5px;
-            font-size: 10px;
+        .refresh-button {
             background: #4a9eff;
-        }
-
-        .type-colored {
-            background: #4a9eff;
-        }
-
-        .type-highlight {
-            background: #ff4444;
-        }
-
-        .detail-block {
-            margin: 5px 0;
-            padding: 5px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 3px;
-        }
-
-        .raw-html {
+            border: none;
+            padding: 8px 16px;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
             margin-top: 10px;
-            padding: 5px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 3px;
-            word-break: break-all;
+            width: 100%;
+            transition: background-color 0.2s ease;
+            font-size: 14px;
+        }
+
+        .refresh-button:hover {
+            background: #357DA6;
         }
 
         .shortcut-info {
@@ -157,176 +120,194 @@
             margin-top: 10px;
             text-align: center;
         }
+
+        .cards-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .cards-container::-webkit-scrollbar-track {
+            background: #1a1d20;
+            border-radius: 3px;
+        }
+
+        .cards-container::-webkit-scrollbar-thumb {
+            background: #4a4d50;
+            border-radius: 3px;
+        }
+
+        .cards-container::-webkit-scrollbar-thumb:hover {
+            background: #5a5d60;
+        }
+
+        .empty-message {
+            color: #ffffff80;
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+        }
     `);
 
-    function checkNodeColor(node) {
+    function getNodeColorInfo(node) {
         const element = node.getElement();
         if (!element) return null;
 
         const content = element.querySelector('.content');
         if (!content) return null;
 
-        // 检查两种类型的颜色标记
-        const coloredElements = content.querySelectorAll('.colored');
-        const highlightElements = content.querySelectorAll('.webhighlights-highlight');
-        
-        const hasColor = coloredElements.length > 0 || highlightElements.length > 0;
+        // 检查两种颜色标记
+        const coloredElement = content.querySelector('.colored');
+        const highlightElement = content.querySelector('.webhighlights-highlight');
 
-        const colorDetails = {
-            colored: Array.from(coloredElements).map(el => ({
+        if (coloredElement) {
+            // 获取具体的颜色类名（例如：c-green, c-red 等）
+            const colorClass = Array.from(coloredElement.classList)
+                .find(cls => cls.startsWith('c-'));
+            
+            // 获取计算后的样式
+            const computedStyle = window.getComputedStyle(coloredElement);
+            const textColor = computedStyle.color;
+
+            return {
                 type: 'colored',
-                text: el.textContent,
-                classes: Array.from(el.classList).filter(cls => cls.startsWith('c-')),
-                fullClasses: Array.from(el.classList)
-            })),
-            highlights: Array.from(highlightElements).map(el => ({
+                colorClass,
+                color: textColor
+            };
+        }
+
+        if (highlightElement) {
+            const style = highlightElement.getAttribute('style') || '';
+            const backgroundColor = style.match(/background-color:\s*([^;]+)/)?.[1];
+
+            return {
                 type: 'highlight',
-                text: el.textContent,
-                backgroundColor: el.style.backgroundColor,
-                fullClasses: Array.from(el.classList),
-                style: el.getAttribute('style')
-            }))
-        };
+                backgroundColor
+            };
+        }
 
-        return {
-            hasColor,
-            details: {
-                coloredElements: [...colorDetails.colored, ...colorDetails.highlights],
-                rawHTML: content.innerHTML
+        return null;
+    }
+
+    function createNodeCard(node) {
+        const colorInfo = getNodeColorInfo(node);
+        let colorStyle = '';
+        let colorClass = '';
+
+        if (colorInfo) {
+            if (colorInfo.type === 'colored') {
+                colorClass = 'colored';
+                // 使用颜色映射表将文本颜色转换为背景色
+                const colorMap = {
+                    'c-red': '#ffebee',
+                    'c-orange': '#fff3e0',
+                    'c-yellow': '#fffde7',
+                    'c-green': '#e8f5e9',
+                    'c-blue': '#e3f2fd',
+                    'c-purple': '#f3e5f5',
+                };
+                
+                const backgroundColor = colorMap[colorInfo.colorClass] || 
+                                      colorInfo.color.replace('rgb', 'rgba').replace(')', ', 0.1)');
+                colorStyle = `
+                    --node-color: ${backgroundColor}; 
+                    --node-border-color: ${colorInfo.color.replace('rgb', 'rgba').replace(')', ', 0.3)')};
+                    --text-color: ${colorInfo.color};
+                `;
+            } else if (colorInfo.type === 'highlight') {
+                colorClass = 'highlighted';
+                const backgroundColor = colorInfo.backgroundColor;
+                colorStyle = `
+                    --highlight-color: ${backgroundColor}; 
+                    --highlight-border-color: ${backgroundColor.replace('rgb', 'rgba').replace(')', ', 0.5)')};
+                `;
             }
-        };
-    }
-
-    function createColorStatusBadge(hasColor) {
-        return `<span class="color-status ${hasColor ? 'status-yes' : 'status-no'}">
-            ${hasColor ? '有颜色' : '无颜色'}
-        </span>`;
-    }
-
-    function formatColorDetails(element) {
-        const typeBadge = `<span class="color-type-badge type-${element.type}">
-            ${element.type === 'colored' ? '文本颜色' : '高亮颜色'}
-        </span>`;
-
-        let details = `
-            <div class="detail-block">
-                ${typeBadge}
-                <div>文本: "${element.text}"</div>
-        `;
-
-        if (element.type === 'colored') {
-            details += `
-                <div>颜色类: ${element.classes.join(', ') || '无'}</div>
-                <div>完整类名: ${element.fullClasses.join(', ')}</div>
-            `;
-        } else {
-            details += `
-                <div>背景色: ${element.backgroundColor || '无'}</div>
-                <div>样式: ${element.style || '无'}</div>
-                <div>类名: ${element.fullClasses.join(', ')}</div>
-            `;
         }
 
-        details += '</div>';
-        return details;
+        const div = document.createElement('div');
+        div.className = `node-card ${colorClass}`;
+        if (colorStyle) {
+            div.style.cssText = colorStyle;
+        }
+        div.textContent = node.getNameInPlainText();
+        div.setAttribute('data-id', node.getId());
+        
+        div.addEventListener('click', () => {
+            WF.zoomTo(node);
+        });
+
+        return div;
     }
 
-    function runColorTest() {
-        const resultsDiv = document.getElementById('test-results');
-        resultsDiv.innerHTML = '';
-
-        // 获取当前可见的节点
-        const visibleNodes = [];
-        let currentNode = WF.currentItem();
-        if (currentNode) {
-            visibleNodes.push(currentNode);
-            currentNode.getChildren().forEach(child => visibleNodes.push(child));
+    function collectNodes() {
+        const targetNode = WF.getItemById(TARGET_NODE_ID);
+        if (!targetNode) {
+            console.log('未找到目标节点');
+            return [];
         }
 
-        if (visibleNodes.length === 0) {
-            resultsDiv.innerHTML = '<div class="color-test-item">没有找到可见的节点</div>';
+        return targetNode.getChildren();
+    }
+
+    function updatePanel() {
+        const container = document.querySelector('.cards-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+        const nodes = collectNodes();
+        
+        if (nodes.length === 0) {
+            container.innerHTML = '<div class="empty-message">没有找到节点</div>';
             return;
         }
 
-        // 显示测试结果
-        visibleNodes.forEach((node, index) => {
-            const colorInfo = checkNodeColor(node);
-            if (!colorInfo) return;
-
-            const div = document.createElement('div');
-            div.className = `color-test-item ${colorInfo.hasColor ? 'has-color' : ''}`;
-            
-            let detailsHtml = '';
-            if (colorInfo.details.coloredElements.length > 0) {
-                detailsHtml = colorInfo.details.coloredElements
-                    .map(formatColorDetails)
-                    .join('');
-            }
-
-            div.innerHTML = `
-                <div class="node-info">
-                    <div class="node-text">节点 ${index + 1}: ${node.getNameInPlainText()}</div>
-                    ${createColorStatusBadge(colorInfo.hasColor)}
-                </div>
-                <div class="color-details">
-                    ${detailsHtml}
-                    <div class="raw-html">
-                        <strong>原始HTML:</strong><br>
-                        <code>${colorInfo.details.rawHTML}</code>
-                    </div>
-                </div>
-            `;
-            resultsDiv.appendChild(div);
+        nodes.forEach(node => {
+            container.appendChild(createNodeCard(node));
         });
     }
 
     function togglePanel() {
-        const panel = document.querySelector('.color-test-panel');
+        const panel = document.querySelector('.collector-panel');
         if (panel) {
             panel.remove();
         } else {
-            initColorTest();
+            initPanel();
         }
     }
 
-    function initColorTest() {
+    function initPanel() {
         const panel = document.createElement('div');
-        panel.className = 'color-test-panel';
+        panel.className = 'collector-panel';
         panel.innerHTML = `
             <div class="panel-header">
-                <h3 class="panel-title">WorkFlowy 颜色检测测试</h3>
+                <h3 class="panel-title">节点收集器</h3>
                 <button class="close-button" id="close-panel">&times;</button>
             </div>
-            <div id="test-results"></div>
-            <button class="test-button" id="run-test">刷新检测</button>
-            <div class="shortcut-info">快捷键: Alt + T 切换面板</div>
+            <div class="cards-container"></div>
+            <button class="refresh-button" id="refresh-nodes">刷新节点</button>
+            <div class="shortcut-info">快捷键: Alt + C 切换面板</div>
         `;
         document.body.appendChild(panel);
         
-        document.getElementById('run-test').addEventListener('click', runColorTest);
+        document.getElementById('refresh-nodes').addEventListener('click', updatePanel);
         document.getElementById('close-panel').addEventListener('click', togglePanel);
         
-        // 初始运行测试
-        setTimeout(runColorTest, 1000);
+        updatePanel();
     }
 
     function waitForWF() {
         if(typeof WF !== 'undefined') {
             console.log('WorkFlowy API 加载完成');
-            // 添加快捷键支持
             document.addEventListener('keydown', function(e) {
-                // Alt + T 切换面板
-                if (e.altKey && e.key === 't') {
+                if (e.altKey && e.key === 'c') {
                     togglePanel();
                 }
             });
-            initColorTest();
+            initPanel();
         } else {
             console.log('等待 WorkFlowy API...');
             setTimeout(waitForWF, 100);
         }
     }
 
-    console.log('WorkFlowy 颜色检测测试启动...');
+    console.log('WorkFlowy 节点收集器启动...');
     waitForWF();
 })();
