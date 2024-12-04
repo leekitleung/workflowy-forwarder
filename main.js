@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.5.1
+// @version      3.5.3
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -1535,41 +1535,74 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                             copied = true;
                         }
                     }
-                    // 情况2：直接是链接
+                    // 情况2：直接是文本
                     else {
-                        const wfItemContent = wfItem.getNameInPlainText();
+                        const wfItemContent = wfItem.getNameInPlainText().trim();
                         const splitContent = wfItemContent.match(/^([\d-]+\s+[\d:]+)\s*\|\s*(.+)$/);
                         
-                        // 收集所有子节点中的链接
-                        const links = [];
-                        children.forEach(child => {
-                            const rawContent = child.getName();
-                            const linkMatch = rawContent.match(/href="([^"]+)"/);
-                            if (linkMatch) {
-                                links.push(linkMatch[1]);
+                        if (children.length > 0) {
+                            const firstChildContent = children[0].getNameInPlainText().trim();
+                            const firstChildRawContent = children[0].getName();
+                            const isFirstChildLink = firstChildRawContent.includes('href="');
+                            
+                            // 检查第一个子节点是否与父节点相同
+                            const isFirstChildSameAsParent = firstChildContent === wfItemContent;
+                            
+                            // 收集所有子节点中的链接和文本内容
+                            const links = [];
+                            const textContents = [];
+                            
+                            // 确定开始处理的子节点索引
+                            const startIndex = isFirstChildSameAsParent ? 1 : 0;
+                            
+                            // 处理子节点
+                            for (let i = startIndex; i < children.length; i++) {
+                                const child = children[i];
+                                const rawContent = child.getName();
+                                const linkMatch = rawContent.match(/href="([^"]+)"/);
+                                
+                                if (linkMatch) {
+                                    links.push(linkMatch[1]);
+                                } else {
+                                    const plainText = child.getNameInPlainText().trim();
+                                    if (plainText) {
+                                        textContents.push(plainText);
+                                    }
+                                }
                             }
-                        });
-                        
-                        if (links.length > 0) {
-                            // 如果找到链接，将所有链接组合起来
-                            await navigator.clipboard.writeText(links.join('\n'));
-                            copied = true;
-                        } else if (splitContent && children.length === 0) {
+                            
+                            // 根据不同情况处理内容
+                            if (startIndex === 0 && isFirstChildLink) {
+                                // 如果第一个子节点是链接且与父节点不同，只复制子节点
+                                if (links.length > 0) {
+                                    await navigator.clipboard.writeText(links.join('\n'));
+                                    copied = true;
+                                }
+                            } else {
+                                // 其他情况：复制父节点和所有子节点（或从第二个子节点开始）
+                                let fullContent = processRichText(wfItem, true);
+                                
+                                // 处理所有子节点，从 startIndex 开始
+                                for (let i = startIndex; i < children.length; i++) {
+                                    const childContent = processRichText(children[i], false);
+                                    if (childContent) {
+                                        fullContent += `\n  - ${childContent}`;
+                                    }
+                                }
+                                
+                                await navigator.clipboard.writeText(fullContent);
+                                copied = true;
+                            }
+                        } else if (splitContent) {
                             // 处理特殊格式的单节点
                             const [_, dateTime, content] = splitContent;
                             const fullContent = `${dateTime}\n  - ${content.replace(/#稍后处理/g, '').trim()}`;
                             await navigator.clipboard.writeText(fullContent);
                             copied = true;
                         } else {
-                            // 处理普通文本内容
-                            const processedParentContent = processRichText(wfItem, true);
-                            const childrenContent = processChildrenWithIndent(children);
-                            
-                            const fullContent = childrenContent 
-                                ? `${processedParentContent}\n${childrenContent}`
-                                : processedParentContent;
-                                
-                            await navigator.clipboard.writeText(fullContent);
+                            // 处理没有子节点的普通节点
+                            const processedContent = processRichText(wfItem, true);
+                            await navigator.clipboard.writeText(processedContent);
                             copied = true;
                         }
                     }
