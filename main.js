@@ -1124,7 +1124,7 @@
                     `;
                 }).join('');
 
-            listElement.innerHTML = blocks || '<div class="no-reminders">暂无时间块内容<br>时间格式：05-22</div>';
+            listElement.innerHTML = blocks || '<div class="no-reminders">暂无时间块卡片</div>';
             addEventListeners(listElement);
         } else if (currentMode === 'follow') {
             const items = currentReminders

@@ -1,0 +1,332 @@
+// ==UserScript==
+// @name         WorkFlowy Color Test (Enhanced)
+// @namespace    http://tampermonkey.net/
+// @version      0.4
+// @description  Test both types of color detection in WorkFlowy
+// @author       You
+// @match        https://workflowy.com/*
+// @grant        GM_addStyle
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    GM_addStyle(`
+        .color-test-panel {
+            position: fixed;
+            right: 20px;
+            top: 60px;
+            background: #2B3135;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            z-index: 9999;
+            width: 450px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .color-test-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .has-color {
+            border-left: 3px solid #ff4444;
+        }
+
+        .test-button {
+            background: #4a9eff;
+            border: none;
+            padding: 8px 16px;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .test-button:hover {
+            background: #357DA6;
+        }
+
+        .color-details {
+            margin-top: 5px;
+            padding: 5px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .panel-title {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            color: #ffffff80;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .close-button:hover {
+            color: #fff;
+        }
+
+        .node-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .node-text {
+            flex: 1;
+            margin-right: 10px;
+            word-break: break-all;
+        }
+
+        .color-status {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            margin-left: 8px;
+        }
+
+        .status-yes {
+            background: #46a753;
+        }
+
+        .status-no {
+            background: #666;
+        }
+
+        .color-type-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-right: 5px;
+            font-size: 10px;
+            background: #4a9eff;
+        }
+
+        .type-colored {
+            background: #4a9eff;
+        }
+
+        .type-highlight {
+            background: #ff4444;
+        }
+
+        .detail-block {
+            margin: 5px 0;
+            padding: 5px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+        }
+
+        .raw-html {
+            margin-top: 10px;
+            padding: 5px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 3px;
+            word-break: break-all;
+        }
+
+        .shortcut-info {
+            font-size: 11px;
+            color: #ffffff80;
+            margin-top: 10px;
+            text-align: center;
+        }
+    `);
+
+    function checkNodeColor(node) {
+        const element = node.getElement();
+        if (!element) return null;
+
+        const content = element.querySelector('.content');
+        if (!content) return null;
+
+        // 检查两种类型的颜色标记
+        const coloredElements = content.querySelectorAll('.colored');
+        const highlightElements = content.querySelectorAll('.webhighlights-highlight');
+        
+        const hasColor = coloredElements.length > 0 || highlightElements.length > 0;
+
+        const colorDetails = {
+            colored: Array.from(coloredElements).map(el => ({
+                type: 'colored',
+                text: el.textContent,
+                classes: Array.from(el.classList).filter(cls => cls.startsWith('c-')),
+                fullClasses: Array.from(el.classList)
+            })),
+            highlights: Array.from(highlightElements).map(el => ({
+                type: 'highlight',
+                text: el.textContent,
+                backgroundColor: el.style.backgroundColor,
+                fullClasses: Array.from(el.classList),
+                style: el.getAttribute('style')
+            }))
+        };
+
+        return {
+            hasColor,
+            details: {
+                coloredElements: [...colorDetails.colored, ...colorDetails.highlights],
+                rawHTML: content.innerHTML
+            }
+        };
+    }
+
+    function createColorStatusBadge(hasColor) {
+        return `<span class="color-status ${hasColor ? 'status-yes' : 'status-no'}">
+            ${hasColor ? '有颜色' : '无颜色'}
+        </span>`;
+    }
+
+    function formatColorDetails(element) {
+        const typeBadge = `<span class="color-type-badge type-${element.type}">
+            ${element.type === 'colored' ? '文本颜色' : '高亮颜色'}
+        </span>`;
+
+        let details = `
+            <div class="detail-block">
+                ${typeBadge}
+                <div>文本: "${element.text}"</div>
+        `;
+
+        if (element.type === 'colored') {
+            details += `
+                <div>颜色类: ${element.classes.join(', ') || '无'}</div>
+                <div>完整类名: ${element.fullClasses.join(', ')}</div>
+            `;
+        } else {
+            details += `
+                <div>背景色: ${element.backgroundColor || '无'}</div>
+                <div>样式: ${element.style || '无'}</div>
+                <div>类名: ${element.fullClasses.join(', ')}</div>
+            `;
+        }
+
+        details += '</div>';
+        return details;
+    }
+
+    function runColorTest() {
+        const resultsDiv = document.getElementById('test-results');
+        resultsDiv.innerHTML = '';
+
+        // 获取当前可见的节点
+        const visibleNodes = [];
+        let currentNode = WF.currentItem();
+        if (currentNode) {
+            visibleNodes.push(currentNode);
+            currentNode.getChildren().forEach(child => visibleNodes.push(child));
+        }
+
+        if (visibleNodes.length === 0) {
+            resultsDiv.innerHTML = '<div class="color-test-item">没有找到可见的节点</div>';
+            return;
+        }
+
+        // 显示测试结果
+        visibleNodes.forEach((node, index) => {
+            const colorInfo = checkNodeColor(node);
+            if (!colorInfo) return;
+
+            const div = document.createElement('div');
+            div.className = `color-test-item ${colorInfo.hasColor ? 'has-color' : ''}`;
+            
+            let detailsHtml = '';
+            if (colorInfo.details.coloredElements.length > 0) {
+                detailsHtml = colorInfo.details.coloredElements
+                    .map(formatColorDetails)
+                    .join('');
+            }
+
+            div.innerHTML = `
+                <div class="node-info">
+                    <div class="node-text">节点 ${index + 1}: ${node.getNameInPlainText()}</div>
+                    ${createColorStatusBadge(colorInfo.hasColor)}
+                </div>
+                <div class="color-details">
+                    ${detailsHtml}
+                    <div class="raw-html">
+                        <strong>原始HTML:</strong><br>
+                        <code>${colorInfo.details.rawHTML}</code>
+                    </div>
+                </div>
+            `;
+            resultsDiv.appendChild(div);
+        });
+    }
+
+    function togglePanel() {
+        const panel = document.querySelector('.color-test-panel');
+        if (panel) {
+            panel.remove();
+        } else {
+            initColorTest();
+        }
+    }
+
+    function initColorTest() {
+        const panel = document.createElement('div');
+        panel.className = 'color-test-panel';
+        panel.innerHTML = `
+            <div class="panel-header">
+                <h3 class="panel-title">WorkFlowy 颜色检测测试</h3>
+                <button class="close-button" id="close-panel">&times;</button>
+            </div>
+            <div id="test-results"></div>
+            <button class="test-button" id="run-test">刷新检测</button>
+            <div class="shortcut-info">快捷键: Alt + T 切换面板</div>
+        `;
+        document.body.appendChild(panel);
+        
+        document.getElementById('run-test').addEventListener('click', runColorTest);
+        document.getElementById('close-panel').addEventListener('click', togglePanel);
+        
+        // 初始运行测试
+        setTimeout(runColorTest, 1000);
+    }
+
+    function waitForWF() {
+        if(typeof WF !== 'undefined') {
+            console.log('WorkFlowy API 加载完成');
+            // 添加快捷键支持
+            document.addEventListener('keydown', function(e) {
+                // Alt + T 切换面板
+                if (e.altKey && e.key === 't') {
+                    togglePanel();
+                }
+            });
+            initColorTest();
+        } else {
+            console.log('等待 WorkFlowy API...');
+            setTimeout(waitForWF, 100);
+        }
+    }
+
+    console.log('WorkFlowy 颜色检测测试启动...');
+    waitForWF();
+})();
