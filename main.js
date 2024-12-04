@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.5.3
+// @version      3.5.4
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -1512,102 +1512,30 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                 let copied = false;
 
                 if (children.length > 0) {
-                    const firstLine = children[0].getNameInPlainText();
-                    const datePattern = /^\d{4}-\d{1,2}-\d{1,2}/;
+                    const parentContent = wfItem.getNameInPlainText().trim();
+                    const firstChildContent = children[0].getNameInPlainText().trim();
+                    const isFirstChildSameAsParent = firstChildContent === parentContent;
 
-                    // 情况1：第一个子节点与父节点重复，标题+链接格式
-                    if (datePattern.test(firstLine) && children.length >= 3) {
-                        const titleLine = children[1].getNameInPlainText();
-                        const linkLine = children[2].getNameInPlainText();
-
-                        const titleMatch = titleLine.match(/标题[：:]\s*(.+)/);
-                        const urlMatch = linkLine.match(/链接[：:]\s*(.+)/);
-
-                        if (titleMatch && urlMatch) {
-                            const title = titleMatch[1].trim();
-                            const url = urlMatch[1].trim();
-
-                            const clipboardItem = new ClipboardItem({
-                                'text/html': new Blob([`<a href="${url}">${title}</a>`], { type: 'text/html' }),
-                                'text/plain': new Blob([url], { type: 'text/plain' })
-                            });
-                            await navigator.clipboard.write([clipboardItem]);
-                            copied = true;
+                    // 构建要复制的内容
+                    let contentToCopy = processRichText(wfItem, true);
+                    
+                    // 处理子节点，如果第一个子节点与父节点相同则跳过
+                    const startIndex = isFirstChildSameAsParent ? 1 : 0;
+                    
+                    for (let i = startIndex; i < children.length; i++) {
+                        const childContent = processRichText(children[i], false);
+                        if (childContent) {
+                            contentToCopy += `\n  - ${childContent}`;
                         }
                     }
-                    // 情况2：直接是文本
-                    else {
-                        const wfItemContent = wfItem.getNameInPlainText().trim();
-                        const splitContent = wfItemContent.match(/^([\d-]+\s+[\d:]+)\s*\|\s*(.+)$/);
-                        
-                        if (children.length > 0) {
-                            const firstChildContent = children[0].getNameInPlainText().trim();
-                            const firstChildRawContent = children[0].getName();
-                            const isFirstChildLink = firstChildRawContent.includes('href="');
-                            
-                            // 检查第一个子节点是否与父节点相同
-                            const isFirstChildSameAsParent = firstChildContent === wfItemContent;
-                            
-                            // 收集所有子节点中的链接和文本内容
-                            const links = [];
-                            const textContents = [];
-                            
-                            // 确定开始处理的子节点索引
-                            const startIndex = isFirstChildSameAsParent ? 1 : 0;
-                            
-                            // 处理子节点
-                            for (let i = startIndex; i < children.length; i++) {
-                                const child = children[i];
-                                const rawContent = child.getName();
-                                const linkMatch = rawContent.match(/href="([^"]+)"/);
-                                
-                                if (linkMatch) {
-                                    links.push(linkMatch[1]);
-                                } else {
-                                    const plainText = child.getNameInPlainText().trim();
-                                    if (plainText) {
-                                        textContents.push(plainText);
-                                    }
-                                }
-                            }
-                            
-                            // 根据不同情况处理内容
-                            if (startIndex === 0 && isFirstChildLink) {
-                                // 如果第一个子节点是链接且与父节点不同，只复制子节点
-                                if (links.length > 0) {
-                                    await navigator.clipboard.writeText(links.join('\n'));
-                                    copied = true;
-                                }
-                            } else {
-                                // 其他情况：复制父节点和所有子节点（或从第二个子节点开始）
-                                let fullContent = processRichText(wfItem, true);
-                                
-                                // 处理所有子节点，从 startIndex 开始
-                                for (let i = startIndex; i < children.length; i++) {
-                                    const childContent = processRichText(children[i], false);
-                                    if (childContent) {
-                                        fullContent += `\n  - ${childContent}`;
-                                    }
-                                }
-                                
-                                await navigator.clipboard.writeText(fullContent);
-                                copied = true;
-                            }
-                        } else if (splitContent) {
-                            // 处理特殊格式的单节点
-                            const [_, dateTime, content] = splitContent;
-                            const fullContent = `${dateTime}\n  - ${content.replace(/#稍后处理/g, '').trim()}`;
-                            await navigator.clipboard.writeText(fullContent);
-                            copied = true;
-                        } else {
-                            // 处理没有子节点的普通节点
-                            const processedContent = processRichText(wfItem, true);
-                            await navigator.clipboard.writeText(processedContent);
-                            copied = true;
-                        }
+
+                    // 如果有内容要复制
+                    if (contentToCopy.trim()) {
+                        await navigator.clipboard.writeText(contentToCopy);
+                        copied = true;
                     }
                 } else {
-                    // 情况3：处理单节点的情况
+                    // 处理单节点的情况（保持原有逻辑）
                     const wfItemContent = wfItem.getNameInPlainText()
                         .replace(/#稍后处理/g, '')
                         .replace(/@\d{1,2}:\d{2}/g, '')
@@ -1615,13 +1543,11 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                     const splitContent = wfItemContent.match(/^([\d-]+\s+[\d:]+)\s*\|\s*(.+)$/);
                     
                     if (splitContent) {
-                        // 如果是特殊格式的单节点
                         const [_, dateTime, content] = splitContent;
                         const fullContent = `${dateTime}\n  - ${content}`;
                         await navigator.clipboard.writeText(fullContent);
                         copied = true;
                     } else {
-                        // 如果是普通单节点，使用原有的处理方式
                         const processedParentContent = processRichText(wfItem, true);
                         await navigator.clipboard.writeText(processedParentContent);
                         copied = true;
@@ -1643,7 +1569,6 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                 }
             } catch (error) {
                 console.error('复制操作失败:', error);
-                console.log('节点数据:', wfItem.data);
                 showFeedback(this, '复制失败');
             }
         }
