@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.5.0
+// @version      3.5.1
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -699,7 +699,11 @@
                     'c-yellow': '#f9a825',
                     'c-green': '#388e3c',
                     'c-blue': '#1e88e5',
-                    'c-purple': '#7b1fa2'
+                    'c-purple': '#7b1fa2',
+                    'c-pink': '#e91e63',    // 粉色
+                    'c-sky': '#00bcd4',     // 天蓝色
+                    'c-teal': '#009688',    // 青色
+                    'c-gray': '#757575'     // 灰色
                 };
                 return {
                     type: 'colored',
@@ -739,7 +743,11 @@
                     'bc-yellow': 'rgba(249, 168, 37, 0.2)',
                     'bc-green': 'rgba(56, 142, 60, 0.2)',
                     'bc-blue': 'rgba(30, 136, 229, 0.2)',
-                    'bc-purple': 'rgba(123, 31, 162, 0.2)'
+                    'bc-purple': 'rgba(123, 31, 162, 0.2)',
+                    'bc-pink': 'rgba(233, 30, 99, 0.2)',    // 粉色
+                    'bc-sky': 'rgba(0, 188, 212, 0.2)',     // 天蓝色
+                    'bc-teal': 'rgba(0, 150, 136, 0.2)',    // 青色
+                    'bc-gray': 'rgba(117, 117, 117, 0.2)'   // 灰色
                 };
                 const backgroundColor = bgColorMap[colorInfo.colorClass];
                 const [r, g, b] = backgroundColor.match(/\d+/g);
@@ -775,7 +783,11 @@
                 'bc-yellow': 'rgba(249, 168, 37, 0.2)',
                 'bc-green': 'rgba(56, 142, 60, 0.2)',
                 'bc-blue': 'rgba(30, 136, 229, 0.2)',
-                'bc-purple': 'rgba(123, 31, 162, 0.2)'
+                'bc-purple': 'rgba(123, 31, 162, 0.2)',
+                'bc-pink': 'rgba(233, 30, 99, 0.2)',    // 粉色
+                'bc-sky': 'rgba(0, 188, 212, 0.2)',     // 天蓝色
+                'bc-teal': 'rgba(0, 150, 136, 0.2)',    // 青色
+                'bc-gray': 'rgba(117, 117, 117, 0.2)'   // 灰色
             };
             const backgroundColor = bgColorMap[colorInfo.colorClass];
             element.style.setProperty('--node-color', backgroundColor);
