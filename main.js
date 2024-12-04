@@ -1915,7 +1915,7 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
     }
 
     // 启动应用
-    console.log('WorkFlowy DAILY PLANNER 助手启动...');
+    console.log('WorkFlowy Forward Plus...');
     waitForWF();
 })();
 
