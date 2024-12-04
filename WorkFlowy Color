@@ -150,52 +150,53 @@
     function getNodeColorInfo(node) {
         const element = node.getElement();
         if (!element) return null;
-
+    
         const content = element.querySelector('.content');
         if (!content) return null;
-
-        // 检查两种颜色标记
+    
+        // 检查带颜色的元素
         const coloredElement = content.querySelector('.colored');
-        const highlightElement = content.querySelector('.webhighlights-highlight');
-
+        
         if (coloredElement) {
-            // 获取具体的颜色类名（例如：c-green, c-red 等）
-            const colorClass = Array.from(coloredElement.classList)
-                .find(cls => cls.startsWith('c-'));
+            const classes = Array.from(coloredElement.classList);
+            const textColorClass = classes.find(cls => cls.startsWith('c-')); // 文本颜色
+            const bgColorClass = classes.find(cls => cls.startsWith('bc-')); // 背景颜色
             
-            // 获取计算后的样式
-            const computedStyle = window.getComputedStyle(coloredElement);
-            const textColor = computedStyle.color;
-
-            return {
-                type: 'colored',
-                colorClass,
-                color: textColor
-            };
+            console.log('Found colored element:', {
+                classes,
+                textColorClass,
+                bgColorClass
+            });
+    
+            if (bgColorClass) {
+                // 如果有背景色类
+                return {
+                    type: 'highlight',
+                    colorClass: bgColorClass,
+                    originalElement: coloredElement
+                };
+            } else if (textColorClass) {
+                // 如果只有文本颜色类
+                const computedStyle = window.getComputedStyle(coloredElement);
+                return {
+                    type: 'colored',
+                    colorClass: textColorClass,
+                    color: computedStyle.color
+                };
+            }
         }
-
-        if (highlightElement) {
-            const style = highlightElement.getAttribute('style') || '';
-            const backgroundColor = style.match(/background-color:\s*([^;]+)/)?.[1];
-
-            return {
-                type: 'highlight',
-                backgroundColor
-            };
-        }
-
+    
         return null;
     }
-
+    
     function createNodeCard(node) {
         const colorInfo = getNodeColorInfo(node);
         let colorStyle = '';
         let colorClass = '';
-
+    
         if (colorInfo) {
             if (colorInfo.type === 'colored') {
                 colorClass = 'colored';
-                // 使用颜色映射表将文本颜色转换为背景色
                 const colorMap = {
                     'c-red': '#ffebee',
                     'c-orange': '#fff3e0',
@@ -214,14 +215,24 @@
                 `;
             } else if (colorInfo.type === 'highlight') {
                 colorClass = 'highlighted';
-                const backgroundColor = colorInfo.backgroundColor;
+                // 背景色映射表
+                const bgColorMap = {
+                    'bc-red': 'rgba(255, 100, 100, 0.2)',
+                    'bc-orange': 'rgba(255, 150, 50, 0.2)',
+                    'bc-yellow': 'rgba(255, 255, 100, 0.2)',
+                    'bc-green': 'rgba(100, 255, 100, 0.2)',
+                    'bc-blue': 'rgba(100, 100, 255, 0.2)',
+                    'bc-purple': 'rgba(200, 100, 255, 0.2)',
+                };
+                
+                const backgroundColor = bgColorMap[colorInfo.colorClass] || 'rgba(200, 200, 200, 0.2)';
                 colorStyle = `
                     --highlight-color: ${backgroundColor}; 
-                    --highlight-border-color: ${backgroundColor.replace('rgb', 'rgba').replace(')', ', 0.5)')};
+                    --highlight-border-color: ${backgroundColor.replace('0.2', '0.3')};
                 `;
             }
         }
-
+    
         const div = document.createElement('div');
         div.className = `node-card ${colorClass}`;
         if (colorStyle) {
@@ -230,10 +241,18 @@
         div.textContent = node.getNameInPlainText();
         div.setAttribute('data-id', node.getId());
         
+        if (colorInfo) {
+            console.log('Card created with:', {
+                text: node.getNameInPlainText(),
+                colorInfo,
+                appliedStyle: colorStyle
+            });
+        }
+    
         div.addEventListener('click', () => {
             WF.zoomTo(node);
         });
-
+    
         return div;
     }
 
