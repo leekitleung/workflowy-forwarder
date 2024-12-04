@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.4.5
+// @version      3.4.6
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -248,10 +248,12 @@
         margin-bottom: 8px;
         border-radius: 6px;
         position: relative;
-        background:rgba(53, 60, 63, 1);
         border: 1px solid rgba(58, 67, 71, 1);
         transition: opacity 0.3s ease;
         font-size: 14px;
+        background: var(--node-color, inherit);
+        
+        color: var(--text-color, inherit);
     }
 
 
@@ -641,6 +643,63 @@
         setTimeout(() => {
             toast.classList.remove('show');
         }, 2000);
+    }
+
+    // 新增颜色检测和更新函数
+    function getNodeColorInfo(node) {
+        const element = node.getElement();
+        if (!element) return null;
+
+        const content = element.querySelector('.content');
+        if (!content) return null;
+
+        const coloredElement = content.querySelector('.colored');
+        if (!coloredElement) return null;
+
+        const classes = Array.from(coloredElement.classList);
+        const textColorClass = classes.find(cls => cls.startsWith('c-'));
+        const bgColorClass = classes.find(cls => cls.startsWith('bc-'));
+
+        if (bgColorClass) {
+            return {
+                type: 'highlight',
+                colorClass: bgColorClass,
+                element: coloredElement
+            };
+        } else if (textColorClass) {
+            return {
+                type: 'text',
+                colorClass: textColorClass,
+                element: coloredElement
+            };
+        }
+
+        return null;
+    }
+
+    function updateCardsColor() {
+        const cards = document.querySelectorAll('.reminder-item');
+        cards.forEach(card => {
+            const id = card.dataset.id;
+            if (!id) return;
+    
+            const node = WF.getItemById(id);
+            if (!node) return;
+    
+            const colorInfo = getNodeColorInfo(node);
+            if (!colorInfo) return;
+    
+            const computedStyle = window.getComputedStyle(colorInfo.element);
+            
+            if (colorInfo.type === 'text') {
+                const color = computedStyle.color;
+                card.style.setProperty('--text-color', color);
+                card.style.setProperty('--node-color', color.replace('rgb', 'rgba').replace(')', ', 0.2)'));
+            } else if (colorInfo.type === 'highlight') {
+                const bgColor = computedStyle.backgroundColor;
+                card.style.setProperty('--node-color', bgColor.replace('rgb', 'rgba').replace(')', ', 0.3)'));
+            }
+        });
     }
 
     function updateLastRefreshTime() {
@@ -1093,7 +1152,9 @@
         if (!listElement) return;
 
         const currentReminders = Object.values(reminders).filter(r => r.mode === currentMode);
-
+        console.log('Current mode:', currentMode);
+        console.log('Current reminders:', currentReminders);
+    
         if (currentMode === 'scan') {
             const remindersByParent = {};
 
@@ -1124,26 +1185,27 @@
                     `;
                 }).join('');
 
-            listElement.innerHTML = blocks || '<div class="no-reminders">暂无时间块卡片</div>';
-            addEventListeners(listElement);
-        } else if (currentMode === 'follow') {
-            const items = currentReminders
-                .sort((a, b) => extractReminderContent(a.name)
-                    .localeCompare(extractReminderContent(b.name)));
+                listElement.innerHTML = blocks || '<div class="no-reminders">暂无时间块卡片</div>';
+                addEventListeners(listElement);
+                setTimeout(updateCardsColor, 0);
+            } else if (currentMode === 'follow') {
+                const items = currentReminders
+                    .sort((a, b) => extractReminderContent(a.name)
+                        .localeCompare(extractReminderContent(b.name)));
 
-            listElement.innerHTML = items
-                .map(reminder => createReminderItem(reminder))
-                .join('') ||
-                '<div class="no-reminders">暂无跟进事项<br>使用格式：任务内容 #01每日推进</div>';
-            addEventListeners(listElement);
-        } else if (currentMode === 'collect') {
+                listElement.innerHTML = items
+                    .map(reminder => createReminderItem(reminder))
+                    .join('') ||
+                    '<div class="no-reminders">暂无跟进事项<br>使用格式：任务内容 #01每日推进</div>';
+                addEventListeners(listElement);
+                setTimeout(updateCardsColor, 0);
+            } else if (currentMode === 'collect') {
             const items = currentReminders.sort((a, b) => b.time - a.time);
 
-            listElement.innerHTML = items
-                .map(reminder => createCollectModeItem(reminder))
-                .join('') ||
-                '<div class="no-reminders">暂无待整理事项<br>使用格式：任务内容 #稍后处理</div>';
-            addCollectModeEventListeners(listElement);
+            listElement.innerHTML = items.map(reminder => createCollectModeItem(reminder)).join('') ||
+            '<div class="no-reminders">暂无待整理事项<br>使用格式：任务内容 #稍后处理</div>';
+        addCollectModeEventListeners(listElement);
+        setTimeout(updateCardsColor, 0);
         }
     }
 
@@ -1586,6 +1648,7 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
             currentMode = 'scan';
             scanReminders();
             updateButtonStyles();
+            updateCardsColor(); 
         };
 
         document.getElementById('follow-reminders').onclick = () => {
@@ -1598,6 +1661,7 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
             currentMode = 'follow';
             followReminders();
             updateButtonStyles();
+            updateCardsColor(); 
         };
 
         document.getElementById('collect-reminders').onclick = () => {
@@ -1610,6 +1674,7 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
             currentMode = 'collect';
             collectReminders();
             updateButtonStyles();
+            updateCardsColor(); 
         };
 
         document.getElementById('clear-all').onclick = clearAllReminders;
