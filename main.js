@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.4.6
+// @version      3.5.0
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -251,12 +251,34 @@
         border: 1px solid rgba(58, 67, 71, 1);
         transition: opacity 0.3s ease;
         font-size: 14px;
-        background: var(--node-color, inherit);
+        background: rgba(53, 60, 63, 1);
         
-        color: var(--text-color, inherit);
     }
 
+    .reminder-item.colored,
+    .reminder-item.highlighted {
+        background: var(--node-color);
+        border-color: var(--node-border-color);
+        color: var(--text-color);
+    }
 
+    /* 带颜色卡片的悬浮效果 */
+    .reminder-item.colored:hover {
+        background: var(--node-color-hover);
+        border-color: var(--node-border-color-hover);
+    }
+
+    /* 高亮卡片的悬浮效果 */
+    .reminder-item.highlighted:hover {
+        background: var(--node-color-hover);
+        border-color: var(--node-border-color-hover);
+    }
+
+    /* 添加过渡动画 */
+    .reminder-item {
+        transition: background-color 0.2s ease,
+                    border-color 0.2s ease;
+    }
 
     .reminder-item.completed {
         opacity: 0.6;
@@ -344,11 +366,11 @@
         display: flex;
         gap: 4px;
         opacity: 0;  /* 默认隐藏 */
-        transition: opacity 0.2s ease;
+        transition: opacity 0.2s ease, background-color 0.2s ease;
         z-index: 2;
         padding: 4px 8px;
         border-radius: 4px;
-
+        
     }
 
 
@@ -357,6 +379,12 @@
         opacity: 1;
         background: linear-gradient(to right, transparent, rgba(56, 70, 81, 0.8) 50%, rgba(56, 70, 81, 0.8));
 
+    }
+
+    /* 带颜色的卡片 actions 悬浮样式 */
+    .reminder-item.colored:hover .reminder-actions,
+    .reminder-item.highlighted:hover .reminder-actions {
+        background: var(--actions-bg-hover);
     }
 
     .reminder-action-btn {
@@ -567,6 +595,9 @@
         padding: 20px;
         line-height: 1.6;
     }
+
+
+
 `);
 
     const MODE_NODES = {
@@ -647,34 +678,110 @@
 
     // 新增颜色检测和更新函数
     function getNodeColorInfo(node) {
-        const element = node.getElement();
-        if (!element) return null;
+        try {
+            const content = node.getName();
+            if (!content) return null;
 
-        const content = element.querySelector('.content');
-        if (!content) return null;
+            const colorMatch = content.match(/class="colored ((?:c-|bc-)[a-z]+)"/);
+            if (!colorMatch) return null;
 
-        const coloredElement = content.querySelector('.colored');
-        if (!coloredElement) return null;
-
-        const classes = Array.from(coloredElement.classList);
-        const textColorClass = classes.find(cls => cls.startsWith('c-'));
-        const bgColorClass = classes.find(cls => cls.startsWith('bc-'));
-
-        if (bgColorClass) {
-            return {
-                type: 'highlight',
-                colorClass: bgColorClass,
-                element: coloredElement
-            };
-        } else if (textColorClass) {
-            return {
-                type: 'text',
-                colorClass: textColorClass,
-                element: coloredElement
-            };
+            const colorClass = colorMatch[1];
+            
+            if (colorClass.startsWith('bc-')) {
+                return {
+                    type: 'highlight',
+                    colorClass: colorClass
+                };
+            } else if (colorClass.startsWith('c-')) {
+                const textColorMap = {
+                    'c-red': '#d32f2f',
+                    'c-orange': '#ef6c00',
+                    'c-yellow': '#f9a825',
+                    'c-green': '#388e3c',
+                    'c-blue': '#1e88e5',
+                    'c-purple': '#7b1fa2'
+                };
+                return {
+                    type: 'colored',
+                    colorClass: colorClass,
+                    color: textColorMap[colorClass] || '#000000'
+                };
+            }
+        } catch (error) {
+            console.error('获取节点颜色信息失败:', error);
         }
-
         return null;
+    }
+
+    function getColorStyle(node) {
+        try {
+            const colorInfo = getNodeColorInfo(node);
+            if (!colorInfo) return { style: '', class: '' };
+    
+            let colorStyle = '';
+            let colorClass = '';
+    
+            if (colorInfo.type === 'colored') {
+                colorClass = 'colored';
+                colorStyle = `
+                    --text-color: ${colorInfo.color};
+                    --node-color: ${colorInfo.color}1a;
+                    --node-border-color: ${colorInfo.color}33;
+                    --node-color-hover: ${colorInfo.color}26;
+                    --node-border-color-hover: ${colorInfo.color}40;
+                    --actions-bg-hover: ${colorInfo.color}0d; /* 5% 透明度 */
+                `;
+            } else if (colorInfo.type === 'highlight') {
+                colorClass = 'highlighted';
+                const bgColorMap = {
+                    'bc-red': 'rgba(211, 47, 47, 0.2)',
+                    'bc-orange': 'rgba(239, 108, 0, 0.2)',
+                    'bc-yellow': 'rgba(249, 168, 37, 0.2)',
+                    'bc-green': 'rgba(56, 142, 60, 0.2)',
+                    'bc-blue': 'rgba(30, 136, 229, 0.2)',
+                    'bc-purple': 'rgba(123, 31, 162, 0.2)'
+                };
+                const backgroundColor = bgColorMap[colorInfo.colorClass];
+                const [r, g, b] = backgroundColor.match(/\d+/g);
+                colorStyle = `
+                    --node-color: ${backgroundColor};
+                    --node-border-color: ${backgroundColor.replace('0.2', '0.3')};
+                    --node-color-hover: rgba(${r}, ${g}, ${b}, 0.25);
+                    --node-border-color-hover: rgba(${r}, ${g}, ${b}, 0.35);
+                    --actions-bg-hover: rgba(${r}, ${g}, ${b}, 0.1);
+                `;
+            }
+    
+            return { style: colorStyle, class: colorClass };
+        } catch (error) {
+            console.error('获取颜色样式失败:', error);
+            return { style: '', class: '' };
+        }
+    }
+
+    function applyNodeColor(element, node) {
+        const colorInfo = getNodeColorInfo(node);
+        if (!colorInfo) return;
+
+        if (colorInfo.type === 'colored') {
+            element.style.setProperty('--text-color', colorInfo.color);
+            element.style.setProperty('--node-color', `${colorInfo.color}1a`); // 10% opacity
+            element.style.setProperty('--node-border-color', `${colorInfo.color}33`); // 20% opacity
+            element.classList.add('colored');
+        } else if (colorInfo.type === 'highlight') {
+            const bgColorMap = {
+                'bc-red': 'rgba(211, 47, 47, 0.2)',
+                'bc-orange': 'rgba(239, 108, 0, 0.2)',
+                'bc-yellow': 'rgba(249, 168, 37, 0.2)',
+                'bc-green': 'rgba(56, 142, 60, 0.2)',
+                'bc-blue': 'rgba(30, 136, 229, 0.2)',
+                'bc-purple': 'rgba(123, 31, 162, 0.2)'
+            };
+            const backgroundColor = bgColorMap[colorInfo.colorClass];
+            element.style.setProperty('--node-color', backgroundColor);
+            element.style.setProperty('--node-border-color', backgroundColor.replace('0.2', '0.3'));
+            element.classList.add('highlighted');
+        }
     }
 
     function updateCardsColor() {
@@ -757,39 +864,79 @@
     // 提醒项创建和事件��理函数
 
     function createReminderItem(reminder) {
-        const isCompleted = reminder.completed || false;
-        let displayText = reminder.name;
-        if (reminder.mode === 'follow' && reminder.displayName) {
-            displayText = reminder.displayName;
-        }
-
-        // 确保URL包含完整域名
-        const fullUrl = reminder.url.startsWith('http') ?
-            reminder.url :
-            `https://workflowy.com${reminder.url}`;
-
-        return `
-            <div class="reminder-item ${reminder.hasMirrors ? 'has-mirrors' : ''}
-                ${isCompleted ? 'completed' : ''}"
-                data-id="${reminder.id}"
-                data-mode="${reminder.mode}">
-                <div class="reminder-checkbox-wrapper">
-                    <input type="checkbox"
-                        class="reminder-checkbox"
-                        ${isCompleted ? 'checked' : ''}
-                        data-id="${reminder.id}">
-                </div>
-                <div class="reminder-item-content">
-                    <span class="reminder-item-name" onclick="WF.getItemById('${reminder.id}') && WF.zoomTo(WF.getItemById('${reminder.id}'))">${displayText}</span>
-
-                    <div class="reminder-actions">
-                        <button class="reminder-action-btn copy" data-content="${fullUrl}">
-                        </button>
-                        <button class="reminder-action-btn remove" data-id="${reminder.id}">
-                        </button>
+        try {
+            const node = WF.getItemById(reminder.id);
+            if (!node) return '';
+    
+            const isCompleted = reminder.completed || false;
+            let displayText = reminder.name;
+            if (reminder.mode === 'follow' && reminder.displayName) {
+                displayText = reminder.displayName;
+            }
+    
+            // 获取颜色信息
+            const colorInfo = getNodeColorInfo(node);
+            let colorStyle = '';
+            let colorClass = '';
+            
+            if (colorInfo) {
+                if (colorInfo.type === 'colored') {
+                    colorClass = 'colored';
+                    colorStyle = `
+                        --text-color: ${colorInfo.color};
+                        --node-color: ${colorInfo.color}1a;
+                        --node-border-color: ${colorInfo.color}33;
+                    `;
+                } else if (colorInfo.type === 'highlight') {
+                    colorClass = 'highlighted';
+                    const bgColorMap = {
+                        'bc-red': 'rgba(211, 47, 47, 0.2)',
+                        'bc-orange': 'rgba(239, 108, 0, 0.2)',
+                        'bc-yellow': 'rgba(249, 168, 37, 0.2)',
+                        'bc-green': 'rgba(56, 142, 60, 0.2)',
+                        'bc-blue': 'rgba(30, 136, 229, 0.2)',
+                        'bc-purple': 'rgba(123, 31, 162, 0.2)'
+                    };
+                    const backgroundColor = bgColorMap[colorInfo.colorClass];
+                    colorStyle = `
+                        --node-color: ${backgroundColor};
+                        --node-border-color: ${backgroundColor.replace('0.2', '0.3')};
+                    `;
+                }
+            }
+    
+            // 确保URL包含完整域名
+            const fullUrl = reminder.url.startsWith('http') ?
+                reminder.url :
+                `https://workflowy.com${reminder.url}`;
+    
+            return `
+                <div class="reminder-item ${reminder.hasMirrors ? 'has-mirrors' : ''}
+                    ${isCompleted ? 'completed' : ''} ${colorClass}"
+                    data-id="${reminder.id}"
+                    data-mode="${reminder.mode}"
+                    style="${colorStyle}">
+                    <div class="reminder-checkbox-wrapper">
+                        <input type="checkbox"
+                            class="reminder-checkbox"
+                            ${isCompleted ? 'checked' : ''}
+                            data-id="${reminder.id}">
                     </div>
-                </div>
-            </div>`;
+                    <div class="reminder-item-content">
+                        <span class="reminder-item-name" onclick="WF.getItemById('${reminder.id}') && WF.zoomTo(WF.getItemById('${reminder.id}'))">${displayText}</span>
+    
+                        <div class="reminder-actions">
+                            <button class="reminder-action-btn copy" data-content="${fullUrl}">
+                            </button>
+                            <button class="reminder-action-btn remove" data-id="${reminder.id}">
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+        } catch (error) {
+            console.error('创建提醒项失败:', error);
+            return '';
+        }
     }
 
     function createCollectModeItem(reminder) {
@@ -1150,14 +1297,14 @@
     function updateReminderList() {
         const listElement = document.getElementById('reminder-list');
         if (!listElement) return;
-
+    
         const currentReminders = Object.values(reminders).filter(r => r.mode === currentMode);
         console.log('Current mode:', currentMode);
         console.log('Current reminders:', currentReminders);
     
         if (currentMode === 'scan') {
             const remindersByParent = {};
-
+    
             currentReminders.forEach(reminder => {
                 const parentId = reminder.parentId;
                 if (!remindersByParent[parentId]) {
@@ -1169,14 +1316,14 @@
                 }
                 remindersByParent[parentId].items.push(reminder);
             });
-
+    
             const blocks = Object.entries(remindersByParent)
                 .sort(([_, a], [__, b]) => a.time - b.time)
                 .map(([parentId, block]) => {
                     const items = block.items
                         .map(reminder => createReminderItem(reminder))
                         .join('');
-
+    
                     return `
                         <div class="reminder-block">
                             <div class="reminder-block-title">${block.name}</div>
@@ -1184,28 +1331,59 @@
                         </div>
                     `;
                 }).join('');
-
-                listElement.innerHTML = blocks || '<div class="no-reminders">暂无时间块卡片</div>';
-                addEventListeners(listElement);
-                setTimeout(updateCardsColor, 0);
-            } else if (currentMode === 'follow') {
-                const items = currentReminders
-                    .sort((a, b) => extractReminderContent(a.name)
-                        .localeCompare(extractReminderContent(b.name)));
-
-                listElement.innerHTML = items
-                    .map(reminder => createReminderItem(reminder))
-                    .join('') ||
-                    '<div class="no-reminders">暂无跟进事项<br>使用格式：任务内容 #01每日推进</div>';
-                addEventListeners(listElement);
-                setTimeout(updateCardsColor, 0);
-            } else if (currentMode === 'collect') {
+    
+            listElement.innerHTML = blocks || '<div class="no-reminders">暂无时间块卡片</div>';
+            addEventListeners(listElement);
+            setTimeout(updateCardsColor, 0);
+        } else if (currentMode === 'follow') {
+            const items = currentReminders
+                .sort((a, b) => extractReminderContent(a.name)
+                    .localeCompare(extractReminderContent(b.name)));
+    
+            listElement.innerHTML = items
+                .map(reminder => createReminderItem(reminder))
+                .join('') ||
+                '<div class="no-reminders">暂无跟进事项<br>使用格式：任务内容 #01每日推进</div>';
+            addEventListeners(listElement);
+            setTimeout(updateCardsColor, 0);
+        } else if (currentMode === 'collect') {
             const items = currentReminders.sort((a, b) => b.time - a.time);
-
-            listElement.innerHTML = items.map(reminder => createCollectModeItem(reminder)).join('') ||
-            '<div class="no-reminders">暂无待整理事项<br>使用格式：任务内容 #稍后处理</div>';
-        addCollectModeEventListeners(listElement);
-        setTimeout(updateCardsColor, 0);
+    
+            listElement.innerHTML = items
+                .map(reminder => createCollectModeItem(reminder))
+                .join('') ||
+                '<div class="no-reminders">暂无待整理事项<br>使用格式：任务内容 #稍后处理</div>';
+            addCollectModeEventListeners(listElement);
+            setTimeout(updateCardsColor, 0);
+        }
+    }
+    
+    // 添加颜色更新函数
+    function updateCardsColor() {
+        try {
+            const items = document.querySelectorAll('.reminder-item');
+            items.forEach(item => {
+                const id = item.getAttribute('data-id');
+                if (!id) return;
+    
+                const node = WF.getItemById(id);
+                if (!node) return;
+    
+                const { style: colorStyle, class: colorClass } = getColorStyle(node);
+                
+                // 移除旧的颜色类
+                item.classList.remove('colored', 'highlighted');
+                // 添加新的颜色类
+                if (colorClass) {
+                    item.classList.add(colorClass);
+                }
+                // 更新样式
+                if (colorStyle) {
+                    item.style.cssText += colorStyle;
+                }
+            });
+        } catch (error) {
+            console.error('更新卡片颜色失败:', error);
         }
     }
 
