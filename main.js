@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.5.4
+// @version      3.5.7
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -784,7 +784,7 @@
                 'bc-green': 'rgba(56, 142, 60, 0.2)',
                 'bc-blue': 'rgba(30, 136, 229, 0.2)',
                 'bc-purple': 'rgba(123, 31, 162, 0.2)',
-                'bc-pink': 'rgba(233, 30, 99, 0.2)',    // 粉色
+                'bc-pink': 'rgba(233, 30, 99, 0.2)',    // ���色
                 'bc-sky': 'rgba(0, 188, 212, 0.2)',     // 天蓝色
                 'bc-teal': 'rgba(0, 150, 136, 0.2)',    // 青色
                 'bc-gray': 'rgba(117, 117, 117, 0.2)'   // 灰色
@@ -1099,7 +1099,6 @@
 
     function cleanContent(text) {
         return text
-            .replace(/@\d{1,2}:\d{2}/g, '')
             .replace(/#稍后处理/g, '')
             .trim();
     }
@@ -1254,15 +1253,17 @@
             Object.entries(reminders).filter(([_, r]) => r.mode === 'collect')
         );
 
-        const firstLevelNodes = inboxItem.getChildren();
-        firstLevelNodes.forEach(parentNode => {
-            const parentName = parentNode.getNameInPlainText();
-            const parentId = parentNode.getId();
-
-            if (parentName.includes('#稍后处理')) {
+        // 递归函数：搜索所有包含 #稍后处理 标签的节点
+        function searchNodesWithTag(node) {
+            const nodeName = node.getNameInPlainText();
+            const nodeId = node.getId();
+            
+            // 检查当前节点是否包含标签
+            if (nodeName.includes('#稍后处理')) {
+                const children = node.getChildren();
                 let fullContent = '';
-                const children = parentNode.getChildren();
-
+                
+                // 如果有子节点，收集子节点内容
                 if (children.length > 0) {
                     children.forEach(child => {
                         const childName = child.getNameInPlainText()
@@ -1276,29 +1277,35 @@
                     });
                 }
 
-                const existingReminder = existingCollectReminders[parentId];
+                const existingReminder = existingCollectReminders[nodeId];
                 const creationTime = existingReminder ?
                     existingReminder.creationTime :
                     Date.now();
 
-                newReminders[parentId] = {
-                    id: parentId,
-                    name: parentName.replace(/#稍后处理/g, '').trim(),
+                newReminders[nodeId] = {
+                    id: nodeId,
+                    name: nodeName.replace(/#稍后处理/g, '').trim(),
                     childrenContent: fullContent.trim(),
-                    time: parentNode.getLastModifiedDate().getTime(),
+                    time: node.getLastModifiedDate().getTime(),
                     creationTime,
                     notified: false,
                     mode: 'collect',
-                    url: parentNode.getUrl(),
-                    completed: parentNode.isCompleted()
+                    url: node.getUrl(),
+                    completed: node.isCompleted()
                 };
             }
-        });
 
-        const filteredReminders = filterRemovedItems(newReminders, 'scan');
+            // 递归处理子节点
+            node.getChildren().forEach(searchNodesWithTag);
+        }
+
+        // 从收件箱节点开始递归搜索
+        searchNodesWithTag(inboxItem);
+
+        const filteredReminders = filterRemovedItems(newReminders, 'collect');
 
         reminders = {
-            ...Object.fromEntries(Object.entries(reminders).filter(([_, r]) => r.mode !== 'scan')),
+            ...Object.fromEntries(Object.entries(reminders).filter(([_, r]) => r.mode !== 'collect')),
             ...filteredReminders
         };
         saveReminders();
@@ -1434,8 +1441,7 @@
             processedContent = processedContent
                 // 移除 #稍后处理 标签
                 .replace(/#稍后处理/g, '')
-                // 移除 @时间 标签
-                .replace(/@\d{1,2}:\d{2}/g, '')
+                
                 // 只对非父节点移除日期时间
                 .replace(isParent ? '' : /\d{4}-\d{1,2}-\d{1,2}\s+\d{2}:\d{2}/g, '')
                 // 移除其他 HTML span 标签
@@ -1538,7 +1544,7 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                     // 处理单节点的情况（保持原有逻辑）
                     const wfItemContent = wfItem.getNameInPlainText()
                         .replace(/#稍后处理/g, '')
-                        .replace(/@\d{1,2}:\d{2}/g, '')
+                        
                         .trim();
                     const splitContent = wfItemContent.match(/^([\d-]+\s+[\d:]+)\s*\|\s*(.+)$/);
                     
@@ -1611,7 +1617,7 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                 // 跳过空行
                 if (!line.trim()) continue;
 
-                // 检测已有的缩进级别和内容
+                // 检测已有的缩进级别和���容
                 const indentMatch = line.match(/^(\s*)[-•]\s*(.*)/);
                 if (indentMatch) {
                     // 获取现有缩进级别
@@ -1675,7 +1681,7 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
                 <div class="reminder-list" id="reminder-list"></div>
             </div>
             <div class="clear-all-container">
-                <button class="clear-all-btn" id="clear-all">清除所有笔记</button>
+                <button class="clear-all-btn" id="clear-all">清除所有��记</button>
             </div>
         `;
 
@@ -1706,7 +1712,7 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
             const cachedNode = sessionStorage.getItem(todayKey);
             
             if (cachedNode) {
-                // 尝试使用缓存的节点ID
+                // 尝试���用缓存的节点ID
                 try {
                     const node = WF.getItemById(cachedNode);
                     if (node) {
@@ -1873,7 +1879,6 @@ listElement.querySelectorAll('.collect-mode .children-content, .collect-mode .si
     // 辅助函数
     function extractReminderContent(text) {
         return normalizeReminderText(text
-            .replace(/@\d{1,2}:\d{2}/, '')
             .replace(/#remind/, '')
             .replace(/#提醒/, '')
             .replace(/#稍后处理/, '')
