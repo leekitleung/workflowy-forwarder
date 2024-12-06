@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.5.8
+// @version      3.5.9
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -1577,18 +1577,31 @@ function addCollectModeEventListeners(listElement) {
                     // 如果存在标题和链接节点（情况一或情况四的第一种）
                     if (titleNode && linkNode) {
                         const title = titleNode.getNameInPlainText().replace(/^标题[：:]\s*/, '').trim();
-                        const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim() + ' ';
+                        const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
                         
+                        // 创建带格式的链接文本
+                        let formattedContent;
+                        if (url.match(/^https?:\/\//)) {
+                            // 如果是完整的URL，创建HTML链接
+                            formattedContent = `<a href="${url}">${url}</a>`;
+                        } else {
+                            // 如果不是完整URL，添加https://
+                            formattedContent = `<a href="https://${url}">${url}</a>`;
+                        }
+                        
+                        // 使用WorkFlowy API创建带链接的内容
                         const tempParent = WF.createItem(WF.currentItem(), 0);
                         if (tempParent) {
                             WF.editGroup(() => {
                                 WF.setItemName(tempParent, title);
-                                WF.setItemNote(tempParent, url);
+                                WF.setItemNote(tempParent, formattedContent);
                             });
                             
+                            // 导出为OPML并删除临时节点
                             const opmlContent = WF.exportOPML([tempParent]);
                             WF.deleteItem(tempParent);
                             
+                            // 复制到剪贴板
                             await navigator.clipboard.writeText(opmlContent);
                             copied = true;
                         }
