@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.5.10
+// @version      3.5.11
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -1067,13 +1067,19 @@
     
         // 复制链接按钮事件
         listElement.querySelectorAll('.reminder-action-btn.copy').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', async function(e) {
                 e.stopPropagation();
-                const content = this.dataset.content;
-                if (content) {
-                    navigator.clipboard.writeText(content).then(() => {
+                const id = this.closest('.reminder-item').dataset.id;
+                const node = WF.getItemById(id);
+                
+                if (node) {
+                    try {
+                        await copyNodeContent(node);
                         showFeedback(this, '已复制');
-                    });
+                    } catch (err) {
+                        console.error('复制失败:', err);
+                        showFeedback(this, '复制失败');
+                    }
                 }
             });
         });
@@ -1094,8 +1100,78 @@
         });
     }
     
-    // Content area click for URL copying
+
+    async function copyNodeContent(node) {
+        return new Promise((resolve, reject) => {
+            try {
+                let contentToCopy = '';
     
+                if (isUrlNode(node)) {
+                    // 获取原始HTML内容而不是纯文本
+                    const htmlContent = node.getName();
+                    
+                    // 检查是否已经是带链接的格式
+                    if (htmlContent.includes('<a href=')) {
+                        // 如果已经是链接格式，直接使用原始HTML
+                        contentToCopy = htmlContent;
+                    } else {
+                        // 如果不是链接格式，则构造链接
+                        const text = node.getNameInPlainText();
+                        const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
+                        
+                        if (urlMatch) {
+                            const url = urlMatch[0];
+                            contentToCopy = `<a href="${url}">${text}</a>`;
+                        } else {
+                            contentToCopy = text;
+                        }
+                    }
+                } else {
+                    // 非URL节点使用原始HTML内容
+                    contentToCopy = node.getName();
+                }
+    
+                // 创建一个临时元素来处理富文本复制
+                const tempDiv = document.createElement('div');
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.innerHTML = contentToCopy;
+                document.body.appendChild(tempDiv);
+    
+                // 创建一个范围来选择内容
+                const range = document.createRange();
+                range.selectNodeContents(tempDiv);
+                
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+    
+                // 执行复制命令
+                const success = document.execCommand('copy');
+                
+                // 清理
+                selection.removeAllRanges();
+                document.body.removeChild(tempDiv);
+                
+                resolve(success);
+            } catch (err) {
+                console.error('复制失败:', err);
+                reject(err);
+            }
+        });
+    }
+    
+    function isUrlNode(node) {
+        // 检查原始HTML内容是否包含链接标签或URL
+        const htmlContent = node.getName();
+        const plainText = node.getNameInPlainText();
+        
+        return htmlContent.includes('<a href=') || 
+               /https?:\/\/[^\s]+/.test(plainText);
+    }
+
+
+    // Content area click for URL copying
     
     function cleanContent(text) {
         return text
@@ -1542,22 +1618,55 @@
         
                     // 处理单节点情况（情况三）
                     if (children.length === 0) {
-                        const content = wfItem.getNameInPlainText();
-                        let processedContent = '';
+                        // 获取原始HTML内容和纯文本内容
+                        const htmlContent = wfItem.getName();
+                        const plainContent = wfItem.getNameInPlainText();
                         
                         // 检查是否以日期时间格式开头，并且包含分隔符 |
-                        const dateTimeMatch = content.match(/^\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}\s+\|\s+(.+)$/);
-                        if (dateTimeMatch) {
-                            // 直接使用正则捕获组获取分隔符后的内容
-                            processedContent = dateTimeMatch[1].replace(/#稍后处理/g, '').trim();
-                        } else {
-                            // 没有日期时间格式，直接移除标签
-                            processedContent = content.replace(/#稍后处理/g, '').trim();
-                        }
+                        const dateTimeMatch = plainContent.match(/^\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}\s+\|\s+(.+)$/);
                         
-                        await navigator.clipboard.writeText(processedContent);
-                        copied = true;
-                    } 
+                        if (dateTimeMatch) {
+                            // 处理带日期时间格式的内容
+                            processedContent = dateTimeMatch[1].replace(/#稍后处理/g, '').trim();
+                        } else if (htmlContent.includes('<a href=')) {
+                            // 如果是带链接的HTML内容，提取链接和文本
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = htmlContent.replace(/#稍后处理/g, '').trim();
+                            const anchor = tempDiv.querySelector('a');
+                            
+                            if (anchor) {
+                                const title = anchor.textContent;
+                                const url = anchor.href;
+                                
+                                // 构造OPML格式，将链接放在note部分
+                                const opmlContent = `<?xml version="1.0"?>
+                                <opml version="2.0">
+                                    <head>
+                                        <title>${title}</title>
+                                    </head>
+                                    <body>
+                                        <outline text="${title}" _note="&lt;a href=&quot;${url}&quot;&gt;${url}&lt;/a&gt;"/>
+                                    </body>
+                                </opml>`;
+                                
+                                try {
+                                    await navigator.clipboard.writeText(opmlContent);
+                                    copied = true;
+                                } catch (error) {
+                                    console.error('复制失败:', error);
+                                    copied = false;
+                                }
+                            } else {
+                                // 如果没有找到链接，使用普通文本
+                                await navigator.clipboard.writeText(plainContent.replace(/#稍后处理/g, '').trim());
+                                copied = true;
+                            }
+                        } else {
+                            // 普通文本内容
+                            await navigator.clipboard.writeText(plainContent.replace(/#稍后处理/g, '').trim());
+                            copied = true;
+                        }
+                    }
                     // 处理多节点情况
                     else {
                         const parentContent = wfItem.getNameInPlainText().trim();
@@ -1581,14 +1690,14 @@
                             
                             // 直接构造OPML格式的文本
                             const opmlContent = `<?xml version="1.0"?>
-                        <opml version="2.0">
-                            <head>
-                                <title>${title}</title>
-                            </head>
-                            <body>
-                                <outline text="${title}" _note="&lt;a href=&quot;${url}&quot;&gt;${url}&lt;/a&gt;"/>
-                            </body>
-                        </opml>`;
+                            <opml version="2.0">
+                                <head>
+                                    <title>${title}</title>
+                                </head>
+                                <body>
+                                    <outline text="${title}" _note="&lt;a href=&quot;${url}&quot;&gt;${url}&lt;/a&gt;"/>
+                                </body>
+                            </opml>`;
                         
                             try {
                                 await navigator.clipboard.writeText(opmlContent);
@@ -1603,8 +1712,40 @@
                             let contentToCopy = '';
                             
                             for (const child of relevantChildren) {
-                                const childContent = child.getNameInPlainText().trim();
-                                contentToCopy += (contentToCopy ? '\n' : '') + childContent;
+                                const htmlContent = child.getName();
+                                const plainContent = child.getNameInPlainText();
+                                
+                                if (htmlContent.includes('<a href=')) {
+                                    // 处理带链接的HTML内容
+                                    const tempDiv = document.createElement('div');
+                                    tempDiv.innerHTML = htmlContent.replace(/#稍后处理/g, '').trim();
+                                    const anchor = tempDiv.querySelector('a');
+                                    
+                                    if (anchor) {
+                                        const title = anchor.textContent;
+                                        const url = anchor.href;
+                                        
+                                        // 使用OPML格式，与单节点处理保持一致
+                                        const opmlContent = `<?xml version="1.0"?>
+                                        <opml version="2.0">
+                                            <head>
+                                                <title>${title}</title>
+                                            </head>
+                                            <body>
+                                                <outline text="${title}" _note="&lt;a href=&quot;${url}&quot;&gt;${url}&lt;/a&gt;"/>
+                                            </body>
+                                        </opml>`;
+                                        
+                                        contentToCopy += (contentToCopy ? '\n' : '') + opmlContent;
+                                    } else {
+                                        contentToCopy += (contentToCopy ? '\n' : '') + 
+                                                    plainContent.replace(/#稍后处理/g, '').trim();
+                                    }
+                                } else {
+                                    // 处理普通文本内容
+                                    contentToCopy += (contentToCopy ? '\n' : '') + 
+                                                plainContent.replace(/#稍后处理/g, '').trim();
+                                }
                             }
                             
                             if (contentToCopy.trim()) {
@@ -1732,7 +1873,7 @@
                 <div class="reminder-list" id="reminder-list"></div>
             </div>
             <div class="clear-all-container">
-                <button class="clear-all-btn" id="clear-all">清除所有��记</button>
+                <button class="clear-all-btn" id="clear-all">清除当前节点</button>
             </div>
         `;
     
