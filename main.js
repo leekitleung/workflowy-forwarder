@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.5.11
+// @version      3.5.12
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -1069,17 +1069,72 @@
         listElement.querySelectorAll('.reminder-action-btn.copy').forEach(btn => {
             btn.addEventListener('click', async function(e) {
                 e.stopPropagation();
-                const id = this.closest('.reminder-item').dataset.id;
-                const node = WF.getItemById(id);
+                const reminderItem = this.closest('.reminder-item');
+                const id = reminderItem.dataset.id;
+                const mode = reminderItem.dataset.mode;
+                const reminder = reminders[id];
                 
-                if (node) {
-                    try {
-                        await copyNodeContent(node);
+                if (!reminder) return;
+                
+                try {
+                    const node = WF.getItemById(id);
+                    if (!node) return;
+                    
+                    let copied = false;
+                    
+                    // 根据不同模式处理复制
+                    if (mode === 'collect') {
+                        // 收集模式的复制处理
+                        const htmlContent = node.getName();
+                        const plainContent = node.getNameInPlainText();
+                        
+                        if (htmlContent.includes('<a href=')) {
+                            // 处理带链接的HTML内容
+                            const tempDiv = document.createElement('div');
+                            tempDiv.innerHTML = htmlContent.replace(/#稍后处理/g, '').trim();
+                            const anchor = tempDiv.querySelector('a');
+                            
+                            if (anchor) {
+                                const title = anchor.textContent;
+                                const url = anchor.href;
+                                
+                                // 构造OPML格式
+                                const opmlContent = `<?xml version="1.0"?>
+                                <opml version="2.0">
+                                    <head>
+                                        <title>${title}</title>
+                                    </head>
+                                    <body>
+                                        <outline text="${title}" _note="&lt;a href=&quot;${url}&quot;&gt;${url}&lt;/a&gt;"/>
+                                    </body>
+                                </opml>`;
+                                
+                                await navigator.clipboard.writeText(opmlContent);
+                                copied = true;
+                            }
+                        }
+                    } else {
+                        // dailyplanner和target模式复制卡片链接
+                        const url = node.getUrl();
+                        if (url) {
+                            // 确保URL包含完整域名
+                            const fullUrl = url.startsWith('http') ? 
+                                url : 
+                                `https://workflowy.com${url}`;
+                            
+                            await navigator.clipboard.writeText(fullUrl);
+                            copied = true;
+                        }
+                    }
+                    
+                    if (copied) {
                         showFeedback(this, '已复制');
-                    } catch (err) {
-                        console.error('复制失败:', err);
+                    } else {
                         showFeedback(this, '复制失败');
                     }
+                } catch (error) {
+                    console.error('复制失败:', error);
+                    showFeedback(this, '复制失败');
                 }
             });
         });
@@ -2110,5 +2165,6 @@
     console.log('WorkFlowy Forward Plus...');
     waitForWF();
     })();
+    
     
     
