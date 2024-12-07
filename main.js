@@ -17,6 +17,17 @@
     
     @import url('https://fonts.googleapis.com/css2?family=Aclonica&display=swap');
     
+    /* 处理以 http:// 或 https:// 开头的链接文本 */
+    [href^="http://"],
+    [href^="https://"] {
+        display: inline-block;
+        max-width: 30ch;  /* 限制最大宽度为30个字符 */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: bottom;
+    }
+        
     .right-bar > div:first-child {
         width: 300px !important;
     }
