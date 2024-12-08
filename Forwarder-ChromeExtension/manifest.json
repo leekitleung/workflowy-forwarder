@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "WorkFlowy Forwarder",
+  "version": "1.0",
+  "description": "WorkFlowy extension with sidebar",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://workflowy.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://workflowy.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [{
+    "resources": ["api.js"],
+    "matches": ["https://workflowy.com/*"]
+  }],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+} 
