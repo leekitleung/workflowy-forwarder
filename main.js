@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.5.12
+// @version      3.5.13
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -69,7 +69,7 @@
         .panel-header h1{
             font-size: 20px;
             margin: 0 0 12px 0;
-            color: rgba(231, 239, 251, 1);
+            color: rgb(217 219 219);
         }
     
     .panel-content {
@@ -1692,8 +1692,17 @@
                         const dateTimeMatch = plainContent.match(/^\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}\s+\|\s+(.+)$/);
                         
                         if (dateTimeMatch) {
-                            // 处理带日期时间格式的内容
-                            processedContent = dateTimeMatch[1].replace(/#稍后处理/g, '').trim();
+                            // Handle date-time format
+                            const content = dateTimeMatch[1].replace(/#稍后处理/g, '').trim();
+                            // Check if content is a plain URL
+                            const urlMatch = content.match(/^https?:\/\/[^\s#]+$/);
+                            if (urlMatch) {
+                                await navigator.clipboard.writeText(urlMatch[0]);
+                                copied = true;
+                            } else {
+                                await navigator.clipboard.writeText(content);
+                                copied = true;
+                            }
                         } else if (htmlContent.includes('<a href=')) {
                             // 如果是带链接的HTML内容，提取链接和文本
                             const tempDiv = document.createElement('div');
@@ -1715,22 +1724,23 @@
                                     </body>
                                 </opml>`;
                                 
-                                try {
-                                    await navigator.clipboard.writeText(opmlContent);
-                                    copied = true;
-                                } catch (error) {
-                                    console.error('复制失败:', error);
-                                    copied = false;
-                                }
+                                await navigator.clipboard.writeText(opmlContent);
+                                copied = true;
                             } else {
                                 // 如果没有找到链接，使用普通文本
                                 await navigator.clipboard.writeText(plainContent.replace(/#稍后处理/g, '').trim());
                                 copied = true;
                             }
                         } else {
-                            // 普通文本内容
-                            await navigator.clipboard.writeText(plainContent.replace(/#稍后处理/g, '').trim());
-                            copied = true;
+                            // Handle plain text with URL check
+                            const urlMatch = plainContent.match(/^https?:\/\/[^\s#]+$/);
+                            if (urlMatch) {
+                                await navigator.clipboard.writeText(urlMatch[0]);
+                                copied = true;
+                            } else {
+                                await navigator.clipboard.writeText(plainContent.replace(/#稍后处理/g, '').trim());
+                                copied = true;
+                            }
                         }
                     }
                     // 处理多节点情况
