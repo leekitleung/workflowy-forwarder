@@ -1,63 +1,56 @@
-# WorkFlowy Forwarder
+# WorkFlowy Forwarder Plus
 
-一个用于 WorkFlowy 的浏览器扩展，提供侧边栏功能来展示和管理节点。
+一个增强 WorkFlowy 使用体验的油猴脚本，提供高效的内容收集、任务跟踪和日常计划管理功能。
 
-## 项目结构
-workflowy-forwarder/Forwarder-ChromeExtension/
-├── manifest.json # 扩展配置文件
-├── content.js # 主要的内容脚本，处理面板UI和事件
-├── api.js # WorkFlowy API 处理脚本
-└── icons/ # 扩展图标
-  ├── icon16.png
-  ├── icon48.png
-  └── icon128.png
+## 主要特性
 
+- 三种工作模式切换：DailyPlanner、Target、Collector
+- 支持快速收集和转发内容
+- 自动同步 WorkFlowy 节点状态
+- 支持链接格式化和 OPML 输出
+- 快捷键操作支持
+- 可自定义面板显示位置
 
-## 功能说明
+## 安装说明
 
-- 在页面右侧提供一个可切换的侧边栏面板
-- 显示 WorkFlowy 的第一个节点内容
-- 支持点击节点跳转到对应位置
-- 提供刷新按钮更新节点内容
+1. 安装 Tampermonkey 浏览器扩展
+2. 点击安装此脚本 [安装链接]
+3. 在 WorkFlowy 页面刷新后即可使用
 
-## 技术实现
+## 工作模式
 
-- 使用 Chrome Extension Manifest V3
-- 通过 Content Script 注入面板 UI
-- 使用自定义事件进行通信
-- 通过独立的 API 脚本访问 WorkFlowy API
+### DailyPlanner 模式
+- 用于日常计划管理
+- 快速访问今日计划
+- 支持计划节点的状态追踪
 
-## 文件说明
+### Target 模式
+- 跟踪带有 #01每日推进 标签的任务
+- 自动同步节点状态
+- 支持任务完成度管理
 
-- `manifest.json`: 扩展的配置文件，定义权限和资源
-- `content.js`: 实现面板 UI 和交互逻辑
-- `api.js`: 处理与 WorkFlowy API 的交互
-- `icons/`: 存放扩展的图标文件
+### Collector 模式
+- 收集带有 #稍后处理 标签的内容
+- 支持多种链接格式（网页、微信文章等）
+- OPML 格式输出支持
 
-## 安装和使用
+## 使用提示
 
-1. 在 Chrome 中打开扩展管理页面 (`chrome://extensions/`)
-2. 启用开发者模式
-3. 点击"加载已解压的扩展程序"
-4. 选择项目文件夹
+- 使用 #稍后处理 标签标记需要收集的内容
+- 使用 #01每日推进 标签标记需要追踪的任务
+- 点击面板中的任务可快速复制内容
+- 支持批量清理已完成任务
 
-## 使用方法
+## Version History
 
-1. 访问 WorkFlowy 网站
-2. 点击右侧中间的切换按钮显示/隐藏面板
-3. 面板中显示第一个节点的内容
-4. 点击刷新按钮更新内容
-5. 点击节点可跳转到对应位置
-
-## 开发说明
-
-- 使用 `!important` 确保样式优先级
-- 通过自定义事件处理通信
-- 使用 `web_accessible_resources` 注入 API 脚本
-- 采用 Promise 等待 WorkFlowy API 就绪
-
-## 注意事项
-
-- 需要在 WorkFlowy 页面上使用
-- 依赖 WorkFlowy 的 API
-- 需要适当的浏览器权限
+### v3.5.14
+- 优化了收集模式对纯URL格式的处理
+  - 支持微信文章等纯URL格式的直接复制
+  - 保留了原有HTML链接的OPML格式输出
+  - 优化了日期时间格式的URL提取
+  
+### v3.5.13
+- 改进了Target模式的数据同步机制
+  - 自动检测并移除已删除的WorkFlowy节点
+  - 实时同步节点的完成状态
+  - 切换到Target模式时自动更新面板数据

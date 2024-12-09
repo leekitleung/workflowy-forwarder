@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Reminder (Improved)
 // @namespace    http://tampermonkey.net/
-// @version      3.5.13
+// @version      3.5.14
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -1325,6 +1325,9 @@
             if (processedIds.has(id)) return;
             processedIds.add(id);
     
+            // 只在这里添加节点存在性检查
+            if (!WF.getItemById(id)) return;
+    
             const name = item.getNameInPlainText();
             const note = item.getNoteInPlainText();
     
@@ -1366,16 +1369,21 @@
             }
         }
     
+        // 将有效的提醒添加到newReminders
         for (const reminder of tempReminders.values()) {
-            newReminders[reminder.id] = reminder;
+            // 仅做基本的节点存在性检查
+            if (WF.getItemById(reminder.id)) {
+                newReminders[reminder.id] = reminder;
+            }
         }
     
-        const filteredReminders = filterRemovedItems(newReminders, 'scan');
+        const filteredReminders = filterRemovedItems(newReminders, 'follow');
     
         reminders = {
-            ...Object.fromEntries(Object.entries(reminders).filter(([_, r]) => r.mode !== 'scan')),
+            ...Object.fromEntries(Object.entries(reminders).filter(([_, r]) => r.mode !== 'follow')),
             ...filteredReminders
         };
+        
         saveReminders();
         updateReminderList();
     }
