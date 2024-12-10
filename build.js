@@ -3,10 +3,10 @@ const path = require('path');
 
 // GitHub repository configuration
 const GITHUB_CONFIG = {
-  username: 'xxxxx',          // GitHub username
-  repository: 'xxxxx',      // Repository name
-  branch: 'main',           // Branch name
-  scriptPath: 'build/bundle.user.js' // Path to script in repo
+  username: 'leekitleung',          // GitHub username
+  repository: 'workflowy-forwarder', // Repository name
+  branch: 'main',                    // Branch name
+  scriptPath: 'dist/bundle.user.js'  // Path to script in repo
 };
 
 // Generate GitHub URLs
@@ -18,16 +18,17 @@ const GITHUB_URLS = {
 
 // Userscript metadata
 const metadata = `// ==UserScript==
-// @name         站内提醒
-// @namespace    ${GITHUB_URLS.homepage}
-// @version      1.0.0
-// @description  站内提醒
-// @author       ${GITHUB_CONFIG.username}
+// @name         WorkFlowy Reminder (Improved)
+// @namespace    http://tampermonkey.net/
+// @version      4.0.0
+// @description  workflowy forwarder Plus
+// @author       Namkit
 // @homepage     ${GITHUB_URLS.homepage}
 // @supportURL   ${GITHUB_URLS.issues}
 // @updateURL    ${GITHUB_URLS.raw}
 // @downloadURL  ${GITHUB_URLS.raw}
-// @match        https://*.example.com/*
+// @match        https://workflowy.com/*
+// @grant        GM_notification
 // @grant        GM_addStyle
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -61,7 +62,7 @@ function processContent(content) {
 // Read and process source files
 function buildBundle() {
   // Create build directory if it doesn't exist
-  const buildDir = path.join(__dirname, 'build');
+  const buildDir = path.join(__dirname, 'dist');
   if (!fs.existsSync(buildDir)) {
     fs.mkdirSync(buildDir, { recursive: true });
   }
