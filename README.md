@@ -86,23 +86,6 @@
 
 ## 开发说明
 
-### 项目结构
-/
-  ├── src/                  # 源代码目录
-  │   ├── main.js          # 主程序
-  │   ├── config.js        # 配置管理
-  │   ├── settings.js      # 设置面板
-  │   ├── styles.js        # 样式定义
-  ├── dist/                # 发布目录
-  │   └── bundle.user.js   # 合并后的脚本
-  ├── .github/             # GitHub配置
-  │   └── workflows/       # GitHub Actions
-  ├── build.js            # 构建脚本
-  ├── package.json        # 项目配置
-  ├── .gitignore          # Git忽略配置
-  ├── LICENSE             # MIT许可证
-  └── README.md           # 项目文档
-
 ### 开发流程
 1. 开发
    - 在 src/ 目录下开发各个模块
