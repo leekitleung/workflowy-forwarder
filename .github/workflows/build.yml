@@ -6,12 +6,20 @@ on:
   pull_request:
     branches: [ main ]
 
+# 添加明确的权限声明
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        # 确保有完整的 git 历史用于版本比较
+        fetch-depth: 0
     
     - name: Setup Node.js
       uses: actions/setup-node@v2
