@@ -3,7 +3,7 @@ const path = require('path');
 
 // 读取元数据模板
 const metadata = `// ==UserScript==
-// @name         WorkFlowy Reminder (Improved)
+// @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
 // @version      ${process.env.npm_package_version || '1.0.0'}
 // @description  workflowy forwarder Plus
