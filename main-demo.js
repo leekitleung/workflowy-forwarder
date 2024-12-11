@@ -179,6 +179,187 @@ function createSettingsUI() {
   return { settingsBtn, settingsModal };
 }
 
+// 创建设置面板的函数
+function createSettingsPanel() {
+    const panel = document.createElement('div');
+    panel.className = 'settings-panel';
+    panel.innerHTML = `
+        <div class="settings-header">
+            <h2>Setting</h2>
+            <button class="close-button">×</button>
+        </div>
+        <div class="settings-content">
+            <div class="settings-section">
+                <h3>模式管理</h3>
+                <div class="input-group">
+                    <label>DailyPlanner节点</label>
+                    <input type="text" id="scan-node" class="settings-input" value="${DEFAULT_SETTINGS.nodes.scan}">
+                </div>
+                <div class="input-group">
+                    <label>Target节点1</label>
+                    <input type="text" id="follow-node-1" class="settings-input" value="${DEFAULT_SETTINGS.nodes.follow[0]}">
+                </div>
+                <div class="input-group">
+                    <label>Target节点2</label>
+                    <input type="text" id="follow-node-2" class="settings-input" value="${DEFAULT_SETTINGS.nodes.follow[1]}">
+                </div>
+                <div class="input-group">
+                    <label>Collector节点</label>
+                    <input type="text" id="collect-node" class="settings-input" value="${DEFAULT_SETTINGS.nodes.collect}">
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3>主题</h3>
+                <select id="theme-select" class="settings-select">
+                    <option value="dark" selected>Black</option>
+                    <option value="light">Light</option>
+                </select>
+            </div>
+            
+            <div class="settings-section">
+                <h3>快捷键</h3>
+                <div class="input-group">
+                    <label>面板切换</label>
+                    <input type="text" id="toggle-shortcut" class="settings-input" value="${DEFAULT_SETTINGS.shortcuts.togglePanel}">
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <h3>刷新间隔</h3>
+                <div class="input-group">
+                    <label>扫描间隔(秒)</label>
+                    <input type="number" id="scan-interval" class="settings-input" value="${DEFAULT_SETTINGS.refreshIntervals.scan / 1000}">
+                </div>
+                <div class="input-group">
+                    <label>同步间隔(秒)</label>
+                    <input type="number" id="sync-interval" class="settings-input" value="${DEFAULT_SETTINGS.refreshIntervals.sync / 1000}">
+                </div>
+            </div>
+            
+            <div class="settings-actions">
+                <button id="save-settings" class="settings-btn primary">保存设置</button>
+                <button id="reset-settings" class="settings-btn">重置默认</button>
+            </div>
+        </div>
+    `;
+    
+    return panel;
+}
+
+// 添加设置面板样式
+GM_addStyle(`
+    .settings-panel {
+        position: fixed;
+        top: 0;
+        right: -320px;
+        width: 320px;
+        height: 100vh;
+        background: #2B3135;
+        border-left: 1px solid #4C5861;
+        transition: transform 0.3s ease;
+        z-index: 1001;
+        color: #d9dbdb;
+    }
+
+    .settings-panel.visible {
+        transform: translateX(-320px);
+    }
+
+    .settings-header {
+        padding: 20px;
+        border-bottom: 1px solid #4C5861;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .settings-header h2 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: normal;
+    }
+
+    .close-button {
+        background: none;
+        border: none;
+        color: #9EA1A2;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .settings-content {
+        padding: 20px;
+        height: calc(100vh - 61px);
+        overflow-y: auto;
+    }
+
+    .settings-section {
+        margin-bottom: 24px;
+    }
+
+    .settings-section h3 {
+        font-size: 14px;
+        color: #9EA1A2;
+        margin: 0 0 12px 0;
+        font-weight: normal;
+    }
+
+    .input-group {
+        margin-bottom: 12px;
+    }
+
+    .input-group label {
+        display: block;
+        font-size: 12px;
+        color: #9EA1A2;
+        margin-bottom: 4px;
+    }
+
+    .settings-input,
+    .settings-select {
+        width: 100%;
+        padding: 8px 12px;
+        background: #383F44;
+        border: 1px solid #4C5861;
+        border-radius: 4px;
+        color: #d9dbdb;
+        font-size: 14px;
+    }
+
+    .settings-actions {
+        margin-top: 24px;
+        display: flex;
+        gap: 12px;
+    }
+
+    .settings-btn {
+        flex: 1;
+        padding: 8px 16px;
+        border: 1px solid #4C5861;
+        border-radius: 4px;
+        background: #383F44;
+        color: #d9dbdb;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s ease;
+    }
+
+    .settings-btn.primary {
+        background: #4A9EFF;
+        border-color: #4A9EFF;
+    }
+
+    .settings-btn:hover {
+        background: #4C5861;
+    }
+
+    .settings-btn.primary:hover {
+        background: #357ABD;
+    }
+`);
+
 (function() {
     'use strict';
     
@@ -278,6 +459,7 @@ function createSettingsUI() {
         justify-content: center;
         transition: all 0.3s ease;
     }
+    
     
     
     
@@ -2435,6 +2617,44 @@ function createSettingsUI() {
 
         document.getElementById('save-settings').onclick = saveSettingsFromUI;
         document.getElementById('reset-settings').onclick = resetSettings;
+
+        // 在 initReminder 函数中添加设置面板初始化
+        function initReminder() {
+            // ... 其他初始化代码 ...
+
+            // 创建设置按钮
+            const settingsButton = document.createElement('button');
+            settingsButton.className = 'settings-button';
+            settingsButton.innerHTML = `
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="currentColor" d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+                </svg>
+            `;
+
+            // 创建设置面板
+            const settingsPanel = createSettingsPanel();
+            document.body.appendChild(settingsPanel);
+
+            // 添加设置按钮到面板
+            const panelHeader = document.querySelector('.panel-header h1');
+            panelHeader.appendChild(settingsButton);
+
+            // 绑定事件
+            settingsButton.onclick = () => {
+                settingsPanel.classList.add('visible');
+            };
+
+            const closeButton = settingsPanel.querySelector('.close-button');
+            closeButton.onclick = () => {
+                settingsPanel.classList.remove('visible');
+            };
+
+            // 绑定保存和重置按钮事件
+            document.getElementById('save-settings').onclick = saveSettings;
+            document.getElementById('reset-settings').onclick = resetSettings;
+
+            // ... 其他初始化代码 ...
+        }
     }
     
     function cleanDeletedNodes(mode) {
@@ -2884,6 +3104,127 @@ function createSettingsUI() {
           togglePanel();
         }
       });
+    }
+    
+    // 添加设置保存功能
+    function saveSettings() {
+        const settings = {
+            theme: document.getElementById('theme-select').value,
+            nodes: {
+                scan: document.getElementById('scan-node').value,
+                follow: [
+                    document.getElementById('follow-node-1').value,
+                    document.getElementById('follow-node-2').value
+                ],
+                collect: document.getElementById('collect-node').value
+            },
+            tags: {
+                target: document.getElementById('target-tag').value,
+                collect: document.getElementById('collect-tag').value
+            },
+            refreshIntervals: {
+                scan: parseInt(document.getElementById('scan-interval').value) * 1000,
+                sync: parseInt(document.getElementById('sync-interval').value) * 1000
+            },
+            shortcuts: {
+                togglePanel: document.getElementById('toggle-shortcut').value
+            },
+            quickLinks: getQuickLinksFromUI()
+        };
+
+        try {
+            // 保存设置
+            GM_setValue('workflowy_settings', JSON.stringify(settings));
+            
+            // 应用新设置
+            updateFromSettings(settings);
+            
+            // 显示成功提示
+            showSettingsMessage('设置已保存', 'success');
+            
+            // 关闭设置面板
+            document.querySelector('.settings-panel').classList.remove('visible');
+        } catch (error) {
+            console.error('保存设置失败:', error);
+            showSettingsMessage('保存失败，请重试', 'error');
+        }
+    }
+
+    // 添加保存按钮和事件监听
+    function initializeSettingsUI() {
+        // ... 现有代码 ...
+
+        // 添加保存按钮
+        const saveButton = document.createElement('button');
+        saveButton.className = 'settings-save-btn';
+        saveButton.textContent = '保存设置';
+        saveButton.onclick = saveSettings;
+
+        // 添加按钮样式
+        GM_addStyle(`
+            .settings-save-btn {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                padding: 8px 16px;
+                background: #4A9EFF;
+                border: none;
+                border-radius: 4px;
+                color: white;
+                cursor: pointer;
+                font-size: 14px;
+                transition: background 0.3s ease;
+            }
+
+            .settings-save-btn:hover {
+                background: #357ABD;
+            }
+
+            .settings-message {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 8px 16px;
+                border-radius: 4px;
+                color: white;
+                font-size: 14px;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .settings-message.success {
+                background: #4CAF50;
+            }
+
+            .settings-message.error {
+                background: #F44336;
+            }
+
+            .settings-message.show {
+                opacity: 1;
+            }
+        `);
+
+        // 添加消息提示功能
+        function showSettingsMessage(message, type = 'success') {
+            let messageEl = document.querySelector('.settings-message');
+            if (!messageEl) {
+                messageEl = document.createElement('div');
+                messageEl.className = 'settings-message';
+                document.body.appendChild(messageEl);
+            }
+
+            messageEl.textContent = message;
+            messageEl.className = `settings-message ${type}`;
+            messageEl.classList.add('show');
+
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+            }, 2000);
+        }
+
+        // 将保存按钮添加到设置面板
+        document.querySelector('.settings-panel').appendChild(saveButton);
     }
     
     
