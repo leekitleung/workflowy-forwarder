@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         WorkFlowy Reminder (Improved)
+// @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      3.5.15
+// @version      3.5.14
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -884,7 +884,7 @@
         }
     }
     
-    // 提醒项创建和事件理函数
+    // 提醒项创建和事件��理函数
     
     function createReminderItem(reminder) {
         try {
@@ -1109,42 +1109,20 @@
                                 const title = anchor.textContent;
                                 const url = anchor.href;
                                 
-                                try {
-                                    // 创建新节点
-                                    const currentItem = WF.currentItem();
-                                    const newItem = WF.createItem(currentItem, 0); // 创建在当前位置
-                                    
-                                    // 设置节点名称和note
-                                    WF.editGroup(() => {
-                                        WF.setItemName(newItem, title);
-                                        WF.setItemNote(newItem, url);
-                                    });
-                                    
-                                    copied = true;
-                                    showFeedback(this, '已创建');
-                                } catch (error) {
-                                    console.error('创建失败:', error);
-                                    showFeedback(this, '创建失败');
-                                }
-                            }
-                        } else {
-                            // dailyplanner和target模式复制卡片链接
-                            const url = node.getUrl();
-                            if (url) {
-                                // 确保URL包含完整域名
-                                const fullUrl = url.startsWith('http') ? 
-                                    url : 
-                                    `https://workflowy.com${url}`;
+                                // 构造OPML格式
+                                const opmlContent = `<?xml version="1.0"?>
+                                <opml version="2.0">
+                                    <head>
+                                        <title>${title}</title>
+                                    </head>
+                                    <body>
+                                        <outline text="${title}" _note="&lt;a href=&quot;${url}&quot;&gt;${url}&lt;/a&gt;"/>
+                                    </body>
+                                </opml>`;
                                 
-                                await navigator.clipboard.writeText(fullUrl);
+                                await navigator.clipboard.writeText(opmlContent);
                                 copied = true;
                             }
-                        }
-                        
-                        if (copied) {
-                            showFeedback(this, '已复制');
-                        } else {
-                            showFeedback(this, '复制失败');
                         }
                     } else {
                         // dailyplanner和target模式复制卡片链接
@@ -1714,7 +1692,7 @@
         
                     // 处理单节点情况（情况三）
                     if (children.length === 0) {
-                        // 获�����原始HTML内容和纯文本内容
+                        // 获取原始HTML内容和纯文本内容
                         const htmlContent = wfItem.getName();
                         const plainContent = wfItem.getNameInPlainText();
                         
@@ -1794,18 +1772,24 @@
                             const title = titleNode.getNameInPlainText().replace(/^标题[：:]\s*/, '').trim();
                             const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
                             
-                            // 创建新节点
-                            const currentItem = WF.currentItem();
-                            const newItem = WF.createItem(currentItem, 0);
-                            
-                            // 设置节点名称和note
-                            WF.editGroup(() => {
-                                WF.setItemName(newItem, title);
-                                WF.setItemNote(newItem, url);
-                            });
-                            
-                            copied = true;
-                            showFeedback(this, '已创建');
+                            // 直接构造OPML格式的文本
+                            const opmlContent = `<?xml version="1.0"?>
+                            <opml version="2.0">
+                                <head>
+                                    <title>${title}</title>
+                                </head>
+                                <body>
+                                    <outline text="${title}" _note="&lt;a href=&quot;${url}&quot;&gt;${url}&lt;/a&gt;"/>
+                                </body>
+                            </opml>`;
+                        
+                            try {
+                                await navigator.clipboard.writeText(opmlContent);
+                                copied = true;
+                            } catch (error) {
+                                console.error('复制失败:', error);
+                                showFeedback(this, '复制失败');
+                            }
                         }
                         // 处理普通文本和链接混合的情况（情况二或情况四的第二种）
                         else {
@@ -1825,38 +1809,26 @@
                                         const title = anchor.textContent;
                                         const url = anchor.href;
                                         
-                                        try {
-                                            // 创建新节点
-                                            const currentItem = WF.currentItem();
-                                            const newItem = WF.createItem(currentItem, 0);
-                                            
-                                            // 设置节点名称和note
-                                            WF.editGroup(() => {
-                                                WF.setItemName(newItem, title);
-                                                WF.setItemNote(newItem, url);
-                                            });
-                                            
-                                            copied = true;
-                                            showFeedback(this, '已创建');
-                                        } catch (error) {
-                                            console.error('创建失败:', error);
-                                            showFeedback(this, '创建失败');
-                                        }
+                                        // 使用OPML格式，与单节点处理保持一致
+                                        const opmlContent = `<?xml version="1.0"?>
+                                        <opml version="2.0">
+                                            <head>
+                                                <title>${title}</title>
+                                            </head>
+                                            <body>
+                                                <outline text="${title}" _note="&lt;a href=&quot;${url}&quot;&gt;${url}&lt;/a&gt;"/>
+                                            </body>
+                                        </opml>`;
+                                        
+                                        contentToCopy += (contentToCopy ? '\n' : '') + opmlContent;
+                                    } else {
+                                        contentToCopy += (contentToCopy ? '\n' : '') + 
+                                                    plainContent.replace(/#稍后处理/g, '').trim();
                                     }
                                 } else {
                                     // 处理普通文本内容
-                                    const textContent = plainContent.replace(/#稍后处理/g, '').trim();
-                                    if (textContent) {
-                                        try {
-                                            const currentItem = WF.currentItem();
-                                            const newItem = WF.createItem(currentItem, 0);
-                                            WF.setItemName(newItem, textContent);
-                                            copied = true;
-                                        } catch (error) {
-                                            console.error('创建失败:', error);
-                                            showFeedback(this, '创建失败');
-                                        }
-                                    }
+                                    contentToCopy += (contentToCopy ? '\n' : '') + 
+                                                plainContent.replace(/#稍后处理/g, '').trim();
                                 }
                             }
                             
@@ -1921,7 +1893,7 @@
                 // 跳过空行
                 if (!line.trim()) continue;
     
-                // 检测已有的缩进级别和
+                // 检测已有的缩进级别和���容
                 const indentMatch = line.match(/^(\s*)[-•]\s*(.*)/);
                 if (indentMatch) {
                     // 获取现有缩进级别
@@ -2016,7 +1988,7 @@
             const cachedNode = sessionStorage.getItem(todayKey);
             
             if (cachedNode) {
-                // 尝试用缓存的节点ID
+                // 尝试���用缓存的节点ID
                 try {
                     const node = WF.getItemById(cachedNode);
                     if (node) {
