@@ -722,7 +722,7 @@
         }, 2000);
     }
     
-    // 新增颜色检测和更新函数
+    // 新增颜���检测和更新函数
     function getNodeColorInfo(node) {
         try {
             const content = node.getName();
@@ -830,7 +830,7 @@
                 'bc-green': 'rgba(56, 142, 60, 0.2)',
                 'bc-blue': 'rgba(30, 136, 229, 0.2)',
                 'bc-purple': 'rgba(123, 31, 162, 0.2)',
-                'bc-pink': 'rgba(233, 30, 99, 0.2)',    // ���色
+                'bc-pink': 'rgba(233, 30, 99, 0.2)',    // 粉色
                 'bc-sky': 'rgba(0, 188, 212, 0.2)',     // 天蓝色
                 'bc-teal': 'rgba(0, 150, 136, 0.2)',    // 青色
                 'bc-gray': 'rgba(117, 117, 117, 0.2)'   // 灰色
@@ -1933,7 +1933,12 @@
     
     
     function initReminder() {
+        // Migrate old data first
+        migrateOldData();
+        
         const config = CONFIG.get();
+        
+        // Create main panel
         const panel = document.createElement('div');
         panel.className = 'reminder-panel';
         panel.innerHTML = `
@@ -1971,19 +1976,22 @@
             </div>
         `;
 
-        // Add settings button
+        // Create and add settings panel
+        const settingsPanel = createConfigPanel();
+        document.body.appendChild(settingsPanel);
+        
+        // Add settings button click handler
         const settingsBtn = document.createElement('button');
         settingsBtn.className = 'settings-btn';
         settingsBtn.innerHTML = '⚙️';
         settingsBtn.onclick = () => {
-            // Show settings panel
-            const settingsPanel = document.querySelector('.config-panel');
-            if (settingsPanel) {
-                settingsPanel.classList.add('visible');
-            }
+            settingsPanel.classList.add('visible');
         };
         panel.querySelector('.panel-header').appendChild(settingsBtn);
 
+        // Initialize settings panel with current config
+        initSettingsPanel(config);
+        
         document.body.appendChild(panel);
 
         // Add panel toggle button
@@ -2080,36 +2088,129 @@
     console.log('WorkFlowy Forward Plus...');
     waitForWF();
     
-    function createConfigPanel() {
-      // 创建配置面板HTML
-      const panel = document.createElement('div');
-      panel.innerHTML = `
-        <div class="config-panel">
-          <h2>设置</h2>
-          <div class="config-item">
-            <label>DailyPlanner节点ID:</label>
-            <input type="text" id="scan-node-id" value="${config.nodes.scan}">
-          </div>
-          <!-- 其他配置项 -->
-          <button id="save-config">保存</button>
-          <button id="reset-config">重置</button>
-        </div>
-      `;
+    // Add data migration function
+    function migrateOldData() {
+        // Migrate config
+        const oldConfig = localStorage.getItem('daily_tasks_config');
+        if (oldConfig) {
+            try {
+                const parsed = JSON.parse(oldConfig);
+                const newConfig = {
+                    daily: {
+                        enabled: true,
+                        taskName: 'DailyPlanner',
+                        nodeId: parsed.nodeId || DEFAULT_CONFIG.daily.nodeId
+                    },
+                    work: {
+                        enabled: parsed.work?.enabled || false,
+                        taskName: parsed.work?.taskName || 'Work Tasks',
+                        nodeId: parsed.work?.nodeId || DEFAULT_CONFIG.work.nodeId,
+                        tag: parsed.work?.tag || '#01每日推进'
+                    },
+                    personal: {
+                        enabled: parsed.personal?.enabled || false,
+                        taskName: parsed.personal?.taskName || 'Personal Tasks', 
+                        nodeId: parsed.personal?.nodeId || DEFAULT_CONFIG.personal.nodeId,
+                        tag: parsed.personal?.tag || '#01每日推进'
+                    },
+                    collector: {
+                        enabled: true,
+                        taskName: 'Collector',
+                        nodeId: parsed.collector?.nodeId || DEFAULT_CONFIG.collector.nodeId,
+                        tag: '#稍后处理'
+                    },
+                    refreshInterval: parsed.refreshInterval || 60000,
+                    theme: parsed.theme || 'dark'
+                };
+                
+                // Save new format
+                localStorage.setItem('workflowy_config', JSON.stringify(newConfig));
+                // Remove old data after migration
+                localStorage.removeItem('daily_tasks_config');
+            } catch (e) {
+                console.error('Config migration failed:', e);
+            }
+        }
 
-      // 添加保存事件
-      panel.querySelector('#save-config').onclick = () => {
-        const newConfig = {
-          nodes: {
-            scan: panel.querySelector('#scan-node-id').value,
-            // 其他节点配置...
-          }
-        };
-        CONFIG.save(newConfig);
-      };
-
-      return panel;
+        // Migrate reminders
+        const oldReminders = localStorage.getItem('daily_tasks_reminders');
+        if (oldReminders) {
+            try {
+                const parsed = JSON.parse(oldReminders);
+                // Keep old reminders but add mode field
+                const newReminders = Object.fromEntries(
+                    Object.entries(parsed).map(([id, reminder]) => [
+                        id,
+                        {
+                            ...reminder,
+                            mode: reminder.mode || 'daily' // Default to daily mode
+                        }
+                    ])
+                );
+                localStorage.setItem('workflowy_reminders', JSON.stringify(newReminders));
+                localStorage.removeItem('daily_tasks_reminders');
+            } catch (e) {
+                console.error('Reminders migration failed:', e);
+            }
+        }
     }
-    })();
+
+    // Add settings panel initialization
+    function initSettingsPanel(config) {
+        // Set initial values
+        Object.entries(config).forEach(([key, value]) => {
+            if (typeof value === 'object') {
+                // Handle nested config objects (daily, work, etc)
+                if (value.enabled !== undefined) {
+                    const checkbox = document.getElementById(`enable-${key}`);
+                    if (checkbox) checkbox.checked = value.enabled;
+                }
+                if (value.taskName) {
+                    const input = document.getElementById(`task-${key}`);
+                    if (input) input.value = value.taskName;
+                }
+                if (value.nodeId) {
+                    const input = document.getElementById(`node-${key}`);
+                    if (input) input.value = value.nodeId;
+                }
+                if (value.tag) {
+                    const input = document.getElementById(`tag-${key}`);
+                    if (input) input.value = value.tag;
+                }
+            } else {
+                // Handle top-level config values
+                const input = document.getElementById(`config-${key}`);
+                if (input) input.value = value;
+            }
+        });
+
+        // Update UI state
+        updateCheckboxStates();
+    }
+
+    // Add function to handle config changes
+    function onConfigChange(newConfig) {
+        CONFIG.save(newConfig);
+        updateUI(newConfig);
+        refreshReminders();
+    }
+
+    // Update refresh function to use enabled modes
+    function refreshReminders() {
+        const config = CONFIG.get();
+        
+        if (config.daily.enabled) {
+            scanReminders();
+        }
+        
+        if (config.work.enabled || config.personal.enabled) {
+            followReminders();
+        }
+        
+        if (config.collector.enabled) {
+            collectReminders(); 
+        }
+    }
     
     
     
