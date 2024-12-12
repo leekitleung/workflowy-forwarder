@@ -14,7 +14,7 @@
 // ==UserScript==
 // @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      0.3.5
+// @version      0.3.6
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -624,10 +624,56 @@
     
     `);
     
-    const MODE_NODES = {
-        scan: '8220a888febe',  // DailyPlanner节点
-        follow: ['6280897d3c65', '3b7e610683fe'],  // Target模式的两个节点
-        collect: '17cfc44d9b20'  // Collector节点
+    // Update default config structure to match Demo-setting format
+    const DEFAULT_CONFIG = {
+        daily: {
+            enabled: true,
+            taskName: 'DailyPlanner',
+            nodeId: '8220a888febe'
+        },
+        work: {
+            enabled: false,
+            taskName: 'Work Tasks', 
+            nodeId: '6280897d3c65',
+            tag: '#01每日推进'
+        },
+        personal: {
+            enabled: false,
+            taskName: 'Personal Tasks',
+            nodeId: '3b7e610683fe',
+            tag: '#01每日推进'
+        },
+        temp: {
+            enabled: false,
+            taskName: 'Temporary Tasks',
+            nodeId: '',
+            tag: '#01每日推进'
+        },
+        collector: {
+            enabled: true,
+            taskName: 'Collector',
+            nodeId: '17cfc44d9b20',
+            tag: '#稍后处理'
+        },
+        refreshInterval: 60000,
+        theme: 'dark'
+    };
+    
+    // Update config management functions
+    const CONFIG = {
+        get() {
+            const saved = localStorage.getItem('workflowy_config');
+            return saved ? {...DEFAULT_CONFIG, ...JSON.parse(saved)} : DEFAULT_CONFIG;
+        },
+        
+        save(config) {
+            localStorage.setItem('workflowy_config', JSON.stringify(config));
+        },
+        
+        reset() {
+            localStorage.removeItem('workflowy_config');
+            return DEFAULT_CONFIG;
+        }
     };
     
     const SCRIPT_VERSION = GM_info.script.version;
@@ -853,7 +899,6 @@
             refreshBtn.title = `最后刷新: ${timeStr}`;
         }
     }
-    }
     
     
     // 在 updateButtonStyles 函数中添加显示逻辑
@@ -898,9 +943,9 @@
             }
         }
     }
-    }
     
-    // 提醒项创建和事件��理函数
+
+    // 提醒项创建和事件理函数
     
     function createReminderItem(reminder) {
         try {
@@ -1912,7 +1957,7 @@
     
     
     function initReminder() {
-        // 创建提醒面板
+        const config = CONFIG.get();
         const panel = document.createElement('div');
         panel.className = 'reminder-panel';
         panel.innerHTML = `
@@ -1923,26 +1968,24 @@
                 </h1>
                 <div class="planner-links">
                     <div class="planner-links-row">
-                        <a href="#" class="planner-link today-link" id="goto-today">
+                        <a href="https://workflowy.com/#/${config.daily.nodeId}" 
+                           class="planner-link today-link">
                             Today's Plan
                         </a>
-                        <a href="https://workflowy.com/#/${MODE_NODES.scan}" class="planner-link scan-link">
-                            DailyPlanner
-                        </a>
+                        ${config.work.enabled ? 
+                            `<a href="https://workflowy.com/#/${config.work.nodeId}" 
+                                class="planner-link follow-link">
+                                ${config.work.taskName}
+                            </a>` : ''
+                        }
+                        ${config.personal.enabled ?
+                            `<a href="https://workflowy.com/#/${config.personal.nodeId}" 
+                                class="planner-link follow-link">
+                                ${config.personal.taskName}
+                            </a>` : ''
+                        }
                     </div>
-                    <div class="follow-links-wrapper">
-                        <a href="https://workflowy.com/#/${MODE_NODES.follow[0]}" class="planner-link follow-link">
-                            ForwardLogs
-                        </a>
-                        <a href="https://workflowy.com/#/${MODE_NODES.follow[1]}" class="planner-link follow-link">
-                            Working
-                        </a>
-                    </div>
-                    <a href="https://workflowy.com/#/${MODE_NODES.collect}" class="planner-link collect-link">
-                        Collector
-                    </a>
                 </div>
-    
             </div>
             <div class="panel-content">
                 <div class="reminder-list" id="reminder-list"></div>
@@ -1951,165 +1994,41 @@
                 <button class="clear-all-btn" id="clear-all">Clear All</button>
             </div>
         `;
-    
+
+        // Add settings button
+        const settingsBtn = document.createElement('button');
+        settingsBtn.className = 'settings-btn';
+        settingsBtn.innerHTML = '⚙️';
+        settingsBtn.onclick = () => {
+            // Show settings panel
+            const settingsPanel = document.querySelector('.config-panel');
+            if (settingsPanel) {
+                settingsPanel.classList.add('visible');
+            }
+        };
+        panel.querySelector('.panel-header').appendChild(settingsBtn);
+
         document.body.appendChild(panel);
-    
-    // 添加面板切换按钮 - 这部分需要确保在正确位置
-    const toggleBtn = document.createElement('button');
-    toggleBtn.className = 'reminder-toggle';
-    toggleBtn.innerHTML = `
-        <svg aria-hidden="true" focusable="false" class="toggle-arrow" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
-            <path fill="currentColor" d="M4.7 244.7c-6.2 6.2-6.2 16.4 0 22.6l176 176c6.2 6.2 16.4 6.2 22.6 0s6.2-16.4 0-22.6L54.6 272 432 272c8.8 0 16-7.2 16-16s-7.2-16-16-16L54.6 240 203.3 91.3c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0l-176 176z"></path>
-        </svg>
-    `;
-    document.body.appendChild(toggleBtn);
-    
-    // 添加点击事件
-    toggleBtn.onclick = togglePanel;
-    
-    // 添加键盘快捷键监听
-    document.addEventListener('keydown', handleKeyPress, false);
-    
-    document.getElementById('goto-today').onclick = (e) => {
-        e.preventDefault();
-        
-        try {
-            // 缓存今天的时间戳
-            const todayKey = new Date().toDateString();
-            const cachedNode = sessionStorage.getItem(todayKey);
-            
-            if (cachedNode) {
-                // 尝试���用缓存的节点ID
-                try {
-                    const node = WF.getItemById(cachedNode);
-                    if (node) {
-                        WF.zoomTo(node);
-                        return;
-                    }
-                } catch (e) {
-                    sessionStorage.removeItem(todayKey);
-                }
-            }
-    
-            // 获取日历根节点
-            const calendarNode = WF.getItemById(WF.shortIdToId('35a73627730b'));
-            if (!calendarNode) {
-                WF.showMessage('未找到日历节点', true);
-                return;
-            }
-    
-            // 优化的时间戳获取函数
-            const parser = new DOMParser();
-            function getMsFromItemName(item) {
-                const name = item.getName();
-                // 快速检查是否包含time标签
-                if (!name.includes('<time')) return null;
-                
-                const time = parser.parseFromString(name, 'text/html').querySelector("time");
-                if (!time) return null;
-                
-                const ta = time.attributes;
-                if (!ta || !ta.startyear || ta.starthour || ta.endyear) return null;
-                
-                return Date.parse(`${ta.startyear.value}/${ta.startmonth.value}/${ta.startday.value}`);
-            }
-    
-            // 优化的查找函数：增加年份预检查
-            function findFirstMatchingItem(targetTimestamp, parent) {
-                // 获取节点名称
-                const name = parent.getName();
-                
-                // 快速预检查：如果节点名包含年份信息，检查是否匹配
-                const currentYear = new Date(targetTimestamp).getFullYear();
-                if (name.includes('Plan of') && !name.includes(currentYear.toString())) {
-                    return null;
-                }
-                
-                // 检查当前节点
-                const nodeTimestamp = getMsFromItemName(parent);
-                if (nodeTimestamp === targetTimestamp) return parent;
-                
-                // 递归检查子节点
-                for (let child of parent.getChildren()) {
-                    const match = findFirstMatchingItem(targetTimestamp, child);
-                    if (match) return match;
-                }
-                
-                return null;
-            }
-    
-            // 获取今天凌晨的时间戳
-            const todayTimestamp = new Date((new Date).setHours(0,0,0,0)).valueOf();
-            
-            // 查找匹配今天日期的节点
-            const found = findFirstMatchingItem(todayTimestamp, calendarNode);
-    
-            if (found) {
-                // 缓存找到的节点ID
-                sessionStorage.setItem(todayKey, found.getId());
-                WF.zoomTo(found);
-            } else {
-                WF.showMessage('未找到今天的日期节点', true);
-            }
-        } catch (error) {
-            console.error('导航到今天的日期时出错:', error);
-            WF.showMessage('导航失败', true);
-        }
-    };
-    
-    
-        // 初始化事件监听
-        document.getElementById('scan-reminders').onclick = () => {
-            if (currentMode === 'scan') {
-                // 如果点击当前模式，清除该模式的移除记录
-                localStorage.removeItem('workflowy_removed_scan');
-                // 检查并清理已删除的节点
-                cleanDeletedNodes('scan');
-            }
-            currentMode = 'scan';
-            scanReminders();
-            updateButtonStyles();
-            updateCardsColor(); 
-        };
-    
-        document.getElementById('follow-reminders').onclick = () => {
-            if (currentMode === 'follow') {
-                // 如果点击当前模式，清除该模式的移除记录
-                localStorage.removeItem('workflowy_removed_follow');
-                // 检查并清理已删除的节点
-                cleanDeletedNodes('follow');
-            }
-            currentMode = 'follow';
-            followReminders();
-            updateButtonStyles();
-            updateCardsColor(); 
-        };
-    
-        document.getElementById('collect-reminders').onclick = () => {
-            if (currentMode === 'collect') {
-                // 如果点击当前模式，清除该模式的移除记录
-                localStorage.removeItem('workflowy_removed_collect');
-                // 检查并清理已删除的节点
-                cleanDeletedNodes('collect');
-            }
-            currentMode = 'collect';
-            collectReminders();
-            updateButtonStyles();
-            updateCardsColor(); 
-        };
-    
+
+        // Add panel toggle button
+        const toggleBtn = document.createElement('button');
+        toggleBtn.className = 'reminder-toggle';
+        toggleBtn.innerHTML = `
+            <svg aria-hidden="true" focusable="false" class="toggle-arrow" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
+                <path fill="currentColor" d="M4.7 244.7c-6.2 6.2-6.2 16.4 0 22.6l176 176c6.2 6.2 16.4 6.2 22.6 0s6.2-16.4 0-22.6L54.6 272 432 272c8.8 0 16-7.2 16-16s-7.2-16-16-16L54.6 240 203.3 91.3c6.2-6.2 6.2-16.4 0-22.6s-16.4-6.2-22.6 0l-176 176z"></path>
+            </svg>
+        `;
+        document.body.appendChild(toggleBtn);
+
+        // Add event listeners
+        toggleBtn.onclick = togglePanel;
         document.getElementById('clear-all').onclick = clearAllReminders;
-    
-        // 初始化界面状态
-        updateButtonStyles();
-        scanReminders();
-    
-        // 设置定时刷新
-        setInterval(() => {
-            if (currentMode === 'scan') {
-                scanReminders();
-            }
-        }, 60000);
+
+        // Set refresh interval from config
+        setInterval(refreshReminders, config.refreshInterval);
+        
+        // Initial refresh
+        refreshReminders();
     }
     
     function cleanDeletedNodes(mode) {
