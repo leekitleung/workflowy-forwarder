@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>WorkFlowy 设置面板 Demo</title>
+    <style>
+        /* 基础样式 */
+        body {
+            background: #1e2124;
+            color: #d9dbdb;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .config-panel {
+            background: #2B3135;
+            border: 1px solid #5c6062;
+            border-radius: 8px;
+            padding: 24px;
+            width: 500px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 头部样式 */
+        .config-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #3a4347;
+        }
+
+        .config-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 500;
+            color: #d9dbdb;
+        }
+
+        .config-close {
+            background: none;
+            border: none;
+            color: #9ea1a2;
+            cursor: pointer;
+            font-size: 20px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        /* 区块样式 */
+        .config-section {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+        }
+
+        .section-header {
+            margin-bottom: 16px;
+        }
+
+        .section-header h3 {
+            color: #9ea1a2;
+            margin: 0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* 分组样式 */
+        .config-group {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+        }
+
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .group-header input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .task-name-input {
+            background: none;
+            border: 1px solid transparent;
+            color: #d9dbdb;
+            font-size: 14px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            width: 120px;
+            transition: all 0.2s ease;
+        }
+
+        .task-name-input:hover,
+        .task-name-input:focus {
+            background: #383f44;
+            border-color: #5c6062;
+            outline: none;
+        }
+
+        /* 输入项样式 */
+        .config-item {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .config-item label {
+            min-width: 60px;
+            color: #9ea1a2;
+            font-size: 13px;
+        }
+
+        .config-item input {
+            flex: 1;
+            padding: 8px 12px;
+            background: #383f44;
+            border: 1px solid #5c6062;
+            border-radius: 4px;
+            color: #d9dbdb;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            pointer-events: auto;
+        }
+
+        .config-item input:focus {
+            outline: none;
+            border-color: #4a9eff;
+            background: #404850;
+        }
+
+        .config-item input::placeholder {
+            color: rgba(158, 161, 162, 0.5);
+        }
+
+        /* 确�����复选框和输入框可交互 */
+        input[type="checkbox"],
+        input[type="text"],
+        input[type="number"] {
+            cursor: pointer;
+            pointer-events: auto !important;
+        }
+
+        /* 标签区域样式 */
+        .tag-list {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* 按钮样式 */
+        .config-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid #3a4347;
+        }
+
+        .config-btn {
+            padding: 12px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+
+        .config-save {
+            background: #357da6;
+            color: white;
+        }
+
+        .config-save:hover {
+            background: #4390bd;
+        }
+
+        .config-reset {
+            background: #4c5861;
+            color: #d9dbdb;
+        }
+
+        .config-reset:hover {
+            background: #5a6871;
+        }
+
+        /* 禁用状态 */
+        .config-group.disabled .group-content {
+            opacity: 0.5;
+        }
+
+        /* 提示样式 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="config-panel">
+        <div class="config-header">
+            <h2>设置</h2>
+            <button class="config-close">×</button>
+        </div>
+
+        <!-- DailyPlanner 设置 -->
+        <div class="config-section">
+            <div class="section-header">
+                <h3>DailyPlanner 设置</h3>
+            </div>
+            <div class="section-content">
+                <div class="config-group">
+                    <div class="group-header">
+                        <input type="checkbox" id="enable-daily">
+                        <input type="text" class="task-name-input" id="task-daily" placeholder="输入任务名称">
+                    </div>
+                    <div class="group-content">
+                        <div class="config-item">
+                            <label>节点ID</label>
+                            <input type="text" id="node-daily" placeholder="输入节点ID">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Target 设置 -->
+        <div class="config-section">
+            <div class="section-header">
+                <h3>Target 设置</h3>
+            </div>
+            <div class="section-content">
+                <!-- 工作任务 -->
+                <div class="config-group">
+                    <div class="group-header">
+                        <input type="checkbox" id="enable-work">
+                        <input type="text" class="task-name-input" id="task-work" placeholder="输入任务名称">
+                    </div>
+                    <div class="group-content">
+                        <div class="config-item">
+                            <label>节点ID</label>
+                            <input type="text" id="node-work" placeholder="输入节点ID，多个用逗号分隔">
+                        </div>
+                        <div class="config-item">
+                            <label>标签</label>
+                            <input type="text" id="tag-work" placeholder="输入标签，多个用逗号分隔">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 个人任务 -->
+                <div class="config-group">
+                    <div class="group-header">
+                        <input type="checkbox" id="enable-personal">
+                        <input type="text" class="task-name-input" id="task-personal" placeholder="输入任务名称">
+                    </div>
+                    <div class="group-content">
+                        <div class="config-item">
+                            <label>节点ID</label>
+                            <input type="text" id="node-personal" placeholder="输入节点ID，多个用逗号分隔">
+                        </div>
+                        <div class="config-item">
+                            <label>标签</label>
+                            <input type="text" id="tag-personal" placeholder="输入标签，多个用逗号分隔">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 临时任务 -->
+                <div class="config-group">
+                    <div class="group-header">
+                        <input type="checkbox" id="enable-temp">
+                        <input type="text" class="task-name-input" id="task-temp" placeholder="输入任务名称">
+                    </div>
+                    <div class="group-content">
+                        <div class="config-item">
+                            <label>节点ID</label>
+                            <input type="text" id="node-temp" placeholder="输入节点ID，多个用逗号分隔">
+                        </div>
+                        <div class="config-item">
+                            <label>标签</label>
+                            <input type="text" id="tag-temp" placeholder="输入标签，多个用逗号分隔">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collector 设置 -->
+        <div class="config-section">
+            <div class="section-header">
+                <h3>Collector 设置</h3>
+            </div>
+            <div class="section-content">
+                <div class="config-group">
+                    <div class="group-header">
+                        <input type="checkbox" id="enable-collector">
+                        <input type="text" class="task-name-input" id="task-collector" placeholder="输入任务名称">
+                    </div>
+                    <div class="group-content">
+                        <div class="config-item">
+                            <label>节点ID</label>
+                            <input type="text" id="node-collector" placeholder="输入节点ID">
+                        </div>
+                        <div class="config-item">
+                            <label>标签</label>
+                            <input type="text" id="tag-collector" placeholder="输入标签，多个用逗号分隔">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 基本设置 -->
+        <div class="config-section">
+            <div class="section-header">
+                <h3>基本设置</h3>
+            </div>
+            <div class="section-content">
+                <div class="config-item">
+                    <label>刷新间隔</label>
+                    <input type="number" id="refresh-interval" placeholder="毫秒">
+                </div>
+            </div>
+        </div>
+
+        <div class="config-buttons">
+            <button class="config-btn config-save">保存设置</button>
+            <button class="config-btn config-reset">重置设置</button>
+        </div>
+    </div>
+
+    <script>
+        // 创建提示元素
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        document.body.appendChild(toast);
+
+        // 显示提示信息
+        function showToast(message) {
+            toast.textContent = message;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        // 检查选中的复选框数量
+        function checkMaxSelected(checkbox) {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const selectedCount = [...checkboxes].filter(cb => cb.checked).length;
+            
+            if (selectedCount > 3) {
+                checkbox.checked = false;
+                showToast('最多只能选择3个模式');
+                return false;
+            }
+            return true;
+        }
+
+        // 保存设置到本地存储
+        function saveSettings() {
+            const settings = {
+                daily: {
+                    enabled: document.getElementById('enable-daily').checked,
+                    taskName: document.getElementById('task-daily').value,
+                    nodeId: document.getElementById('node-daily').value
+                },
+                work: {
+                    enabled: document.getElementById('enable-work').checked,
+                    taskName: document.getElementById('task-work').value,
+                    nodeId: document.getElementById('node-work').value,
+                    tag: document.getElementById('tag-work').value
+                },
+                personal: {
+                    enabled: document.getElementById('enable-personal').checked,
+                    taskName: document.getElementById('task-personal').value,
+                    nodeId: document.getElementById('node-personal').value,
+                    tag: document.getElementById('tag-personal').value
+                },
+                temp: {
+                    enabled: document.getElementById('enable-temp').checked,
+                    taskName: document.getElementById('task-temp').value,
+                    nodeId: document.getElementById('node-temp').value,
+                    tag: document.getElementById('tag-temp').value
+                },
+                collector: {
+                    enabled: document.getElementById('enable-collector').checked,
+                    taskName: document.getElementById('task-collector').value,
+                    nodeId: document.getElementById('node-collector').value,
+                    tag: document.getElementById('tag-collector').value
+                },
+                refreshInterval: document.getElementById('refresh-interval').value
+            };
+            localStorage.setItem('workflowySettings', JSON.stringify(settings));
+        }
+
+        // 从本地存储恢复设置
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('workflowySettings') || '{}');
+            
+            // 设置默认值为空
+            const elements = [
+                'enable-daily', 'task-daily', 'node-daily',
+                'enable-work', 'task-work', 'node-work', 'tag-work',
+                'enable-personal', 'task-personal', 'node-personal', 'tag-personal',
+                'enable-temp', 'task-temp', 'node-temp', 'tag-temp',
+                'enable-collector', 'task-collector', 'node-collector', 'tag-collector',
+                'refresh-interval'
+            ];
+            
+            // 先清空所有输入
+            elements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (element.type === 'checkbox') {
+                        element.checked = false;
+                    } else {
+                        element.value = '';
+                    }
+                }
+            });
+
+            // 然后从存储中恢复已保存的值
+            if (settings.daily) {
+                document.getElementById('enable-daily').checked = settings.daily.enabled || false;
+                document.getElementById('task-daily').value = settings.daily.taskName || '';
+                document.getElementById('node-daily').value = settings.daily.nodeId || '';
+            }
+            if (settings.work) {
+                document.getElementById('enable-work').checked = settings.work.enabled || false;
+                document.getElementById('task-work').value = settings.work.taskName || '';
+                document.getElementById('node-work').value = settings.work.nodeId || '';
+                document.getElementById('tag-work').value = settings.work.tag || '';
+            }
+            if (settings.personal) {
+                document.getElementById('enable-personal').checked = settings.personal.enabled || false;
+                document.getElementById('task-personal').value = settings.personal.taskName || '';
+                document.getElementById('node-personal').value = settings.personal.nodeId || '';
+                document.getElementById('tag-personal').value = settings.personal.tag || '';
+            }
+            if (settings.temp) {
+                document.getElementById('enable-temp').checked = settings.temp.enabled || false;
+                document.getElementById('task-temp').value = settings.temp.taskName || '';
+                document.getElementById('node-temp').value = settings.temp.nodeId || '';
+                document.getElementById('tag-temp').value = settings.temp.tag || '';
+            }
+            if (settings.collector) {
+                document.getElementById('enable-collector').checked = settings.collector.enabled || false;
+                document.getElementById('task-collector').value = settings.collector.taskName || '';
+                document.getElementById('node-collector').value = settings.collector.nodeId || '';
+                document.getElementById('tag-collector').value = settings.collector.tag || '';
+            }
+            if (settings.refreshInterval) {
+                document.getElementById('refresh-interval').value = settings.refreshInterval || '';
+            }
+
+            // 初始化所有复选框状态
+            updateCheckboxStates();
+        }
+
+        // 更新所有复选框状态
+        function updateCheckboxStates() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                const groupContent = checkbox.closest('.config-group').querySelector('.group-content');
+                if (groupContent) {
+                    groupContent.style.opacity = checkbox.checked ? '1' : '0.5';
+                }
+            });
+        }
+
+        // 处理复选框变化
+        function handleCheckboxChange(event) {
+            const checkbox = event.target;
+            
+            // 检查是否超过最大选择数量
+            if (checkbox.checked && !checkMaxSelected(checkbox)) {
+                return;
+            }
+
+            const groupContent = checkbox.closest('.config-group').querySelector('.group-content');
+            if (groupContent) {
+                groupContent.style.opacity = checkbox.checked ? '1' : '0.5';
+            }
+            saveSettings();
+        }
+
+        // 添加事件监听器
+        function addEventListeners() {
+            // 为所有文本和数字输入框添加事件监听器
+            const textInputs = document.querySelectorAll('input[type="text"], input[type="number"]');
+            textInputs.forEach(input => {
+                input.addEventListener('input', saveSettings);
+            });
+
+            // 为复选框添加事件监听器
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('click', handleCheckboxChange);
+                checkbox.addEventListener('change', handleCheckboxChange);
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            addEventListeners();
+        });
+    </script>
+</body>
+</html>
