@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.4
+// @version      0.0.5
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -93,26 +93,45 @@
             // 验证节点ID
             const validateNodeId = (id, name) => {
                 if (id && !/^[0-9a-f]{12}$/.test(id)) {
-                    errors.push(`${name}的节点ID格式不正确`);
+                    errors.push(`${name} 的节点ID格式不正确，应为12位的16进制字符`);
                 }
             };
 
             // 验证标签
             const validateTags = (tags, name) => {
-                if (tags && !/^[#\w\s,]+$/.test(tags)) {
-                    errors.push(`${name}的标签格式不正确`);
+                if (tags) {
+                    const tagList = tags.split(',').map(t => t.trim());
+                    for (const tag of tagList) {
+                        if (!tag.startsWith('#')) {
+                            errors.push(`${name} 的标签 "${tag}" 应以 # 开头`);
+                        }
+                    }
                 }
             };
+
+            // 验证任务名称
+            const validateTaskName = (name, type) => {
+                if (name && name.length > 50) {
+                    errors.push(`${type} 的任务名称不应超过50个字符`);
+                }
+            };
+
+            // 验证刷新间隔
+            if (config.refreshInterval < 1000 || config.refreshInterval > 3600000) {
+                errors.push('刷新间隔应在1000-3600000毫秒之间');
+            }
 
             // 验证 DailyPlanner
             if (config.dailyPlanner.enabled) {
                 validateNodeId(config.dailyPlanner.nodeId, 'DailyPlanner');
+                validateTaskName(config.dailyPlanner.taskName, 'DailyPlanner');
             }
 
             // 验证 Target
             Object.entries(config.target).forEach(([key, value]) => {
                 if (value.enabled) {
                     validateNodeId(value.nodeId, `Target-${key}`);
+                    validateTaskName(value.taskName, `Target-${key}`);
                     validateTags(value.tag, `Target-${key}`);
                 }
             });
@@ -120,10 +139,21 @@
             // 验证 Collector
             if (config.collector.enabled) {
                 validateNodeId(config.collector.nodeId, 'Collector');
+                validateTaskName(config.collector.taskName, 'Collector');
                 validateTags(config.collector.tags, 'Collector');
+
+                // 验证复制格式
+                if (!['plain', 'markdown', 'opml'].includes(config.collector.copyFormat)) {
+                    errors.push('Collector 的复制格式选项无效');
+                }
             }
 
             return errors;
+        },
+
+        // 添加一个新方法：获取节点ID的简短说明
+        getNodeIdHelp() {
+            return '在 WorkFlowy 中打开目标节点，从URL中复制12位的节点ID';
         }
     };
 
@@ -575,7 +605,7 @@
                         <div class="config-group">
                             <div class="group-header">
                                 <input type="checkbox" id="enable-work">
-                                <input type="text" class="task-name-input" id="task-work" placeholder="输入任务名称">
+                                <input type="text" class="task-name-input" id="task-work" placeholder="工作任务">
                             </div>
                             <div class="group-content">
                                 <div class="config-item">
@@ -584,7 +614,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-work" placeholder="输入标签">
+                                    <input type="text" id="tag-work" placeholder="#01每日推进">
                                 </div>
                             </div>
                         </div>
@@ -593,7 +623,7 @@
                         <div class="config-group">
                             <div class="group-header">
                                 <input type="checkbox" id="enable-personal">
-                                <input type="text" class="task-name-input" id="task-personal" placeholder="输入任务名称">
+                                <input type="text" class="task-name-input" id="task-personal" placeholder="个人任务">
                             </div>
                             <div class="group-content">
                                 <div class="config-item">
@@ -602,7 +632,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-personal" placeholder="输入标签">
+                                    <input type="text" id="tag-personal" placeholder="#01每日推进">
                                 </div>
                             </div>
                         </div>
@@ -611,7 +641,7 @@
                         <div class="config-group">
                             <div class="group-header">
                                 <input type="checkbox" id="enable-temp">
-                                <input type="text" class="task-name-input" id="task-temp" placeholder="输入任务名称">
+                                <input type="text" class="task-name-input" id="task-temp" placeholder="临时任务">
                             </div>
                             <div class="group-content">
                                 <div class="config-item">
@@ -620,7 +650,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-temp" placeholder="输入标签">
+                                    <input type="text" id="tag-temp" placeholder="#01每日推进">
                                 </div>
                             </div>
                         </div>
@@ -634,7 +664,7 @@
                         <div class="config-group">
                             <div class="group-header">
                                 <input type="checkbox" id="enable-collector">
-                                <input type="text" class="task-name-input" id="task-collector" placeholder="输入任务名称">
+                                <input type="text" class="task-name-input" id="task-collector" placeholder="收集箱">
                             </div>
                             <div class="group-content">
                                 <div class="config-item">
@@ -643,12 +673,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-collector" placeholder="输入标签，多个用逗号分隔">
-                                </div>
-                                <div class="config-item">
-                                    <label>自动完成</label>
-                                    <input type="checkbox" id="auto-complete-collector">
-                                    <span class="checkbox-label">复制内容后自动标记完成</span>
+                                    <input type="text" id="tag-collector" placeholder="#稍后处理">
                                 </div>
                                 <div class="config-item">
                                     <label>复制格式</label>
@@ -657,6 +682,10 @@
                                         <option value="markdown">Markdown</option>
                                         <option value="opml">OPML</option>
                                     </select>
+                                </div>
+                                <div class="config-item checkbox-item">
+                                    <input type="checkbox" id="auto-complete-collector">
+                                    <label class="checkbox-label">复制后自动标记完成</label>
                                 </div>
                             </div>
                         </div>
@@ -677,14 +706,15 @@
                             </div>
                             <div class="config-item">
                                 <label>刷新间隔</label>
-                                <input type="number" id="refresh-interval" placeholder="毫秒">
+                                <input type="number" id="refresh-interval" placeholder="60000">
+                                <span class="input-hint">毫秒</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="config-buttons">
                     <button class="config-btn config-save">保存设置</button>
-                    <button class="config-btn config-reset">重置设���</button>
+                    <button class="config-btn config-reset">重置设置</button>
                 </div>
             </div>
         `;
@@ -843,14 +873,17 @@
             const errors = ConfigManager.validateConfig(newConfig);
             
             if (errors.length > 0) {
-                alert('配置验证失败:\n' + errors.join('\n'));
+                alert('配置验证失败：\n\n' + errors.join('\n\n') + 
+                      '\n\n提示：\n' + ConfigManager.getNodeIdHelp());
                 return;
             }
             
             if (ConfigManager.saveConfig(newConfig)) {
                 alert('配置已保存');
+                // 保存成功后关闭配置面板
+                panel.querySelector('.config-panel').classList.remove('visible');
             } else {
-                alert('保存失败');
+                alert('保存失败，请检查配置并重试');
             }
         });
 
