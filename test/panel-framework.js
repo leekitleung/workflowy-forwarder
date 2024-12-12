@@ -20,10 +20,12 @@
             top: 46px;
             height: calc(100vh - 46px);
             width: 320px;
-            background: #2B3135;
-            border-left: 1px solid #5c6062;
+            background: var(--bg-color, #2B3135);
+            border-left: 1px solid var(--border-color, #5c6062);
             z-index: 100;
             transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
         .wf-panel.visible {
@@ -43,7 +45,7 @@
             position: fixed;
             right: 20px;
             top: 60px;
-            background: #2B3135;
+            background: var(--bg-color, #2B3135);
             border: none;
             padding: 8px;
             cursor: pointer;
@@ -57,7 +59,7 @@
         }
 
         .wf-toggle:hover {
-            background: #363b3f;
+            background: var(--hover-bg, #363b3f);
         }
 
         .wf-toggle.active .toggle-arrow {
@@ -67,7 +69,7 @@
         .toggle-arrow {
             width: 20px;
             height: 20px;
-            color: #9EA1A2;
+            color: var(--text-secondary, #9EA1A2);
             transition: transform 0.3s ease;
             opacity: 0.8;
         }
@@ -75,8 +77,66 @@
         .wf-toggle:hover .toggle-arrow {
             opacity: 1;
         }
+
+        /* 主题变量 */
+        :root[data-theme="dark"] {
+            --bg-color: #2B3135;
+            --border-color: #5c6062;
+            --text-color: #d9dbdb;
+            --text-secondary: #9ea1a2;
+            --hover-bg: #363b3f;
+        }
+
+        :root[data-theme="light"] {
+            --bg-color: #ffffff;
+            --border-color: #e0e0e0;
+            --text-color: #333333;
+            --text-secondary: #666666;
+            --hover-bg: #f5f5f5;
+        }
+
+        /* 设置面板内容样式 */
+        .config-header {
+            padding: 24px 12px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .config-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        .header-actions {
+            margin-top: 12px;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .version-tag {
+            font-size: 8px;
+            color: var(--text-secondary);
+            margin-left: 8px;
+            padding: 0px 2px;
+            background: var(--bg-color);
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
     `);
 
+    // 面板切换函数
     function togglePanel() {
         const panel = document.querySelector('.wf-panel');
         const toggleBtn = document.querySelector('.wf-toggle');
@@ -85,6 +145,25 @@
             panel.classList.toggle('visible');
             toggleBtn.classList.toggle('active');
         }
+    }
+
+    // 主题切换函数
+    function toggleTheme() {
+        const html = document.documentElement;
+        const themeIcon = document.querySelector('.theme-icon');
+        const currentTheme = html.getAttribute('data-theme') || 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        html.setAttribute('data-theme', newTheme);
+        themeIcon.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+        
+        localStorage.setItem('wf_theme', newTheme);
+    }
+
+    // 初始化主题
+    function initTheme() {
+        const savedTheme = localStorage.getItem('wf_theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
     }
 
     function handleKeyPress(event) {
@@ -99,6 +178,24 @@
         // 创建面板元素
         const panel = document.createElement('div');
         panel.className = 'wf-panel';
+        
+        // 添加面板内容
+        panel.innerHTML = `
+            <div class="config-header">
+                <h2>
+                    Workflowy<br/>
+                    Forwarder Plus
+                    <span class="version-tag">v0.0.2</span>
+                </h2>
+                <div class="header-actions">
+                    <button class="theme-toggle">
+                        <i class="theme-icon">🌙</i>
+                        <span class="theme-text">切换主题</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        
         document.body.appendChild(panel);
 
         // 创建切换按钮
@@ -111,11 +208,15 @@
         `;
         document.body.appendChild(toggleBtn);
 
-        // 添加点击事件
+        // 添加事件监听
         toggleBtn.onclick = togglePanel;
-
-        // 添加键盘快捷键监听
         document.addEventListener('keydown', handleKeyPress, false);
+        
+        const themeToggle = panel.querySelector('.theme-toggle');
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // 初始化主题
+        initTheme();
     }
 
     // 等待 WorkFlowy 加载完成
@@ -132,4 +233,4 @@
     // 启动
     console.log('WorkFlowy Forwarder Plus Framework 启动...');
     waitForWF();
-})(); 
+})();
