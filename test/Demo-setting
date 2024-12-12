@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Daily Tasks
 // @namespace    http://tampermonkey.net/
-// @version      1.0.2
+// @version      1.0.1
 // @description  Show daily tasks from WorkFlowy
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -11,11 +11,11 @@
 
 (function() {
     'use strict';
-
+    
     // 样式定义
     GM_addStyle(`
         @import url('https://fonts.googleapis.com/css2?family=Aclonica&display=swap');
-
+        
         .reminder-panel {
             position: fixed;
             right: -319px;
@@ -29,70 +29,55 @@
             flex-direction: column;
             transition: transform 0.3s ease;
         }
-
+        
         .reminder-panel.visible {
             transform: translateX(-319px);
         }
-
+        
         .reminder-panel.visible ~ #content {
             padding-right: 319px;
         }
-
+        
         #content {
             transition: padding-right 0.3s ease;
         }
-
+        
         .panel-header {
             padding: 24px 12px 12px;
             flex-shrink: 0;
             position: relative;
         }
-
+        
         .panel-header h1 {
             font-size: 20px;
             margin: 0 0 12px 0;
             color: #d9dbdb;
         }
-
+        
         .panel-content {
             flex: 1;
             overflow-y: auto;
             padding: 0 12px;
         }
-
+        
         .reminder-toggle {
-        position: fixed;
-        right: 20px;  /* 改回原来的位置 */
-        top: 60px;
-        background: #2B3135;
-        border: none;
-        padding: 8px;
-        border-radius: 50%;
-        cursor: pointer;
-        z-index: 101;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.3s ease;
+            position: fixed;
+            right: 50px;
+            top: 60px;
+            background: #2B3135;
+            border: none;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 101;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
         }
-
-        .reminder-toggle:hover {
-            background: #363b3f;
-        }
-
-        .reminder-toggle.active .toggle-arrow {
-            transform: rotate(180deg);
-        }
-
-        .toggle-arrow {
-            width: 16px;
-            height: 16px;
-            color: rgba(158, 161, 162, 1);
-            transition: transform 0.3s ease;
-        }
-
+        
         .reminder-item {
             padding: 12px;
             margin-bottom: 8px;
@@ -104,11 +89,11 @@
             background: rgba(53, 60, 63, 1);
             color: #9ea1a2;
         }
-
+        
         .reminder-item.completed {
             opacity: 0.6;
         }
-
+        
         .reminder-checkbox {
             appearance: none;
             -webkit-appearance: none;
@@ -121,12 +106,12 @@
             position: relative;
             margin: 0;
         }
-
+        
         .reminder-checkbox:checked {
             background: #4a9eff;
             border-color: #4a9eff;
         }
-
+        
         .reminder-checkbox:checked::after {
             content: '';
             position: absolute;
@@ -138,12 +123,12 @@
             border-width: 0 1px 1px 0;
             transform: rotate(45deg);
         }
-
+        
         .reminder-item-content {
             padding-left: 20px;
             cursor: pointer;
         }
-
+        
         /* 配置面板样式 */
         .config-panel {
             position: fixed;
@@ -158,11 +143,11 @@
             width: 400px;
             display: none;
         }
-
+        
         .config-panel.visible {
             display: block;
         }
-
+        
         .settings-btn {
             position: absolute;
             top: 10px;
@@ -175,11 +160,11 @@
             padding: 4px;
             border-radius: 4px;
         }
-
+        
         .settings-btn:hover {
             background: rgba(255, 255, 255, 0.1);
         }
-
+        
     .config-panel {
         position: fixed;
         top: 50%;
@@ -194,11 +179,11 @@
         display: none;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
-
+    
     .config-panel.visible {
         display: block;
     }
-
+    
     .config-header {
         display: flex;
         justify-content: space-between;
@@ -207,14 +192,14 @@
         padding-bottom: 12px;
         border-bottom: 1px solid #3a4347;
     }
-
+    
     .config-header h2 {
         color: #d9dbdb;
         margin: 0;
         font-size: 18px;
         font-weight: 500;
     }
-
+    
     .config-close {
         background: none;
         border: none;
@@ -225,34 +210,34 @@
         border-radius: 4px;
         transition: all 0.2s ease;
     }
-
+    
     .config-close:hover {
         background: rgba(255, 255, 255, 0.1);
         color: #fff;
     }
-
+    
     .config-section {
         margin-bottom: 24px;
     }
-
+    
     .config-section h3 {
         color: #9ea1a2;
         font-size: 14px;
         margin: 0 0 12px 0;
         font-weight: normal;
     }
-
+    
     .config-item {
         margin-bottom: 16px;
     }
-
+    
     .config-item label {
         display: block;
         color: #d9dbdb;
         margin-bottom: 6px;
         font-size: 13px;
     }
-
+    
     .config-item input {
         width: 100%;
         padding: 8px 12px;
@@ -263,17 +248,17 @@
         font-size: 14px;
         transition: all 0.2s ease;
     }
-
+    
     .config-item input:focus {
         outline: none;
         border-color: #4a9eff;
         background: #404850;
     }
-
+    
     .config-item input:hover {
         background: #404850;
     }
-
+    
     .config-buttons {
         display: flex;
         justify-content: flex-end;
@@ -282,7 +267,7 @@
         padding-top: 16px;
         border-top: 1px solid #3a4347;
     }
-
+    
     .config-btn {
         padding: 8px 16px;
         border-radius: 4px;
@@ -291,25 +276,25 @@
         font-size: 14px;
         transition: all 0.2s ease;
     }
-
+    
     .config-save {
         background: #357da6;
         color: white;
     }
-
+    
     .config-save:hover {
         background: #4390bd;
     }
-
+    
     .config-reset {
         background: #4c5861;
         color: #d9dbdb;
     }
-
+    
     .config-reset:hover {
         background: #5a6871;
     }
-
+    
     .settings-btn {
         position: absolute;
         top: 10px;
@@ -326,18 +311,18 @@
         align-items: center;
         justify-content: center;
     }
-
+    
     .settings-btn:hover {
         background: rgba(255, 255, 255, 0.1);
         color: #fff;
     }
-
+    
     /* 清除按钮样式 */
     .clear-all-container {
         padding: 12px;
         border-top: 1px solid #3a4347;
     }
-
+    
     .clear-all-btn {
         width: 100%;
         padding: 8px 16px;
@@ -349,16 +334,16 @@
         font-size: 14px;
         transition: all 0.2s ease;
     }
-
+    
     .clear-all-btn:hover {
         background: #5a6871;
     }
-
+    
     /* 链接样式 */
     .planner-links {
         margin-top: 8px;
     }
-
+    
     .planner-link {
         display: flex;
         color: #9ea1a2;
@@ -368,385 +353,224 @@
         font-size: 13px;
         transition: all 0.2s ease;
     }
-
+    
     .planner-link:hover {
         background: rgba(255, 255, 255, 0.1);
         color: #fff;
     }
-
+    
     /* 滚动条样式 */
     .panel-content::-webkit-scrollbar {
         width: 8px;
     }
-
+    
     .panel-content::-webkit-scrollbar-track {
         background: #2B3135;
     }
-
+    
     .panel-content::-webkit-scrollbar-thumb {
         background: #4c5861;
         border-radius: 4px;
     }
-
+    
     .panel-content::-webkit-scrollbar-thumb:hover {
         background: #5a6871;
     }
 
-    .refresh-btn {
-        position: absolute;
-        top: 10px;
-        right: 40px; /* 位于设置按钮左侧 */
-        background: none;
-        border: none;
-        color: #9ea1a2;
-        cursor: pointer;
-        font-size: 16px;
-        padding: 8px;
-        border-radius: 4px;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .refresh-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
-    }
-
-    .refresh-btn.spinning {
-        animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-
-    .reminder-section {
-        margin-bottom: 24px;
-    }
-
-    .section-title {
-        color: #9ea1a2;
-        font-size: 14px;
-        margin: 0 0 12px 0;
-        padding: 8px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 4px;
-    }
-
-    .planner-links {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .planner-link {
-        font-size: 12px;
-        padding: 4px 8px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 4px;
-        color: #9ea1a2;
-        text-decoration: none;
-        transition: all 0.2s ease;
-    }
-
-    .planner-link:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #fff;
-    }
-
     `);
-
-    let currentMode = 'work'; // 'work', 'personal', 'temp'
-
-    // 修改默认配置
+    
+    // 默认配置
     const DEFAULT_CONFIG = {
-        modes: {
-            work: {
-                id: '3b7e610683fe',
-                name: '工作任务',
-                tag: '#01每日推进'
-            },
-            personal: {
-                id: '6280897d3c65',
-                name: '个人任务',
-                tag: '#01每日推进'
-            },
-            temp: {
-                id: '17cfc44d9b20',
-                name: '临时任务',
-                tag: '#01每日推进'
-            }
+        daily: {
+            enabled: true,
+            taskName: 'DailyPlanner',
+            nodeId: '8220a888febe'
+        },
+        work: {
+            enabled: false,
+            taskName: 'Work Tasks', 
+            nodeId: '6280897d3c65',
+            tag: '#01每日推进'
+        },
+        personal: {
+            enabled: false,
+            taskName: 'Personal Tasks',
+            nodeId: '3b7e610683fe',
+            tag: '#01每日推进'
+        },
+        temp: {
+            enabled: false,
+            taskName: 'Temporary Tasks',
+            nodeId: '',
+            tag: '#01每日推进'
+        },
+        collector: {
+            enabled: true,
+            taskName: 'Collector',
+            nodeId: '17cfc44d9b20',
+            tag: '#稍后处理'
         },
         refreshInterval: 60000,
-        ui: {
-            title: 'Daily Tasks',
-            clearButtonText: 'Clear All',
-            viewAllText: 'View All Tasks'
-        }
+        theme: 'dark'
     };
-
+    
     // 状态管理
     let reminders = JSON.parse(localStorage.getItem('daily_tasks_reminders') || '{}');
-
+    
     // 配置管理
     const CONFIG = {
         get() {
             const saved = localStorage.getItem('daily_tasks_config');
             return saved ? {...DEFAULT_CONFIG, ...JSON.parse(saved)} : DEFAULT_CONFIG;
         },
-
+        
         save(config) {
             localStorage.setItem('daily_tasks_config', JSON.stringify(config));
         },
-
+        
         reset() {
             localStorage.removeItem('daily_tasks_config');
             return DEFAULT_CONFIG;
         }
     };
-
+    
     // 创建配置面板
     function createConfigPanel() {
         const panel = document.createElement('div');
         panel.className = 'config-panel';
         const config = CONFIG.get();
-
+        
         panel.innerHTML = `
             <div class="config-header">
-                <h2>设置</h2>
+                <h2>Settings</h2>
                 <button class="config-close">&times;</button>
             </div>
-
+            
             <div class="config-section">
-                <h3>节点设置</h3>
-                ${config.nodes.map((node, index) => `
-                    <div class="config-item">
-                        <label>${node.name} 节点ID:</label>
-                        <input type="text" id="node-id-${index}" value="${node.id}">
-                    </div>
-                    <div class="config-item">
-                        <label>${node.name} 标签:</label>
-                        <input type="text" id="node-tag-${index}" value="${node.tag}">
-                    </div>
-                `).join('')}
-            </div>
-
-            <div class="config-section">
-                <h3>基本设置</h3>
+                <h3>Basic Settings</h3>
                 <div class="config-item">
-                    <label>刷新间隔 (毫秒):</label>
-                    <input type="number" id="refresh-interval" value="${config.refreshInterval}">
+                    <label>Target Node ID</label>
+                    <input type="text" id="config-node-id" value="${config.nodeId}">
+                </div>
+                <div class="config-item">
+                    <label>Tag to Track</label>
+                    <input type="text" id="config-tag" value="${config.tag}">
+                </div>
+                <div class="config-item">
+                    <label>Refresh Interval (ms)</label>
+                    <input type="number" id="config-interval" value="${config.refreshInterval}">
                 </div>
             </div>
-
+            
             <div class="config-buttons">
-                <button class="config-btn config-reset">重置</button>
-                <button class="config-btn config-save">保存</button>
+                <button class="config-btn config-reset">Reset</button>
+                <button class="config-btn config-save">Save</button>
             </div>
         `;
-
+        
         // 添加事件监听
-        const closeBtn = panel.querySelector('.config-close');
-        const saveBtn = panel.querySelector('.config-save');
-        const resetBtn = panel.querySelector('.config-reset');
-
-        closeBtn.onclick = () => {
-            panel.classList.remove('visible');
-        };
-
-        saveBtn.onclick = () => {
+        panel.querySelector('.config-close').onclick = () => panel.classList.remove('visible');
+        
+        panel.querySelector('.config-save').onclick = () => {
             const newConfig = {
-                modes: {  // 修改为正确的配置结构
-                    work: {
-                        id: panel.querySelector('#node-id-0').value,
-                        name: '工作任务',
-                        tag: panel.querySelector('#node-tag-0').value
-                    },
-                    personal: {
-                        id: panel.querySelector('#node-id-1').value,
-                        name: '个人任务',
-                        tag: panel.querySelector('#node-tag-1').value
-                    },
-                    temp: {
-                        id: panel.querySelector('#node-id-2').value,
-                        name: '临时任务',
-                        tag: panel.querySelector('#node-tag-2').value
-                    }
-                },
-                refreshInterval: parseInt(panel.querySelector('#refresh-interval').value),
+                nodeId: panel.querySelector('#config-node-id').value,
+                tag: panel.querySelector('#config-tag').value,
+                refreshInterval: parseInt(panel.querySelector('#config-interval').value),
                 ui: config.ui // 保持UI设置不变
             };
             
             CONFIG.save(newConfig);
             updateUI(newConfig);
             panel.classList.remove('visible');
-            
-            // 立即刷新任务列表
-            scanTasks();
         };
-
-        resetBtn.onclick = () => {
+        
+        panel.querySelector('.config-reset').onclick = () => {
             const defaultConfig = CONFIG.reset();
             updateUI(defaultConfig);
             panel.classList.remove('visible');
-
-            // 立即刷新任务列表
-            scanTasks();
         };
-
+        
+        document.body.appendChild(panel);
         return panel;
     }
-
+    
     // 更新UI
-    // 修改 updateUI 函数
     function updateUI(config) {
         const panel = document.querySelector('.reminder-panel');
         if (!panel) return;
-
-        // 更新面板内容
-        panel.innerHTML = `
-            <div class="panel-header">
-                <h1>${config.ui.title}</h1>
-                <button class="refresh-btn" title="刷新列表">🔄</button>
-                <button class="settings-btn">⚙️</button>
-                <div class="mode-switch">
-                    <button class="mode-btn ${currentMode === 'work' ? 'active' : ''}" data-mode="work">工作任务</button>
-                    <button class="mode-btn ${currentMode === 'personal' ? 'active' : ''}" data-mode="personal">个人任务</button>
-                    <button class="mode-btn ${currentMode === 'temp' ? 'active' : ''}" data-mode="temp">临时任务</button>
-                </div>
-                <div class="planner-links">
-                    <a href="https://workflowy.com/#/${config.modes[currentMode].id}" class="planner-link">
-                        ${config.modes[currentMode].name}
-                    </a>
-                </div>
-            </div>
-            <div class="panel-content">
-                <div class="reminder-list" id="reminder-list"></div>
-            </div>
-            <div class="clear-all-container">
-                <button class="clear-all-btn" id="clear-all">${config.ui.clearButtonText}</button>
-            </div>
-        `;
-
-        // 重新绑定事件
-        const refreshBtn = panel.querySelector('.refresh-btn');
-        const settingsBtn = panel.querySelector('.settings-btn');
-        const clearAllBtn = panel.querySelector('.clear-all-btn');
-        const modeBtns = panel.querySelectorAll('.mode-btn');
-
-        // 绑定模式切换按钮事件
-        modeBtns.forEach(btn => {
-            btn.onclick = () => {
-                currentMode = btn.dataset.mode;
-                modeBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                scanTasks(); // 切换模式后重新扫描
-            };
-        });
-
-        refreshBtn.onclick = async () => {
-            refreshBtn.classList.add('spinning');
-            await scanTasks();
-            setTimeout(() => {
-                refreshBtn.classList.remove('spinning');
-            }, 500);
-        };
-
-        settingsBtn.onclick = () => {
-            const configPanel = document.querySelector('.config-panel');
-            if (configPanel) {
-                configPanel.classList.add('visible');
-            }
-        };
-
-        clearAllBtn.onclick = clearAllReminders;
+        
+        panel.querySelector('h1').textContent = config.ui.title;
+        panel.querySelector('.planner-link').textContent = config.ui.viewAllText;
+        panel.querySelector('.clear-all-btn').textContent = config.ui.clearButtonText;
+        panel.querySelector('.planner-link').href = `https://workflowy.com/#/${config.nodeId}`;
+        
+        // 重新扫描任务
+        scanTasks();
     }
-
-    // 修改 scanTasks 函数
-    async function scanTasks() {
+    
+    // 扫描任务
+    function scanTasks() {
         const config = CONFIG.get();
         const newReminders = {};
-
-        const currentModeConfig = config.modes[currentMode];
-        log(`Scanning ${currentModeConfig.name}...`);
-
-        const targetNode = WF.getItemById(currentModeConfig.id);
-        if (!targetNode) {
-            log(`Warning: Node not found: ${currentModeConfig.id}`);
-            return;
-        }
-
         const processedIds = new Set();
-
+        
         function processItem(item) {
             const id = item.getId();
             if (processedIds.has(id)) return;
             processedIds.add(id);
-
+            
             if (!WF.getItemById(id)) return;
-
+            
             const name = item.getNameInPlainText();
             const note = item.getNoteInPlainText();
-
-            if (name.includes(currentModeConfig.tag) || note.includes(currentModeConfig.tag)) {
-                log(`Found matching item: ${name}`);
-
-                const reminderText = note.includes(currentModeConfig.tag) ? note : name;
+            
+            if (name.includes(config.tag) || note.includes(config.tag)) {
+                const reminderText = note.includes(config.tag) ? note : name;
                 const element = item.getElement();
                 const hasMirrors = element?.closest('.project')?.classList.contains('hasMirrors');
-
+                
                 newReminders[id] = {
                     id,
                     name: reminderText,
                     originalName: name,
-                    hasNoteTag: note.includes(currentModeConfig.tag),
+                    hasNoteTag: note.includes(config.tag),
                     time: Date.now(),
                     url: item.getUrl(),
                     hasMirrors,
-                    completed: item.isCompleted(),
-                    mode: currentMode
+                    completed: item.isCompleted()
                 };
             }
-
+            
             item.getChildren().forEach(processItem);
         }
-
-        processItem(targetNode);
-
-        log(`Scan complete, found ${Object.keys(newReminders).length} items`);
-
-        reminders = {
-            ...Object.fromEntries(Object.entries(reminders).filter(([_, r]) => r.mode !== currentMode)),
-            ...newReminders
-        };
-
+        
+        const targetNode = WF.getItemById(config.nodeId);
+        if (targetNode) {
+            processItem(targetNode);
+        }
+        
+        reminders = newReminders;
         saveReminders();
         updateReminderList();
     }
-
+    
     // 更新提醒列表
     function updateReminderList() {
         const listElement = document.getElementById('reminder-list');
         if (!listElement) return;
-
-        // 只显示当前模式的提醒
-        const currentReminders = Object.values(reminders)
-            .filter(reminder => reminder.mode === currentMode)
+        
+        listElement.innerHTML = Object.values(reminders)
             .map(reminder => createReminderItem(reminder))
             .join('');
-
-        listElement.innerHTML = currentReminders || `<div class="no-reminders">暂无${CONFIG.get().modes[currentMode].name}</div>`;
-
+            
         updateCardsColor();
     }
+    
     // 创建提醒项
     function createReminderItem(reminder) {
         const node = WF.getItemById(reminder.id);
         if (!node) return '';
-
+        
         return `
             <div class="reminder-item ${reminder.completed ? 'completed' : ''}" data-id="${reminder.id}">
                 <input type="checkbox" class="reminder-checkbox" ${reminder.completed ? 'checked' : ''}>
@@ -756,91 +580,72 @@
             </div>
         `;
     }
-
+    
     // 更新卡片颜色
     function updateCardsColor() {
         const cards = document.querySelectorAll('.reminder-item');
         cards.forEach(card => {
             const id = card.dataset.id;
             if (!id) return;
-
+            
             const node = WF.getItemById(id);
             if (!node) return;
-
+            
             const element = node.getElement();
             if (!element) return;
-
+            
             // 获取节点颜色
             const colorElement = element.querySelector('.content');
             if (!colorElement) return;
-
+            
             const computedStyle = window.getComputedStyle(colorElement);
             const color = computedStyle.color;
-
+            
             card.style.setProperty('--text-color', color);
             card.style.setProperty('--node-color', color.replace('rgb', 'rgba').replace(')', ', 0.2)'));
         });
     }
-
+    
     // 保存提醒
     function saveReminders() {
         localStorage.setItem('daily_tasks_reminders', JSON.stringify(reminders));
     }
-
+    
     // 清除所有提醒
     function clearAllReminders() {
-        // 只清除当前模式的提醒
-        reminders = Object.fromEntries(
-            Object.entries(reminders)
-                .filter(([_, r]) => r.mode !== currentMode)
-        );
+        reminders = {};
         saveReminders();
         updateReminderList();
     }
-
+    
     // 切换面板显示
-    // 修改 togglePanel 函数
     function togglePanel() {
         const panel = document.querySelector('.reminder-panel');
         const toggleBtn = document.querySelector('.reminder-toggle');
         const content = document.getElementById('content');
-
+        
         if (panel && toggleBtn) {
-            const isVisible = panel.classList.contains('visible');
             panel.classList.toggle('visible');
             toggleBtn.classList.toggle('active');
-
-            // 添加日志调试
-            console.log('Toggle panel:', isVisible ? 'hiding' : 'showing');
-
             if (content) {
-                content.style.paddingRight = !isVisible ? '319px' : '0';
+                content.style.paddingRight = panel.classList.contains('visible') ? '319px' : '0';
             }
-        } else {
-            console.error('Panel or toggle button not found');
         }
     }
-
+    
     // 初始化
-    // 修改 initDailyTasks 函数中的相关部分
     function initDailyTasks() {
         const config = CONFIG.get();
-
         const panel = document.createElement('div');
         panel.className = 'reminder-panel';
+        
         panel.innerHTML = `
             <div class="panel-header">
                 <h1>${config.ui.title}</h1>
-                <button class="refresh-btn" title="刷新列表">🔄</button>
                 <button class="settings-btn">⚙️</button>
-                <div class="mode-switch">
-                    <button class="mode-btn" data-mode="work">工作任务</button>
-                    <button class="mode-btn" data-mode="personal">个人任务</button>
-                    <button class="mode-btn" data-mode="temp">临时任务</button>
-                </div>
                 <div class="planner-links">
-                    <a href="https://workflowy.com/#/${config.modes[currentMode].id}" class="planner-link">
-                        ${config.modes[currentMode].name}
+                    <a href="https://workflowy.com/#/${config.nodeId}" class="planner-link">
+                        ${config.ui.viewAllText}
                     </a>
                 </div>
             </div>
@@ -851,23 +656,18 @@
                 <button class="clear-all-btn" id="clear-all">${config.ui.clearButtonText}</button>
             </div>
         `;
-
-        const modeBtns = panel.querySelectorAll('.mode-btn');
-        modeBtns.forEach(btn => {
-            if (btn.dataset.mode === currentMode) {
-                btn.classList.add('active');
-            }
-            btn.onclick = () => {
-                currentMode = btn.dataset.mode;
-                modeBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                updateUI(config);
-            };
-        });
-
+        
         document.body.appendChild(panel);
-
-        // 2. 创建并添加切换按钮
+        
+        // 创建配置面板
+        const configPanel = createConfigPanel();
+        
+        // 添加设置按钮事件
+        panel.querySelector('.settings-btn').onclick = () => {
+            configPanel.classList.add('visible');
+        };
+        
+        // 添加面板切换按钮
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'reminder-toggle';
         toggleBtn.innerHTML = `
@@ -876,70 +676,66 @@
             </svg>
         `;
         document.body.appendChild(toggleBtn);
-
-        // 3. 创建配置面板（只创建一次）
-        const configPanel = createConfigPanel();
-        document.body.appendChild(configPanel);
-
-        // 4. 添加事件监听
-        // 切换面板显示
+        
+        // 添加事件监听
         toggleBtn.onclick = togglePanel;
-
-        // 刷新按钮事件
-        const refreshBtn = panel.querySelector('.refresh-btn');
-        refreshBtn.onclick = async () => {
-            refreshBtn.classList.add('spinning');
-            await scanTasks();
-            setTimeout(() => {
-                refreshBtn.classList.remove('spinning');
-            }, 500);
-        };
-
-        // 设置按钮事件
-        const settingsBtn = panel.querySelector('.settings-btn');
-        settingsBtn.onclick = () => {
-            log('Opening settings panel');
-            configPanel.classList.add('visible');
-        };
-
-        // 清除按钮事件
         document.getElementById('clear-all').onclick = clearAllReminders;
-
-        // 5. 设置定时刷新
-        setInterval(scanTasks, config.refreshInterval);
-
-        // 6. 初始扫描
-        scanTasks();
-
-        // 7. 添加快捷键支持
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === '/') {
-                togglePanel();
+        
+        // 添加复选框事件监听
+        document.addEventListener('change', e => {
+            if (e.target.matches('.reminder-checkbox')) {
+                const item = e.target.closest('.reminder-item');
+                const id = item?.dataset.id;
+                if (id && reminders[id]) {
+                    reminders[id].completed = e.target.checked;
+                    item.classList.toggle('completed', e.target.checked);
+                    saveReminders();
+                    
+                    // 同步到 WorkFlowy
+                    const node = WF.getItemById(id);
+                    if (node) {
+                        WF.editGroup(() => {
+                            if (node.isCompleted() !== e.target.checked) {
+                                WF.completeItem(node);
+                            }
+                        });
+                    }
+                }
             }
         });
+        
+        // 添加点击事件监听
+        document.addEventListener('click', e => {
+            if (e.target.matches('.reminder-item-content')) {
+                const item = e.target.closest('.reminder-item');
+                const id = item?.dataset.id;
+                if (id) {
+                    const node = WF.getItemById(id);
+                    if (node) {
+                        WF.zoomTo(node);
+                    }
+                }
+            }
+        });
+        
+        // 设置定时刷新
+        setInterval(scanTasks, config.refreshInterval);
+        
+        // 初始扫描
+        scanTasks();
     }
-
+    
     // 等待 WorkFlowy API 加载
-    const DEBUG = true;
-
-    function log(...args) {
-        if (DEBUG) {
-            console.log('[Daily Tasks]', ...args);
-        }
-    }
-
-    // 在 waitForWF 函数中添加更多日志
     function waitForWF() {
         if (typeof WF !== 'undefined') {
-            log('WorkFlowy API loaded');
+            console.log('WorkFlowy API loaded');
             initDailyTasks();
-            log('Daily Tasks initialized');
         } else {
-            log('Waiting for WorkFlowy API...');
+            console.log('Waiting for WorkFlowy API...');
             setTimeout(waitForWF, 100);
         }
     }
-
+    
     // 启动应用
     console.log('WorkFlowy Daily Tasks starting...');
     waitForWF();

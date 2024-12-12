@@ -1,28 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <title>WorkFlowy 设置面板 Demo</title>
     <style>
+        /* 主题变量 */
+        :root[data-theme="dark"] {
+            --bg-color: #1e2124;
+            --panel-bg: #2B3135;
+            --border-color: #5c6062;
+            --text-color: #d9dbdb;
+            --text-secondary: #9ea1a2;
+            --input-bg: #383f44;
+            --input-border: #5c6062;
+            --input-focus-border: #4a9eff;
+            --input-focus-bg: #404850;
+            --section-bg: rgba(255, 255, 255, 0.03);
+            --group-bg: rgba(255, 255, 255, 0.02);
+            --divider-color: #3a4347;
+        }
+
+        :root[data-theme="light"] {
+            --bg-color: #f5f5f5;
+            --panel-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --text-color: #333333;
+            --text-secondary: #666666;
+            --input-bg: #ffffff;
+            --input-border: #d0d0d0;
+            --input-focus-border: #2196f3;
+            --input-focus-bg: #f8f9fa;
+            --section-bg: rgba(0, 0, 0, 0.02);
+            --group-bg: rgba(0, 0, 0, 0.01);
+            --divider-color: #e0e0e0;
+        }
+
         /* 基础样式 */
         body {
-            background: #1e2124;
-            color: #d9dbdb;
+            background: var(--bg-color);
+            color: var(--text-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
+            transition: all 0.3s ease;
         }
 
         .config-panel {
-            background: #2B3135;
-            border: 1px solid #5c6062;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 24px;
             width: 500px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
         }
 
         /* 头部样式 */
@@ -32,20 +65,48 @@
             align-items: center;
             margin-bottom: 24px;
             padding-bottom: 16px;
-            border-bottom: 1px solid #3a4347;
+            border-bottom: 1px solid var(--divider-color);
         }
 
         .config-header h2 {
             margin: 0;
             font-size: 18px;
             font-weight: 500;
-            color: #d9dbdb;
+            color: var(--text-color);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--input-bg);
+        }
+
+        .theme-toggle i {
+            font-size: 16px;
         }
 
         .config-close {
             background: none;
             border: none;
-            color: #9ea1a2;
+            color: var(--text-secondary);
             cursor: pointer;
             font-size: 20px;
             padding: 4px 8px;
@@ -57,8 +118,9 @@
         .config-section {
             margin-bottom: 24px;
             padding: 16px;
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--section-bg);
             border-radius: 6px;
+            transition: all 0.3s ease;
         }
 
         .section-header {
@@ -66,7 +128,7 @@
         }
 
         .section-header h3 {
-            color: #9ea1a2;
+            color: var(--text-secondary);
             margin: 0;
             font-size: 14px;
             font-weight: 500;
@@ -76,8 +138,9 @@
         .config-group {
             margin-bottom: 20px;
             padding: 16px;
-            background: rgba(255, 255, 255, 0.02);
+            background: var(--group-bg);
             border-radius: 4px;
+            transition: all 0.3s ease;
         }
 
         .group-header {
@@ -97,7 +160,7 @@
         .task-name-input {
             background: none;
             border: 1px solid transparent;
-            color: #d9dbdb;
+            color: var(--text-color);
             font-size: 14px;
             padding: 6px 10px;
             border-radius: 4px;
@@ -107,8 +170,8 @@
 
         .task-name-input:hover,
         .task-name-input:focus {
-            background: #383f44;
-            border-color: #5c6062;
+            background: var(--input-bg);
+            border-color: var(--input-border);
             outline: none;
         }
 
@@ -122,45 +185,30 @@
 
         .config-item label {
             min-width: 60px;
-            color: #9ea1a2;
+            color: var(--text-secondary);
             font-size: 13px;
         }
 
         .config-item input {
             flex: 1;
             padding: 8px 12px;
-            background: #383f44;
-            border: 1px solid #5c6062;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 4px;
-            color: #d9dbdb;
+            color: var(--text-color);
             font-size: 14px;
             transition: all 0.2s ease;
-            pointer-events: auto;
         }
 
         .config-item input:focus {
             outline: none;
-            border-color: #4a9eff;
-            background: #404850;
+            border-color: var(--input-focus-border);
+            background: var(--input-focus-bg);
         }
 
         .config-item input::placeholder {
-            color: rgba(158, 161, 162, 0.5);
-        }
-
-        /* 确�����复选框和输入框可交互 */
-        input[type="checkbox"],
-        input[type="text"],
-        input[type="number"] {
-            cursor: pointer;
-            pointer-events: auto !important;
-        }
-
-        /* 标签区域样式 */
-        .tag-list {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            opacity: 0.5;
         }
 
         /* 按钮样式 */
@@ -170,7 +218,7 @@
             gap: 12px;
             margin-top: 24px;
             padding-top: 20px;
-            border-top: 1px solid #3a4347;
+            border-top: 1px solid var(--divider-color);
         }
 
         .config-btn {
@@ -193,17 +241,13 @@
         }
 
         .config-reset {
-            background: #4c5861;
-            color: #d9dbdb;
+            background: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
         }
 
         .config-reset:hover {
-            background: #5a6871;
-        }
-
-        /* 禁用状态 */
-        .config-group.disabled .group-content {
-            opacity: 0.5;
+            background: var(--input-focus-bg);
         }
 
         /* 提示样式 */
@@ -228,7 +272,13 @@
     <div class="config-panel">
         <div class="config-header">
             <h2>设置</h2>
-            <button class="config-close">×</button>
+            <div class="header-actions">
+                <button class="theme-toggle" onclick="toggleTheme()">
+                    <i class="theme-icon">🌙</i>
+                    <span class="theme-text">切换主题</span>
+                </button>
+                <button class="config-close">×</button>
+            </div>
         </div>
 
         <!-- DailyPlanner 设置 -->
@@ -359,6 +409,30 @@
     </div>
 
     <script>
+        // 主题切换功能
+        function toggleTheme() {
+            const html = document.documentElement;
+            const themeIcon = document.querySelector('.theme-icon');
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            html.setAttribute('data-theme', newTheme);
+            themeIcon.textContent = newTheme === 'dark' ? '🌙' : '☀️';
+            
+            // 保存主题设置
+            localStorage.setItem('theme', newTheme);
+        }
+
+        // 初始化主题
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+            const themeIcon = document.querySelector('.theme-icon');
+            
+            html.setAttribute('data-theme', savedTheme);
+            themeIcon.textContent = savedTheme === 'dark' ? '🌙' : '☀️';
+        }
+
         // 创建提示元素
         const toast = document.createElement('div');
         toast.className = 'toast';
@@ -532,6 +606,7 @@
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
             loadSettings();
             addEventListeners();
         });

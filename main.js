@@ -611,12 +611,56 @@
     
     `);
     
-    // 默认配置
+    // Update default config structure to match Demo-setting format
     const DEFAULT_CONFIG = {
-      nodes: {
-        scan: '8220a888febe',  // DailyPlanner节点
-        follow: ['6280897d3c65', '3b7e610683fe'],  // Target模式的两个节点
-        collect: '17cfc44d9b20'  // Collector节点
+        daily: {
+            enabled: true,
+            taskName: 'DailyPlanner',
+            nodeId: '8220a888febe'
+        },
+        work: {
+            enabled: false,
+            taskName: 'Work Tasks', 
+            nodeId: '6280897d3c65',
+            tag: '#01每日推进'
+        },
+        personal: {
+            enabled: false,
+            taskName: 'Personal Tasks',
+            nodeId: '3b7e610683fe',
+            tag: '#01每日推进'
+        },
+        temp: {
+            enabled: false,
+            taskName: 'Temporary Tasks',
+            nodeId: '',
+            tag: '#01每日推进'
+        },
+        collector: {
+            enabled: true,
+            taskName: 'Collector',
+            nodeId: '17cfc44d9b20',
+            tag: '#稍后处理'
+        },
+        refreshInterval: 60000,
+        theme: 'dark'
+    };
+    
+    // Update config management functions
+    const CONFIG = {
+        get() {
+            const saved = localStorage.getItem('workflowy_config');
+            return saved ? {...DEFAULT_CONFIG, ...JSON.parse(saved)} : DEFAULT_CONFIG;
+        },
+        
+        save(config) {
+            localStorage.setItem('workflowy_config', JSON.stringify(config));
+        },
+        
+        reset() {
+            localStorage.removeItem('workflowy_config');
+            return DEFAULT_CONFIG;
+        }
     };
     
     const SCRIPT_VERSION = GM_info.script.version;
@@ -842,7 +886,7 @@
             refreshBtn.title = `最后刷新: ${timeStr}`;
         }
     }
-    }
+    
     
     // 在 updateButtonStyles 函数中添加显示逻辑
     function updateButtonStyles() {
@@ -886,8 +930,8 @@
             }
         }
     }
-    }
     
+
     // 提醒项创建和事件理函数
     
     function createReminderItem(reminder) {
@@ -1900,6 +1944,7 @@
     
     
     function initReminder() {
+        const config = CONFIG.get();
         const panel = document.createElement('div');
         panel.className = 'reminder-panel';
         panel.innerHTML = `
@@ -1909,9 +1954,24 @@
                     <span class="version-tag">v${SCRIPT_VERSION}</span>
                 </h1>
                 <div class="planner-links">
-                    <a href="https://workflowy.com/#/${MODE_NODES.follow[0]}" class="planner-link follow-link">
-                        View All Tasks
-                    </a>
+                    <div class="planner-links-row">
+                        <a href="https://workflowy.com/#/${config.daily.nodeId}" 
+                           class="planner-link today-link">
+                            Today's Plan
+                        </a>
+                        ${config.work.enabled ? 
+                            `<a href="https://workflowy.com/#/${config.work.nodeId}" 
+                                class="planner-link follow-link">
+                                ${config.work.taskName}
+                            </a>` : ''
+                        }
+                        ${config.personal.enabled ?
+                            `<a href="https://workflowy.com/#/${config.personal.nodeId}" 
+                                class="planner-link follow-link">
+                                ${config.personal.taskName}
+                            </a>` : ''
+                        }
+                    </div>
                 </div>
             </div>
             <div class="panel-content">
@@ -1922,9 +1982,22 @@
             </div>
         `;
 
+        // Add settings button
+        const settingsBtn = document.createElement('button');
+        settingsBtn.className = 'settings-btn';
+        settingsBtn.innerHTML = '⚙️';
+        settingsBtn.onclick = () => {
+            // Show settings panel
+            const settingsPanel = document.querySelector('.config-panel');
+            if (settingsPanel) {
+                settingsPanel.classList.add('visible');
+            }
+        };
+        panel.querySelector('.panel-header').appendChild(settingsBtn);
+
         document.body.appendChild(panel);
 
-        // 添加面板切换按钮
+        // Add panel toggle button
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'reminder-toggle';
         toggleBtn.innerHTML = `
@@ -1934,15 +2007,15 @@
         `;
         document.body.appendChild(toggleBtn);
 
-        // 添加事件监听
+        // Add event listeners
         toggleBtn.onclick = togglePanel;
         document.getElementById('clear-all').onclick = clearAllReminders;
 
-        // 设置定时刷新
-        setInterval(followReminders, 60000);
+        // Set refresh interval from config
+        setInterval(refreshReminders, config.refreshInterval);
         
-        // 初始化
-        followReminders();
+        // Initial refresh
+        refreshReminders();
     }
     
     function cleanDeletedNodes(mode) {
