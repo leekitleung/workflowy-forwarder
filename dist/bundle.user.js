@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      4.0.0
+// @version      1.0.0
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -735,7 +735,7 @@
         }, 2000);
     }
     
-    // 新增颜色检测和更新函数
+    // 新增颜���检测和更新函数
     function getNodeColorInfo(node) {
         try {
             const content = node.getName();
@@ -843,7 +843,7 @@
                 'bc-green': 'rgba(56, 142, 60, 0.2)',
                 'bc-blue': 'rgba(30, 136, 229, 0.2)',
                 'bc-purple': 'rgba(123, 31, 162, 0.2)',
-                'bc-pink': 'rgba(233, 30, 99, 0.2)',    // ���色
+                'bc-pink': 'rgba(233, 30, 99, 0.2)',    // 粉色
                 'bc-sky': 'rgba(0, 188, 212, 0.2)',     // 天蓝色
                 'bc-teal': 'rgba(0, 150, 136, 0.2)',    // 青色
                 'bc-gray': 'rgba(117, 117, 117, 0.2)'   // 灰色
