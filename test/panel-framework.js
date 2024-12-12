@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.2
+// @version      0.0.3
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -134,6 +134,119 @@
             border-radius: 4px;
             border: 1px solid var(--border-color);
         }
+
+        /* 模式切换按钮组样式 */
+        .mode-switch {
+            display: flex;
+            background: rgba(39, 45, 50, 1);
+            border-radius: 6px;
+            padding: 6px;
+            margin: 16px 12px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 6px 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            font-size: 14px;
+            margin: 2px;
+        }
+
+        .mode-btn.active {
+            background: rgba(56, 70, 81, 1);
+            color: var(--text-color);
+        }
+
+        .mode-btn:hover {
+            background: var(--hover-bg);
+            color: var(--text-color);
+        }
+
+        /* 配置按钮样式 */
+        .config-trigger {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-color);
+        }
+
+        .config-trigger-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .config-trigger-btn:hover {
+            background: var(--hover-bg);
+        }
+
+        /* 配置面板样式 */
+        .config-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-color);
+            z-index: 200;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .config-panel.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .config-panel-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .config-panel-title {
+            font-size: 16px;
+            color: var(--text-color);
+            margin: 0;
+        }
+
+        .config-panel-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 20px;
+            padding: 4px;
+        }
+
+        .config-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
     `);
 
     // 面板切换函数
@@ -175,23 +288,56 @@
     }
 
     function initPanel() {
-        // 创建面板元素
         const panel = document.createElement('div');
         panel.className = 'wf-panel';
         
-        // 添加面板内容
         panel.innerHTML = `
             <div class="config-header">
                 <h2>
                     Workflowy<br/>
                     Forwarder Plus
-                    <span class="version-tag">v0.0.2</span>
+                    <span class="version-tag">v0.0.3</span>
                 </h2>
-                <div class="header-actions">
-                    <button class="theme-toggle">
-                        <i class="theme-icon">🌙</i>
-                        <span class="theme-text">切换主题</span>
-                    </button>
+            </div>
+
+            <div class="mode-switch">
+                <button class="mode-btn active" id="mode-daily">DailyPlanner</button>
+                <button class="mode-btn" id="mode-target">Target</button>
+                <button class="mode-btn" id="mode-collect">Collector</button>
+            </div>
+
+            <!-- 配置按钮 -->
+            <div class="config-trigger">
+                <button class="config-trigger-btn">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6.5 1L7.5 0H8.5L9.5 1L10.5 1.5L11.5 1L12.5 1.5L13 2.5L14 3.5L14.5 4.5L15 5.5V6.5L14 7.5V8.5L15 9.5V10.5L14.5 11.5L14 12.5L13 13.5L12.5 14.5L11.5 15L10.5 14.5L9.5 15H8.5L7.5 16H6.5L5.5 15L4.5 14.5L3.5 15L2.5 14.5L2 13.5L1 12.5L0.5 11.5L0 10.5V9.5L1 8.5V7.5L0 6.5V5.5L0.5 4.5L1 3.5L2 2.5L2.5 1.5L3.5 1L4.5 1.5L5.5 1H6.5Z" fill="currentColor"/>
+                        <circle cx="8" cy="8" r="2" fill="var(--bg-color)"/>
+                    </svg>
+                    设置
+                </button>
+            </div>
+
+            <!-- 配置面板 -->
+            <div class="config-panel">
+                <div class="config-panel-header">
+                    <h3 class="config-panel-title">设置</h3>
+                    <button class="config-panel-close">×</button>
+                </div>
+                <div class="config-panel-content">
+                    <!-- 主题设置 -->
+                    <div class="config-section">
+                        <div class="section-header">
+                            <h3>主题设置</h3>
+                        </div>
+                        <div class="config-group">
+                            <button class="theme-toggle">
+                                <i class="theme-icon">🌙</i>
+                                <span class="theme-text">切换主题</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 其他设置部分将从 Demo-setting-panel.html 中逐步添加 -->
                 </div>
             </div>
         `;
@@ -217,6 +363,41 @@
 
         // 初始化主题
         initTheme();
+
+        // 添加模式切换事件处理
+        const modeButtons = panel.querySelectorAll('.mode-btn');
+        modeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // 移除所有按钮的 active 状态
+                modeButtons.forEach(b => b.classList.remove('active'));
+                // 添加当前按钮的 active 状态
+                btn.classList.add('active');
+                // 保存当前模式
+                const mode = btn.id.replace('mode-', '');
+                localStorage.setItem('wf_current_mode', mode);
+                // TODO: 切换模式后的其他处理
+            });
+        });
+
+        // 恢复上次选择的模式
+        const savedMode = localStorage.getItem('wf_current_mode') || 'daily';
+        const savedModeBtn = panel.querySelector(`#mode-${savedMode}`);
+        if (savedModeBtn) {
+            savedModeBtn.click();
+        }
+
+        // 添加配置面板事件处理
+        const configTrigger = panel.querySelector('.config-trigger-btn');
+        const configPanel = panel.querySelector('.config-panel');
+        const configClose = panel.querySelector('.config-panel-close');
+
+        configTrigger.addEventListener('click', () => {
+            configPanel.classList.add('visible');
+        });
+
+        configClose.addEventListener('click', () => {
+            configPanel.classList.remove('visible');
+        });
     }
 
     // 等待 WorkFlowy 加载完成
