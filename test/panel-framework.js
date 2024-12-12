@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.3
+// @version      0.0.4
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -10,6 +10,122 @@
 
 (function() {
     'use strict';
+
+    // 默认配置
+    const DEFAULT_CONFIG = {
+        version: '0.0.4',
+        theme: 'dark',
+        refreshInterval: 60000,
+        dailyPlanner: {
+            enabled: false,
+            taskName: '',
+            nodeId: ''
+        },
+        target: {
+            work: {
+                enabled: false,
+                taskName: '',
+                nodeId: '',
+                tag: ''
+            },
+            personal: {
+                enabled: false,
+                taskName: '',
+                nodeId: '',
+                tag: ''
+            },
+            temp: {
+                enabled: false,
+                taskName: '',
+                nodeId: '',
+                tag: ''
+            }
+        },
+        collector: {
+            enabled: false,
+            taskName: '',
+            nodeId: '',
+            tags: '',
+            autoComplete: true,
+            copyFormat: 'plain'
+        }
+    };
+
+    // 配置管理
+    const ConfigManager = {
+        // 获取完整配置
+        getConfig() {
+            try {
+                const saved = localStorage.getItem('wf_config');
+                return saved ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : DEFAULT_CONFIG;
+            } catch (error) {
+                console.error('读取配置失败:', error);
+                return DEFAULT_CONFIG;
+            }
+        },
+
+        // 保存配置
+        saveConfig(config) {
+            try {
+                localStorage.setItem('wf_config', JSON.stringify(config));
+                return true;
+            } catch (error) {
+                console.error('保存配置失败:', error);
+                return false;
+            }
+        },
+
+        // 重置配置
+        resetConfig() {
+            try {
+                localStorage.setItem('wf_config', JSON.stringify(DEFAULT_CONFIG));
+                return true;
+            } catch (error) {
+                console.error('重置配置失败:', error);
+                return false;
+            }
+        },
+
+        // 验证配置项
+        validateConfig(config) {
+            const errors = [];
+
+            // 验证节点ID
+            const validateNodeId = (id, name) => {
+                if (id && !/^[0-9a-f]{12}$/.test(id)) {
+                    errors.push(`${name}的节点ID格式不正确`);
+                }
+            };
+
+            // 验证标签
+            const validateTags = (tags, name) => {
+                if (tags && !/^[#\w\s,]+$/.test(tags)) {
+                    errors.push(`${name}的标签格式不正确`);
+                }
+            };
+
+            // 验证 DailyPlanner
+            if (config.dailyPlanner.enabled) {
+                validateNodeId(config.dailyPlanner.nodeId, 'DailyPlanner');
+            }
+
+            // 验证 Target
+            Object.entries(config.target).forEach(([key, value]) => {
+                if (value.enabled) {
+                    validateNodeId(value.nodeId, `Target-${key}`);
+                    validateTags(value.tag, `Target-${key}`);
+                }
+            });
+
+            // 验证 Collector
+            if (config.collector.enabled) {
+                validateNodeId(config.collector.nodeId, 'Collector');
+                validateTags(config.collector.tags, 'Collector');
+            }
+
+            return errors;
+        }
+    };
 
     // 添加基础样式
     GM_addStyle(`
@@ -247,6 +363,113 @@
             overflow-y: auto;
             padding: 16px;
         }
+
+        /* 配置组样式优化 */
+        .config-group {
+            margin-bottom: 16px;
+            padding: 16px;
+            background: var(--section-bg);
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .task-name-input {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .config-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .config-item label {
+            min-width: 80px;
+            color: var(--text-secondary);
+        }
+
+        .config-item input {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .config-buttons {
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-color);
+        }
+
+        .config-btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .config-save {
+            background: var(--btn-bg);
+            color: var(--btn-text);
+        }
+
+        .config-reset {
+            background: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        /* 复选框样式 */
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        /* 复选框标签样式 */
+        .checkbox-label {
+            margin-left: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* 下拉选择框样式 */
+        .config-select {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            color: var(--text-color);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .config-select option {
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
     `);
 
     // 面板切换函数
@@ -296,7 +519,7 @@
                 <h2>
                     Workflowy<br/>
                     Forwarder Plus
-                    <span class="version-tag">v0.0.3</span>
+                    <span class="version-tag">v0.0.4</span>
                 </h2>
             </div>
 
@@ -324,20 +547,144 @@
                     <button class="config-panel-close">×</button>
                 </div>
                 <div class="config-panel-content">
-                    <!-- 主题设置 -->
+                    <!-- DailyPlanner 设置 -->
                     <div class="config-section">
                         <div class="section-header">
-                            <h3>主题设置</h3>
+                            <h3>DailyPlanner 设置</h3>
                         </div>
                         <div class="config-group">
-                            <button class="theme-toggle">
-                                <i class="theme-icon">🌙</i>
-                                <span class="theme-text">切换主题</span>
-                            </button>
+                            <div class="group-header">
+                                <input type="checkbox" id="enable-daily">
+                                <input type="text" class="task-name-input" id="task-daily" placeholder="输入任务名称">
+                            </div>
+                            <div class="group-content">
+                                <div class="config-item">
+                                    <label>节点ID</label>
+                                    <input type="text" id="node-daily" placeholder="输入节点ID">
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 其他设置部分将从 Demo-setting-panel.html 中逐步添加 -->
+                    <!-- Target 设置 -->
+                    <div class="config-section">
+                        <div class="section-header">
+                            <h3>Target 设置</h3>
+                        </div>
+                        <!-- 工作任务 -->
+                        <div class="config-group">
+                            <div class="group-header">
+                                <input type="checkbox" id="enable-work">
+                                <input type="text" class="task-name-input" id="task-work" placeholder="输入任务名称">
+                            </div>
+                            <div class="group-content">
+                                <div class="config-item">
+                                    <label>节点ID</label>
+                                    <input type="text" id="node-work" placeholder="输入节点ID">
+                                </div>
+                                <div class="config-item">
+                                    <label>标签</label>
+                                    <input type="text" id="tag-work" placeholder="输入标签">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 个人任务 -->
+                        <div class="config-group">
+                            <div class="group-header">
+                                <input type="checkbox" id="enable-personal">
+                                <input type="text" class="task-name-input" id="task-personal" placeholder="输入任务名称">
+                            </div>
+                            <div class="group-content">
+                                <div class="config-item">
+                                    <label>节点ID</label>
+                                    <input type="text" id="node-personal" placeholder="输入节点ID">
+                                </div>
+                                <div class="config-item">
+                                    <label>标签</label>
+                                    <input type="text" id="tag-personal" placeholder="输入标签">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 临时任务 -->
+                        <div class="config-group">
+                            <div class="group-header">
+                                <input type="checkbox" id="enable-temp">
+                                <input type="text" class="task-name-input" id="task-temp" placeholder="输入任务名称">
+                            </div>
+                            <div class="group-content">
+                                <div class="config-item">
+                                    <label>节点ID</label>
+                                    <input type="text" id="node-temp" placeholder="输入节点ID">
+                                </div>
+                                <div class="config-item">
+                                    <label>标签</label>
+                                    <input type="text" id="tag-temp" placeholder="输入标签">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Collector 设置 -->
+                    <div class="config-section">
+                        <div class="section-header">
+                            <h3>Collector 设置</h3>
+                        </div>
+                        <div class="config-group">
+                            <div class="group-header">
+                                <input type="checkbox" id="enable-collector">
+                                <input type="text" class="task-name-input" id="task-collector" placeholder="输入任务名称">
+                            </div>
+                            <div class="group-content">
+                                <div class="config-item">
+                                    <label>节点ID</label>
+                                    <input type="text" id="node-collector" placeholder="输入节点ID">
+                                </div>
+                                <div class="config-item">
+                                    <label>标签</label>
+                                    <input type="text" id="tag-collector" placeholder="输入标签，多个用逗号分隔">
+                                </div>
+                                <div class="config-item">
+                                    <label>自动完成</label>
+                                    <input type="checkbox" id="auto-complete-collector">
+                                    <span class="checkbox-label">复制内容后自动标记完成</span>
+                                </div>
+                                <div class="config-item">
+                                    <label>复制格式</label>
+                                    <select id="copy-format-collector" class="config-select">
+                                        <option value="plain">纯文本</option>
+                                        <option value="markdown">Markdown</option>
+                                        <option value="opml">OPML</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 基本设置 -->
+                    <div class="config-section">
+                        <div class="section-header">
+                            <h3>基本设置</h3>
+                        </div>
+                        <div class="config-group">
+                            <div class="config-item">
+                                <label>主题</label>
+                                <button class="theme-toggle">
+                                    <i class="theme-icon">🌙</i>
+                                    <span class="theme-text">切换主题</span>
+                                </button>
+                            </div>
+                            <div class="config-item">
+                                <label>刷新间隔</label>
+                                <input type="number" id="refresh-interval" placeholder="毫秒">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="config-buttons">
+                    <button class="config-btn config-save">保存设置</button>
+                    <button class="config-btn config-reset">重置设���</button>
                 </div>
             </div>
         `;
@@ -398,6 +745,130 @@
         configClose.addEventListener('click', () => {
             configPanel.classList.remove('visible');
         });
+
+        // 加载配置
+        function loadConfig() {
+            const config = ConfigManager.getConfig();
+            
+            // 设置主题
+            document.documentElement.setAttribute('data-theme', config.theme);
+            
+            // 设置表单值
+            Object.entries({
+                'node-daily': config.dailyPlanner.nodeId,
+                'task-daily': config.dailyPlanner.taskName,
+                'enable-daily': config.dailyPlanner.enabled,
+                
+                'node-work': config.target.work.nodeId,
+                'task-work': config.target.work.taskName,
+                'enable-work': config.target.work.enabled,
+                'tag-work': config.target.work.tag,
+                
+                'node-personal': config.target.personal.nodeId,
+                'task-personal': config.target.personal.taskName,
+                'enable-personal': config.target.personal.enabled,
+                'tag-personal': config.target.personal.tag,
+                
+                'node-temp': config.target.temp.nodeId,
+                'task-temp': config.target.temp.taskName,
+                'enable-temp': config.target.temp.enabled,
+                'tag-temp': config.target.temp.tag,
+                
+                'node-collector': config.collector.nodeId,
+                'task-collector': config.collector.taskName,
+                'enable-collector': config.collector.enabled,
+                'tag-collector': config.collector.tags,
+                'auto-complete-collector': config.collector.autoComplete,
+                'copy-format-collector': config.collector.copyFormat,
+                
+                'refresh-interval': config.refreshInterval
+            }).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    if (element.type === 'checkbox') {
+                        element.checked = value;
+                    } else {
+                        element.value = value;
+                    }
+                }
+            });
+        }
+
+        // 收集表单数据
+        function collectFormData() {
+            return {
+                version: DEFAULT_CONFIG.version,
+                theme: document.documentElement.getAttribute('data-theme') || 'dark',
+                refreshInterval: Number(document.getElementById('refresh-interval').value) || DEFAULT_CONFIG.refreshInterval,
+                dailyPlanner: {
+                    enabled: document.getElementById('enable-daily').checked,
+                    taskName: document.getElementById('task-daily').value,
+                    nodeId: document.getElementById('node-daily').value
+                },
+                target: {
+                    work: {
+                        enabled: document.getElementById('enable-work').checked,
+                        taskName: document.getElementById('task-work').value,
+                        nodeId: document.getElementById('node-work').value,
+                        tag: document.getElementById('tag-work').value
+                    },
+                    personal: {
+                        enabled: document.getElementById('enable-personal').checked,
+                        taskName: document.getElementById('task-personal').value,
+                        nodeId: document.getElementById('node-personal').value,
+                        tag: document.getElementById('tag-personal').value
+                    },
+                    temp: {
+                        enabled: document.getElementById('enable-temp').checked,
+                        taskName: document.getElementById('task-temp').value,
+                        nodeId: document.getElementById('node-temp').value,
+                        tag: document.getElementById('tag-temp').value
+                    }
+                },
+                collector: {
+                    enabled: document.getElementById('enable-collector').checked,
+                    taskName: document.getElementById('task-collector').value,
+                    nodeId: document.getElementById('node-collector').value,
+                    tags: document.getElementById('tag-collector').value,
+                    autoComplete: document.getElementById('auto-complete-collector').checked,
+                    copyFormat: document.getElementById('copy-format-collector').value
+                }
+            };
+        }
+
+        // 保存按钮事件处理
+        const saveBtn = panel.querySelector('.config-save');
+        saveBtn.addEventListener('click', () => {
+            const newConfig = collectFormData();
+            const errors = ConfigManager.validateConfig(newConfig);
+            
+            if (errors.length > 0) {
+                alert('配置验证失败:\n' + errors.join('\n'));
+                return;
+            }
+            
+            if (ConfigManager.saveConfig(newConfig)) {
+                alert('配置已保存');
+            } else {
+                alert('保存失败');
+            }
+        });
+
+        // 重置按钮事件处理
+        const resetBtn = panel.querySelector('.config-reset');
+        resetBtn.addEventListener('click', () => {
+            if (confirm('确定要重置所有设置吗？')) {
+                if (ConfigManager.resetConfig()) {
+                    loadConfig();
+                    alert('配置已重置');
+                } else {
+                    alert('重置失败');
+                }
+            }
+        });
+
+        // 初始加载配置
+        loadConfig();
     }
 
     // 等待 WorkFlowy 加载完成
