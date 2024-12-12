@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
+// @version      ${version}
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -2031,7 +2031,7 @@
                     // 尝试获取节点，如果节点不存在会抛出异常
                     const node = WF.getItemById(id);
                     if (!node) {
-                        // 如果节点��存在，删除这个提醒
+                        // 如果节点不存在，删除这个提醒
                         delete reminders[id];
                         hasChanges = true;
                     }

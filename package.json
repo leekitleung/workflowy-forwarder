@@ -1,5 +1,5 @@
 {
-  "name": "workflowy-forwarder",
+  "name": "workflowy-forwarder-plus",
   "version": "4.0.0",
   "scripts": {
     "build": "node build.js"
