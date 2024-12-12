@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Daily Tasks
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
+// @version      1.0.2
 // @description  Show daily tasks from WorkFlowy
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -559,19 +559,31 @@
 
         saveBtn.onclick = () => {
             const newConfig = {
-                nodes: config.nodes.map((node, index) => ({
-                    id: panel.querySelector(`#node-id-${index}`).value,
-                    name: node.name,
-                    tag: panel.querySelector(`#node-tag-${index}`).value
-                })),
+                modes: {  // 修改为正确的配置结构
+                    work: {
+                        id: panel.querySelector('#node-id-0').value,
+                        name: '工作任务',
+                        tag: panel.querySelector('#node-tag-0').value
+                    },
+                    personal: {
+                        id: panel.querySelector('#node-id-1').value,
+                        name: '个人任务',
+                        tag: panel.querySelector('#node-tag-1').value
+                    },
+                    temp: {
+                        id: panel.querySelector('#node-id-2').value,
+                        name: '临时任务',
+                        tag: panel.querySelector('#node-tag-2').value
+                    }
+                },
                 refreshInterval: parseInt(panel.querySelector('#refresh-interval').value),
                 ui: config.ui // 保持UI设置不变
             };
-
+            
             CONFIG.save(newConfig);
             updateUI(newConfig);
             panel.classList.remove('visible');
-
+            
             // 立即刷新任务列表
             scanTasks();
         };
