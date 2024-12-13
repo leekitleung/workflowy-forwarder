@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.5
+// @version      0.0.6
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -13,7 +13,7 @@
 
     // 默认配置
     const DEFAULT_CONFIG = {
-        version: '0.0.5',
+        version: '0.0.6',
         theme: 'dark',
         refreshInterval: 60000,
         excludeTags: '',
@@ -568,6 +568,132 @@
             border-color: var(--input-focus-border);
             background: var(--input-focus-bg);
         }
+
+        /* 模式切换样式 */
+        .mode-switch {
+            display: flex;
+            background: rgba(39, 45, 50, 1);
+            border-radius: 6px;
+            padding: 6px;
+            margin: 16px 12px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 6px 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            font-size: 14px;
+            margin: 2px;
+        }
+
+        .mode-btn.active {
+            background: rgba(56, 70, 81, 1);
+            color: var(--text-color);
+        }
+
+        .mode-btn:hover {
+            background: var(--hover-bg);
+            color: var(--text-color);
+        }
+
+        /* 模式内容区域样式 */
+        .mode-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: none;
+        }
+
+        .mode-content.active {
+            display: block;
+        }
+
+        /* 任务列表样式 */
+        .task-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .task-item {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            background: var(--section-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .task-item:hover {
+            background: var(--group-bg);
+        }
+
+        .task-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .task-title {
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .task-action-btn {
+            padding: 4px 8px;
+            border: none;
+            background: var(--input-bg);
+            color: var(--text-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .task-action-btn:hover {
+            background: var(--input-focus-bg);
+        }
+
+        /* Toast 提示样式 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        /* 禁用状态的输入框样式 */
+        input:disabled,
+        select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--section-bg) !important;
+        }
+
+        /* 禁用状态的输入框hover效果 */
+        input:disabled:hover,
+        select:disabled:hover {
+            border-color: var(--input-border) !important;
+            background: var(--section-bg) !important;
+        }
     `);
 
     // 面板切换函数
@@ -606,6 +732,55 @@
                 togglePanel();
             }, 50);
         }
+    }
+
+    // 添加模式选择限制的相关函数
+    function handleModeSelection(checkbox) {
+        const enabledModes = [
+            'enable-daily',
+            'enable-work',
+            'enable-personal',
+            'enable-temp',
+            'enable-collector'
+        ].filter(id => document.getElementById(id)?.checked);
+
+        if (enabledModes.length > 3 && checkbox.checked) {
+            checkbox.checked = false;
+            showToast('最多只能启用3个模式');
+            return false;
+        }
+
+        // 更新相关输入框的状态
+        const group = checkbox.closest('.config-group');
+        if (group) {
+            const inputs = group.querySelectorAll('input:not([type="checkbox"]), select');
+            inputs.forEach(input => {
+                input.disabled = !checkbox.checked;
+                if (!checkbox.checked) {
+                    input.value = ''; // 取消选择时清空输入
+                }
+            });
+        }
+
+        return true;
+    }
+
+    // 创建提示框元素
+    function createToast() {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        document.body.appendChild(toast);
+        return toast;
+    }
+
+    // 显示提示信息
+    function showToast(message) {
+        const toast = document.querySelector('.toast') || createToast();
+        toast.textContent = message;
+        toast.style.opacity = '1';
+        setTimeout(() => {
+            toast.style.opacity = '0';
+        }, 2000);
     }
 
     function initPanel() {
@@ -849,6 +1024,17 @@
             // 设置主题
             document.documentElement.setAttribute('data-theme', config.theme);
             
+            // 设置表单值并控制输入框状态
+            const setInputsState = (prefix, enabled) => {
+                const group = document.getElementById(`enable-${prefix}`)?.closest('.config-group');
+                if (group) {
+                    const inputs = group.querySelectorAll('input:not([type="checkbox"]), select');
+                    inputs.forEach(input => {
+                        input.disabled = !enabled;
+                    });
+                }
+            };
+
             // 设置表单值
             Object.entries({
                 'node-daily': config.dailyPlanner.nodeId,
@@ -889,6 +1075,13 @@
                     }
                 }
             });
+
+            // 设置各模式输入框状态
+            setInputsState('daily', config.dailyPlanner.enabled);
+            setInputsState('work', config.target.work.enabled);
+            setInputsState('personal', config.target.personal.enabled);
+            setInputsState('temp', config.target.temp.enabled);
+            setInputsState('collector', config.collector.enabled);
         }
 
         // 收集表单数据
@@ -967,6 +1160,45 @@
 
         // 初始加载配置
         loadConfig();
+
+        // 为所有模式的复选框添加事件监听
+        const modeCheckboxes = [
+            'enable-daily',
+            'enable-work',
+            'enable-personal',
+            'enable-temp',
+            'enable-collector'
+        ].forEach(id => {
+            const checkbox = document.getElementById(id);
+            if (checkbox) {
+                checkbox.addEventListener('change', function() {
+                    handleModeSelection(this);
+                });
+            }
+        });
+
+        // 初始化时检查已启用的模式数量
+        function initModeStatus() {
+            const config = ConfigManager.getConfig();
+            let enabledCount = 0;
+
+            // 计算已启用的模式数量
+            if (config.dailyPlanner.enabled) enabledCount++;
+            if (config.target.work.enabled) enabledCount++;
+            if (config.target.personal.enabled) enabledCount++;
+            if (config.target.temp.enabled) enabledCount++;
+            if (config.collector.enabled) enabledCount++;
+
+            // 如果超过限制，重置配置
+            if (enabledCount > 3) {
+                showToast('已启用的模式超过限制，已重置配置');
+                ConfigManager.resetConfig();
+                loadConfig();
+            }
+        }
+
+        // 初始化时调用
+        initModeStatus();
     }
 
     // 等待 WorkFlowy 加载完成
