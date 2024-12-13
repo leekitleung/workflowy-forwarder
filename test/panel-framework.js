@@ -1220,25 +1220,78 @@
         
         document.body.appendChild(panel);
 
+        // 保存按钮事件处理
         const saveBtn = panel.querySelector('.config-save');
-        if (saveBtn) {
-            saveBtn.addEventListener('click', () => {
-                const newConfig = collectFormData();
-                const errors = ConfigManager.validateConfig(newConfig);
+        saveBtn.addEventListener('click', () => {
+            try {
+                const config = ConfigManager.getConfig(); // 获取当前配置
                 
+                // 收集表单数据
+                const formData = {
+                    dailyPlanner: {
+                        enabled: document.getElementById('enable-daily').checked,
+                        nodeId: document.getElementById('node-daily').value.trim(),
+                        taskName: document.getElementById('task-daily').value.trim()
+                    },
+                    target: {
+                        work: {
+                            enabled: document.getElementById('enable-work').checked,
+                            nodeId: document.getElementById('node-work').value.trim(),
+                            taskName: document.getElementById('task-work').value.trim(),
+                            tag: document.getElementById('tag-work').value.trim()
+                        },
+                        personal: {
+                            enabled: document.getElementById('enable-personal').checked,
+                            nodeId: document.getElementById('node-personal').value.trim(),
+                            taskName: document.getElementById('task-personal').value.trim(),
+                            tag: document.getElementById('tag-personal').value.trim()
+                        },
+                        temp: {
+                            enabled: document.getElementById('enable-temp').checked,
+                            nodeId: document.getElementById('node-temp').value.trim(),
+                            taskName: document.getElementById('task-temp').value.trim(),
+                            tag: document.getElementById('tag-temp').value.trim()
+                        }
+                    },
+                    collector: {
+                        enabled: document.getElementById('enable-collector').checked,
+                        nodeId: document.getElementById('node-collector').value.trim(),
+                        taskName: document.getElementById('task-collector').value.trim(),
+                        tags: document.getElementById('tag-collector').value.trim(),
+                        autoComplete: document.getElementById('auto-complete-collector').checked,
+                        copyFormat: document.getElementById('copy-format-collector').value
+                    },
+                    refreshInterval: parseInt(document.getElementById('refresh-interval').value) || 60000,
+                    excludeTags: document.getElementById('exclude-tags').value.trim(),
+                    theme: config.theme // 保持主题设置不变
+                };
+
+                // 验证配置
+                const errors = ConfigManager.validateConfig(formData);
                 if (errors.length > 0) {
-                    showToast('配置验证失败: ' + errors[0]);
+                    showToast('保存失败：' + errors[0]);
+                    console.error('配置验证失败:', errors);
                     return;
                 }
-                
-                if (ConfigManager.saveConfig(newConfig)) {
-                    updateModeButtons();
+
+                // 保存配置
+                if (ConfigManager.saveConfig(formData)) {
                     showToast('配置已保存');
+                    // 更新模式按钮
+                    updateModeButtons();
+                    // 更新输入框状态
+                    loadConfig();
+                    // 刷新当前视图
+                    const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
+                    switchMode(currentMode);
                 } else {
-                    showToast('保存失败');
+                    showToast('保存失败，请重试');
                 }
-            });
-        }
+            } catch (error) {
+                console.error('保存配置时发生错误:', error);
+                showToast('保存失败：' + error.message);
+            }
+        });
 
         // 统一的模式切换处理
         function initModeSwitching() {
