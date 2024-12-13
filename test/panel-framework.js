@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.6
+// @version      0.0.7
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -694,6 +694,67 @@
             border-color: var(--input-border) !important;
             background: var(--section-bg) !important;
         }
+
+        /* Mode switching styles */
+        .mode-switch {
+            display: flex;
+            background: var(--section-bg);
+            border-radius: 6px;
+            padding: 6px;
+            margin: 16px 12px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .mode-btn.active {
+            background: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        .mode-btn:hover {
+            background: var(--hover-bg);
+            color: var(--text-color);
+        }
+
+        .mode-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: none;
+        }
+
+        .mode-content.active {
+            display: block;
+        }
+
+        /* Task list styles */
+        .task-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .task-item {
+            padding: 12px;
+            background: var(--section-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+
+        .task-item:hover {
+            background: var(--hover-bg);
+        }
     `);
 
     // 面板切换函数
@@ -794,6 +855,32 @@
                     Forwarder Plus
                     <span class="version-tag">v${DEFAULT_CONFIG.version}</span>
                 </h2>
+            </div>
+
+            <!-- Add mode switching buttons -->
+            <div class="mode-switch">
+                <button id="mode-daily" class="mode-btn">Daily</button>
+                <button id="mode-target" class="mode-btn">Target</button> 
+                <button id="mode-collector" class="mode-btn">Collector</button>
+            </div>
+
+            <!-- Add mode content containers -->
+            <div class="mode-content" id="daily-content">
+                <div class="task-list">
+                    <!-- Daily tasks will be rendered here -->
+                </div>
+            </div>
+
+            <div class="mode-content" id="target-content">
+                <div class="task-list">
+                    <!-- Target tasks will be rendered here -->
+                </div>
+            </div>
+
+            <div class="mode-content" id="collector-content">
+                <div class="task-list">
+                    <!-- Collected items will be rendered here -->
+                </div>
             </div>
 
             <!-- 配置按钮 -->
@@ -1082,6 +1169,9 @@
             setInputsState('personal', config.target.personal.enabled);
             setInputsState('temp', config.target.temp.enabled);
             setInputsState('collector', config.collector.enabled);
+
+            // Update mode buttons after loading config
+            updateModeButtons();
         }
 
         // 收集表单数据
@@ -1139,6 +1229,7 @@
             }
             
             if (ConfigManager.saveConfig(newConfig)) {
+                updateModeButtons(); // Update buttons after saving
                 alert('配置已保存');
             } else {
                 alert('保存失败');
@@ -1199,6 +1290,48 @@
 
         // 初始化时调用
         initModeStatus();
+
+        // Add mode switching logic
+        function switchMode(mode) {
+            // Hide all content
+            document.querySelectorAll('.mode-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected mode content
+            document.getElementById(`${mode}-content`).classList.add('active');
+            document.getElementById(`mode-${mode}`).classList.add('active');
+            
+            // Save current mode
+            localStorage.setItem('wf_current_mode', mode);
+        }
+
+        // Add mode button event listeners
+        function initModeButtons() {
+            const modeButtons = document.querySelectorAll('.mode-btn');
+            modeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const mode = btn.id.replace('mode-', '');
+                    switchMode(mode);
+                });
+            });
+            
+            // Set initial mode
+            const savedMode = localStorage.getItem('wf_current_mode') || 'daily';
+            switchMode(savedMode);
+        }
+
+        // Add to initPanel function
+        function initPanel() {
+            // Existing initialization code...
+            
+            initModeButtons();
+        }
     }
 
     // 等待 WorkFlowy 加载完成
@@ -1215,4 +1348,110 @@
     // 启动
     console.log('WorkFlowy Forwarder Plus Framework 启动...');
     waitForWF();
+
+    // Add function to update mode button labels
+    function updateModeButtons() {
+        const config = ConfigManager.getConfig();
+        
+        // Update Daily button
+        const dailyBtn = document.getElementById('mode-daily');
+        if (dailyBtn) {
+            dailyBtn.textContent = config.dailyPlanner.taskName || 'Daily';
+            dailyBtn.style.display = config.dailyPlanner.enabled ? 'block' : 'none';
+        }
+        
+        // Update Target button
+        const targetBtn = document.getElementById('mode-target');
+        if (targetBtn) {
+            // Show Target button if any target mode is enabled
+            const targetEnabled = config.target.work.enabled || 
+                                config.target.personal.enabled || 
+                                config.target.temp.enabled;
+            targetBtn.style.display = targetEnabled ? 'block' : 'none';
+            
+            // Use first enabled target's name, or default to "Target"
+            let targetName = 'Target';
+            if (config.target.work.enabled && config.target.work.taskName) {
+                targetName = config.target.work.taskName;
+            } else if (config.target.personal.enabled && config.target.personal.taskName) {
+                targetName = config.target.personal.taskName;
+            } else if (config.target.temp.enabled && config.target.temp.taskName) {
+                targetName = config.target.temp.taskName;
+            }
+            targetBtn.textContent = targetName;
+        }
+        
+        // Update Collector button
+        const collectorBtn = document.getElementById('mode-collector');
+        if (collectorBtn) {
+            collectorBtn.textContent = config.collector.taskName || 'Collector';
+            collectorBtn.style.display = config.collector.enabled ? 'block' : 'none';
+        }
+    }
+
+    // Update loadConfig function to call updateModeButtons
+    function loadConfig() {
+        const config = ConfigManager.getConfig();
+        
+        // Existing config loading code...
+        
+        // Update mode buttons after loading config
+        updateModeButtons();
+    }
+
+    // Update saveConfig to call updateModeButtons
+    const saveBtn = panel.querySelector('.config-save');
+    saveBtn.addEventListener('click', () => {
+        const newConfig = collectFormData();
+        const errors = ConfigManager.validateConfig(newConfig);
+        
+        if (errors.length > 0) {
+            alert('配置验证失败:\n' + errors.join('\n'));
+            return;
+        }
+        
+        if (ConfigManager.saveConfig(newConfig)) {
+            updateModeButtons(); // Update buttons after saving
+            alert('配置已保存');
+        } else {
+            alert('保存失败');
+        }
+    });
+
+    // Update mode switch styles to handle hidden buttons
+    GM_addStyle(`
+        .mode-switch {
+            display: flex;
+            background: var(--section-bg);
+            border-radius: 6px;
+            padding: 6px;
+            margin: 16px 12px;
+            gap: 6px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: none; /* Hide by default */
+        }
+
+        .mode-btn[style*="display: block"] {
+            display: block; /* Show only enabled buttons */
+        }
+
+        .mode-btn.active {
+            background: var(--input-bg);
+            color: var(--text-color);
+        }
+    `);
 })();
