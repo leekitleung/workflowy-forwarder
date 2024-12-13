@@ -13,9 +13,10 @@
 
     // 默认配置
     const DEFAULT_CONFIG = {
-        version: '0.0.4',
+        version: '0.0.5',
         theme: 'dark',
         refreshInterval: 60000,
+        excludeTags: '',
         dailyPlanner: {
             enabled: false,
             taskName: '',
@@ -90,48 +91,37 @@
         validateConfig(config) {
             const errors = [];
 
-            // 验证节点ID
+            // 验证节点ID (支持单个或多个，用逗号分隔)
             const validateNodeId = (id, name) => {
-                if (id && !/^[0-9a-f]{12}$/.test(id)) {
-                    errors.push(`${name} 的节点ID格式不正确，应为12位的16进制字符`);
-                }
-            };
-
-            // 验证标签
-            const validateTags = (tags, name) => {
-                if (tags) {
-                    const tagList = tags.split(',').map(t => t.trim());
-                    for (const tag of tagList) {
-                        if (!tag.startsWith('#')) {
-                            errors.push(`${name} 的标签 "${tag}" 应以 # 开头`);
-                        }
+                if (!id) return;
+                const ids = id.split(',').map(i => i.trim());
+                for (const singleId of ids) {
+                    if (singleId && !/^[0-9a-f]{12}$/.test(singleId)) {
+                        errors.push(`${name}的节点ID "${singleId}" 格式不正确`);
                     }
                 }
             };
 
-            // 验证任务名称
-            const validateTaskName = (name, type) => {
-                if (name && name.length > 50) {
-                    errors.push(`${type} 的任务名称不应超过50个字符`);
+            // 验证标签 (支持单个或多个，用逗号分隔)
+            const validateTags = (tags, name) => {
+                if (!tags) return;
+                const tagList = tags.split(',').map(t => t.trim());
+                for (const tag of tagList) {
+                    if (tag && !/^[#\w\s]+$/.test(tag)) {
+                        errors.push(`${name}的标签 "${tag}" 格式不正确`);
+                    }
                 }
             };
-
-            // 验证刷新间隔
-            if (config.refreshInterval < 1000 || config.refreshInterval > 3600000) {
-                errors.push('刷新间隔应在1000-3600000毫秒之间');
-            }
 
             // 验证 DailyPlanner
             if (config.dailyPlanner.enabled) {
                 validateNodeId(config.dailyPlanner.nodeId, 'DailyPlanner');
-                validateTaskName(config.dailyPlanner.taskName, 'DailyPlanner');
             }
 
             // 验证 Target
             Object.entries(config.target).forEach(([key, value]) => {
                 if (value.enabled) {
                     validateNodeId(value.nodeId, `Target-${key}`);
-                    validateTaskName(value.taskName, `Target-${key}`);
                     validateTags(value.tag, `Target-${key}`);
                 }
             });
@@ -139,21 +129,20 @@
             // 验证 Collector
             if (config.collector.enabled) {
                 validateNodeId(config.collector.nodeId, 'Collector');
-                validateTaskName(config.collector.taskName, 'Collector');
                 validateTags(config.collector.tags, 'Collector');
+            }
 
-                // 验证复制格式
-                if (!['plain', 'markdown', 'opml'].includes(config.collector.copyFormat)) {
-                    errors.push('Collector 的复制格式选项无效');
+            // 验证排除标签
+            if (config.excludeTags) {
+                const tagList = config.excludeTags.split(',').map(t => t.trim());
+                for (const tag of tagList) {
+                    if (tag && !/^[#\w\s]+$/.test(tag)) {
+                        errors.push(`排除标签 "${tag}" 格式不正确`);
+                    }
                 }
             }
 
             return errors;
-        },
-
-        // 添加一个新方法：获取节点ID的简短说明
-        getNodeIdHelp() {
-            return '在 WorkFlowy 中打开目标节点，从URL中复制12位的节点ID';
         }
     };
 
@@ -226,19 +215,33 @@
 
         /* 主题变量 */
         :root[data-theme="dark"] {
-            --bg-color: #2B3135;
+            --bg-color: #1e2124;
+            --panel-bg: #2B3135;
             --border-color: #5c6062;
             --text-color: #d9dbdb;
             --text-secondary: #9ea1a2;
-            --hover-bg: #363b3f;
+            --input-bg: #383f44;
+            --input-border: #5c6062;
+            --input-focus-border: #4a9eff;
+            --input-focus-bg: #404850;
+            --section-bg: rgba(255, 255, 255, 0.03);
+            --group-bg: rgba(255, 255, 255, 0.02);
+            --divider-color: #3a4347;
         }
 
         :root[data-theme="light"] {
-            --bg-color: #ffffff;
+            --bg-color: #f5f5f5;
+            --panel-bg: #ffffff;
             --border-color: #e0e0e0;
             --text-color: #333333;
             --text-secondary: #666666;
-            --hover-bg: #f5f5f5;
+            --input-bg: #ffffff;
+            --input-border: #d0d0d0;
+            --input-focus-border: #2196f3;
+            --input-focus-bg: #f8f9fa;
+            --section-bg: rgba(0, 0, 0, 0.02);
+            --group-bg: rgba(0, 0, 0, 0.01);
+            --divider-color: #e0e0e0;
         }
 
         /* 设置面板内容样式 */
@@ -500,6 +503,71 @@
             background: var(--bg-color);
             color: var(--text-color);
         }
+
+        /* 任务名称输入框样式 */
+        .task-name-input {
+            background: none;
+            border: 1px solid transparent;
+            color: var(--text-color);
+            font-size: 14px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            width: 120px;
+            transition: all 0.2s ease;
+        }
+
+        .task-name-input:hover,
+        .task-name-input:focus {
+            background: var(--input-bg);
+            border-color: var(--input-border);
+            outline: none;
+        }
+
+        /* 分组头部样式 */
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .group-header input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        /* 配置项样式 */
+        .config-item {
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .config-item label {
+            min-width: 60px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .config-item input:not([type="checkbox"]) {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            color: var(--text-color);
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .config-item input:focus {
+            outline: none;
+            border-color: var(--input-focus-border);
+            background: var(--input-focus-bg);
+        }
     `);
 
     // 面板切换函数
@@ -549,14 +617,8 @@
                 <h2>
                     Workflowy<br/>
                     Forwarder Plus
-                    <span class="version-tag">v0.0.4</span>
+                    <span class="version-tag">v${DEFAULT_CONFIG.version}</span>
                 </h2>
-            </div>
-
-            <div class="mode-switch">
-                <button class="mode-btn active" id="mode-daily">DailyPlanner</button>
-                <button class="mode-btn" id="mode-target">Target</button>
-                <button class="mode-btn" id="mode-collect">Collector</button>
             </div>
 
             <!-- 配置按钮 -->
@@ -605,7 +667,7 @@
                         <div class="config-group">
                             <div class="group-header">
                                 <input type="checkbox" id="enable-work">
-                                <input type="text" class="task-name-input" id="task-work" placeholder="工作任务">
+                                <input type="text" class="task-name-input" id="task-work" placeholder="输入任务名称">
                             </div>
                             <div class="group-content">
                                 <div class="config-item">
@@ -614,7 +676,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-work" placeholder="#01每日推进">
+                                    <input type="text" id="tag-work" placeholder="输入标签">
                                 </div>
                             </div>
                         </div>
@@ -623,7 +685,7 @@
                         <div class="config-group">
                             <div class="group-header">
                                 <input type="checkbox" id="enable-personal">
-                                <input type="text" class="task-name-input" id="task-personal" placeholder="个人任务">
+                                <input type="text" class="task-name-input" id="task-personal" placeholder="输入任务名称">
                             </div>
                             <div class="group-content">
                                 <div class="config-item">
@@ -632,7 +694,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-personal" placeholder="#01每日推进">
+                                    <input type="text" id="tag-personal" placeholder="输入标签">
                                 </div>
                             </div>
                         </div>
@@ -641,7 +703,7 @@
                         <div class="config-group">
                             <div class="group-header">
                                 <input type="checkbox" id="enable-temp">
-                                <input type="text" class="task-name-input" id="task-temp" placeholder="临时任务">
+                                <input type="text" class="task-name-input" id="task-temp" placeholder="输入任务名称">
                             </div>
                             <div class="group-content">
                                 <div class="config-item">
@@ -650,7 +712,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-temp" placeholder="#01每日推进">
+                                    <input type="text" id="tag-temp" placeholder="输入标签">
                                 </div>
                             </div>
                         </div>
@@ -664,7 +726,7 @@
                         <div class="config-group">
                             <div class="group-header">
                                 <input type="checkbox" id="enable-collector">
-                                <input type="text" class="task-name-input" id="task-collector" placeholder="收集箱">
+                                <input type="text" class="task-name-input" id="task-collector" placeholder="输入任务名称">
                             </div>
                             <div class="group-content">
                                 <div class="config-item">
@@ -673,7 +735,12 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-collector" placeholder="#稍后处理">
+                                    <input type="text" id="tag-collector" placeholder="输入标签，多个用逗号分隔">
+                                </div>
+                                <div class="config-item">
+                                    <label>自动完成</label>
+                                    <input type="checkbox" id="auto-complete-collector">
+                                    <span class="checkbox-label">复制内容后自动标记完成</span>
                                 </div>
                                 <div class="config-item">
                                     <label>复制格式</label>
@@ -682,10 +749,6 @@
                                         <option value="markdown">Markdown</option>
                                         <option value="opml">OPML</option>
                                     </select>
-                                </div>
-                                <div class="config-item checkbox-item">
-                                    <input type="checkbox" id="auto-complete-collector">
-                                    <label class="checkbox-label">复制后自动标记完成</label>
                                 </div>
                             </div>
                         </div>
@@ -706,8 +769,11 @@
                             </div>
                             <div class="config-item">
                                 <label>刷新间隔</label>
-                                <input type="number" id="refresh-interval" placeholder="60000">
-                                <span class="input-hint">毫秒</span>
+                                <input type="number" id="refresh-interval" placeholder="毫秒">
+                            </div>
+                            <div class="config-item">
+                                <label>排除标签</label>
+                                <input type="text" id="exclude-tags" placeholder="输入要排除的标签，多个用逗号分隔">
                             </div>
                         </div>
                     </div>
@@ -811,7 +877,8 @@
                 'auto-complete-collector': config.collector.autoComplete,
                 'copy-format-collector': config.collector.copyFormat,
                 
-                'refresh-interval': config.refreshInterval
+                'refresh-interval': config.refreshInterval,
+                'exclude-tags': config.excludeTags
             }).forEach(([id, value]) => {
                 const element = document.getElementById(id);
                 if (element) {
@@ -830,6 +897,7 @@
                 version: DEFAULT_CONFIG.version,
                 theme: document.documentElement.getAttribute('data-theme') || 'dark',
                 refreshInterval: Number(document.getElementById('refresh-interval').value) || DEFAULT_CONFIG.refreshInterval,
+                excludeTags: document.getElementById('exclude-tags').value,
                 dailyPlanner: {
                     enabled: document.getElementById('enable-daily').checked,
                     taskName: document.getElementById('task-daily').value,
@@ -873,17 +941,14 @@
             const errors = ConfigManager.validateConfig(newConfig);
             
             if (errors.length > 0) {
-                alert('配置验证失败：\n\n' + errors.join('\n\n') + 
-                      '\n\n提示：\n' + ConfigManager.getNodeIdHelp());
+                alert('配置验证失败:\n' + errors.join('\n'));
                 return;
             }
             
             if (ConfigManager.saveConfig(newConfig)) {
                 alert('配置已保存');
-                // 保存成功后关闭配置面板
-                panel.querySelector('.config-panel').classList.remove('visible');
             } else {
-                alert('保存失败，请检查配置并重试');
+                alert('保存失败');
             }
         });
 

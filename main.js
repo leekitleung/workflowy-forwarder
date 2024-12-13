@@ -1,3 +1,14 @@
+// ==UserScript==
+// @name         workflowy forwarder Plus
+// @namespace    http://tampermonkey.net/
+// @version      3.5.14
+// @description  workflowy forwarder Plus（稳定版）
+// @author       Namkit
+// @match        https://workflowy.com/*
+// @grant        GM_notification
+// @grant        GM_addStyle
+// ==/UserScript==
+
 (function() {
     'use strict';
 
