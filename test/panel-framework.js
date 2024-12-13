@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.7
+// @version      0.0.8
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -107,8 +107,13 @@
                 if (!tags) return;
                 const tagList = tags.split(',').map(t => t.trim());
                 for (const tag of tagList) {
-                    if (tag && !/^[#\w\s]+$/.test(tag)) {
-                        errors.push(`${name}的标签 "${tag}" 格式不正确`);
+                    // 更新正则表达式以支持中文字符和数字
+                    // ^ - 开始
+                    // #? - 可选的#号
+                    // [0-9\u4e00-\u9fa5a-zA-Z\s_]+ - 支持数字、中文、英文、空格和下划线
+                    // $ - 结束
+                    if (tag && !/^#?[0-9\u4e00-\u9fa5a-zA-Z\s_]+$/.test(tag)) {
+                        errors.push(`${name}的标签 "${tag}" 格式不正确，标签只能包含数字、中文、英文、空格和下划线`);
                     }
                 }
             };
@@ -116,6 +121,7 @@
             // 验证 DailyPlanner
             if (config.dailyPlanner.enabled) {
                 validateNodeId(config.dailyPlanner.nodeId, 'DailyPlanner');
+                validateTags(config.dailyPlanner.tag, 'DailyPlanner');
             }
 
             // 验证 Target
@@ -134,12 +140,7 @@
 
             // 验证排除标签
             if (config.excludeTags) {
-                const tagList = config.excludeTags.split(',').map(t => t.trim());
-                for (const tag of tagList) {
-                    if (tag && !/^[#\w\s]+$/.test(tag)) {
-                        errors.push(`排除标签 "${tag}" 格式不正确`);
-                    }
-                }
+                validateTags(config.excludeTags, '排除标签');
             }
 
             return errors;
@@ -601,11 +602,20 @@
             color: var(--text-color);
         }
 
+
+        .mode-contents {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
         /* 模式内容区域样式 */
         .mode-content {
-            flex: 1;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             overflow-y: auto;
-            padding: 12px;
             display: none;
         }
 
@@ -755,6 +765,16 @@
         .task-item:hover {
             background: var(--hover-bg);
         }
+
+        .error-state {
+            padding: 20px;
+            text-align: center;
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+            border-radius: 4px;
+            margin: 12px;
+            font-size: 14px;
+        }
     `);
 
     // 面板切换函数
@@ -807,7 +827,7 @@
 
         if (enabledModes.length > 3 && checkbox.checked) {
             checkbox.checked = false;
-            showToast('最多只能启用3个模式');
+            showToast('多只能启用3个模式');
             return false;
         }
 
@@ -856,19 +876,19 @@
                     <span class="version-tag">v${DEFAULT_CONFIG.version}</span>
                 </h2>
             </div>
-
-            <!-- Add mode switching buttons -->
+    
+            <!-- Mode switching buttons -->
             <div class="mode-switch">
                 <button id="mode-daily" class="mode-btn">Daily</button>
                 <button id="mode-target" class="mode-btn">Target</button> 
                 <button id="mode-collector" class="mode-btn">Collector</button>
             </div>
-
-            <!-- Add mode content containers -->
-            <div class="mode-content" id="daily-content">
-                <div class="task-list">
-                    <!-- Daily tasks will be rendered here -->
-                </div>
+    
+            <!-- Mode content containers -->
+            <div class="mode-contents">
+                <div class="mode-content" id="daily-content"></div>
+                <div class="mode-content" id="target-content"></div>
+                <div class="mode-content" id="collector-content"></div>
             </div>
 
             <div class="mode-content" id="target-content">
@@ -938,7 +958,8 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-work" placeholder="输入标签">
+                                    <input type="text" id="tag-work" 
+                                        placeholder="输入标签，如: #01每日推进 (支持数字、中文、英文)">
                                 </div>
                             </div>
                         </div>
@@ -956,7 +977,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-personal" placeholder="输入标签">
+                                    <input type="text" id="tag-personal" placeholder="输入标签，如: #01每日推进 (支持数字、中文、英文)">
                                 </div>
                             </div>
                         </div>
@@ -974,7 +995,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-temp" placeholder="输入标签">
+                                    <input type="text" id="tag-temp" placeholder="输入标签，如: #01每日推进 (支持数字、中文、英文)">
                                 </div>
                             </div>
                         </div>
@@ -1049,6 +1070,38 @@
         
         document.body.appendChild(panel);
 
+        // 统一的模式切换处理
+        function initModeSwitching() {
+            const modeButtons = panel.querySelectorAll('.mode-btn');
+            
+            // 只绑定一次事件监听器
+            modeButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const mode = btn.id.replace('mode-', '');
+                    
+                    // 更新按钮状态
+                    modeButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // 保存当前模式
+                    localStorage.setItem('wf_current_mode', mode);
+                    
+                    // 切换模式内容
+                    switchMode(mode);
+                });
+            });
+            
+            // 恢复上次选择的模式
+            const savedMode = localStorage.getItem('wf_current_mode') || 'daily';
+            const savedModeBtn = panel.querySelector(`#mode-${savedMode}`);
+            if (savedModeBtn) {
+                savedModeBtn.click();
+            }
+        }
+        
+        // 在面板初始化完成后调用
+        initModeSwitching();
+
         // 创建切换按钮
         const toggleBtn = document.createElement('button');
         toggleBtn.className = 'wf-toggle';
@@ -1073,7 +1126,7 @@
         const modeButtons = panel.querySelectorAll('.mode-btn');
         modeButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                // 移除所有按钮的 active 状态
+                // 移所有按钮的 active 状态
                 modeButtons.forEach(b => b.classList.remove('active'));
                 // 添加当前按钮的 active 状态
                 btn.classList.add('active');
@@ -1081,6 +1134,7 @@
                 const mode = btn.id.replace('mode-', '');
                 localStorage.setItem('wf_current_mode', mode);
                 // TODO: 切换模式后的其他处理
+                switchMode(mode);
             });
         });
 
@@ -1108,7 +1162,7 @@
         function loadConfig() {
             const config = ConfigManager.getConfig();
             
-            // 设置主题
+            // 置主题
             document.documentElement.setAttribute('data-theme', config.theme);
             
             // 设置表单值并控制输入框状态
@@ -1172,6 +1226,7 @@
 
             // Update mode buttons after loading config
             updateModeButtons();
+        
         }
 
         // 收集表单数据
@@ -1224,15 +1279,15 @@
             const errors = ConfigManager.validateConfig(newConfig);
             
             if (errors.length > 0) {
-                alert('配置验证失败:\n' + errors.join('\n'));
+                showToast('配置验证失败: ' + errors[0]); // Show only first error to avoid long toast
                 return;
             }
             
             if (ConfigManager.saveConfig(newConfig)) {
                 updateModeButtons(); // Update buttons after saving
-                alert('配置已保存');
+                showToast('配置已保存');
             } else {
-                alert('保存失败');
+                showToast('保存失败');
             }
         });
 
@@ -1242,9 +1297,9 @@
             if (confirm('确定要重置所有设置吗？')) {
                 if (ConfigManager.resetConfig()) {
                     loadConfig();
-                    alert('配置已重置');
+                    showToast('配置已重置');
                 } else {
-                    alert('重置失败');
+                    showToast('重置失败');
                 }
             }
         });
@@ -1311,27 +1366,9 @@
             localStorage.setItem('wf_current_mode', mode);
         }
 
-        // Add mode button event listeners
-        function initModeButtons() {
-            const modeButtons = document.querySelectorAll('.mode-btn');
-            modeButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const mode = btn.id.replace('mode-', '');
-                    switchMode(mode);
-                });
-            });
-            
-            // Set initial mode
-            const savedMode = localStorage.getItem('wf_current_mode') || 'daily';
-            switchMode(savedMode);
-        }
+        
 
-        // Add to initPanel function
-        function initPanel() {
-            // Existing initialization code...
-            
-            initModeButtons();
-        }
+
     }
 
     // 等待 WorkFlowy 加载完成
@@ -1454,4 +1491,386 @@
             color: var(--text-color);
         }
     `);
+
+    // Add data management functions
+    const DataManager = {
+        async collectNodes(nodeId, tag) {
+            console.log('Collecting nodes for:', nodeId, 'with tag:', tag);
+            
+            if (!nodeId) {
+                console.log('No nodeId provided');
+                return [];
+            }
+            
+            try {
+                const nodes = [];
+                const nodeIds = nodeId.split(',').map(id => id.trim());
+                
+                for (const id of nodeIds) {
+                    console.log('Processing node:', id);
+                    const node = WF.getItemById(id);
+                    if (!node) {
+                        console.log('Node not found:', id);
+                        continue;
+                    }
+                    
+                    const children = node.getChildren() || [];
+                    console.log('Found children:', children.length);
+                    
+                    children.forEach(child => {
+                        const name = child.getNameInPlainText();
+                        const note = child.getNoteInPlainText();
+                        
+                        if (tag && (name.includes(tag) || note.includes(tag))) {
+                            nodes.push({
+                                id: child.getId(),
+                                name,
+                                note,
+                                completed: child.getCompleted(),
+                                hasTag: true
+                            });
+                        } else if (!tag) {
+                            nodes.push({
+                                id: child.getId(),
+                                name,
+                                note,
+                                completed: child.getCompleted(),
+                                hasTag: false
+                            });
+                        }
+                    });
+                }
+                
+                console.log('Collected nodes:', nodes.length);
+                return nodes;
+            } catch (error) {
+                console.error('Error collecting nodes:', error);
+                return [];
+            }
+        }
+    };
+
+    // Add render functions for each mode
+    const ViewRenderer = {
+        // 渲染 DailyPlanner 视图
+        async renderDailyView(container, config) {
+            if (!config.dailyPlanner.enabled || !config.dailyPlanner.nodeId) {
+                container.innerHTML = '<div class="empty-state">请先配置日常计划节点</div>';
+                return;
+            }
+
+            container.innerHTML = '<div class="loading">加载中...</div>';
+            
+            const nodes = await DataManager.collectNodes(
+                config.dailyPlanner.nodeId, 
+                DataManager.validateTag(config.dailyPlanner.tag)
+            );
+
+            if (nodes.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无任务<br>在目标节点添加任务后刷新</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="daily-tasks">
+                    <div class="task-header">
+                        <h3>${config.dailyPlanner.taskName || '日常计划'}</h3>
+                        <button class="refresh-btn">刷新</button>
+                    </div>
+                    <div class="task-list">
+                        ${nodes.map(node => `
+                            <div class="task-item ${node.completed ? 'completed' : ''}" data-id="${node.id}">
+                                <div class="task-content">
+                                    <input type="checkbox" ${node.completed ? 'checked' : ''}>
+                                    <span class="task-name">${node.name}</span>
+                                </div>
+                                ${node.note ? `<div class="task-note">${node.note}</div>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Add event listeners
+            container.querySelector('.refresh-btn')?.addEventListener('click', () => {
+                this.renderDailyView(container, config);
+            });
+
+            // Add checkbox event listeners
+            container.querySelectorAll('.task-item input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', async (e) => {
+                    const taskId = e.target.closest('.task-item').dataset.id;
+                    const node = WF.getItemById(taskId);
+                    if (node) {
+                        await node.setCompleted(e.target.checked);
+                    }
+                });
+            });
+        },
+
+        // 渲染 Target 视图
+        async renderTargetView(container, config) {
+            const targetTypes = ['work', 'personal', 'temp'];
+            const enabledTargets = targetTypes.filter(type => config.target[type].enabled);
+            
+            if (enabledTargets.length === 0) return;
+            
+            container.innerHTML = '<div class="loading">加载中...</div>';
+            
+            const targetContent = [];
+            
+            for (const type of enabledTargets) {
+                const nodes = await DataManager.fetchNodeData(config.target[type].nodeId);
+                if (!nodes) continue;
+                
+                const filteredNodes = DataManager.filterExcludedTags(nodes, config.excludeTags);
+                
+                targetContent.push(`
+                    <div class="target-section">
+                        <div class="section-header">
+                            <h3>${config.target[type].taskName || type}</h3>
+                        </div>
+                        <div class="task-list">
+                            ${filteredNodes.map(node => `
+                                <div class="task-item ${node.completed ? 'completed' : ''}" data-id="${node.id}">
+                                    <div class="task-content">
+                                        <input type="checkbox" ${node.completed ? 'checked' : ''}>
+                                        <span class="task-name">${node.name}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `);
+            }
+            
+            container.innerHTML = targetContent.join('') || '<div class="empty-state">暂无数据</div>';
+        },
+
+        // 渲染 Collector 视图
+        async renderCollectorView(container, config) {
+            if (!config.collector.enabled) return;
+            
+            container.innerHTML = '<div class="loading">加载中...</div>';
+            
+            const nodes = await DataManager.fetchNodeData(config.collector.nodeId);
+            if (!nodes || nodes.length === 0) {
+                container.innerHTML = '<div class="empty-state">暂无数据</div>';
+                return;
+            }
+            
+            const filteredNodes = DataManager.filterExcludedTags(nodes, config.excludeTags);
+            
+            container.innerHTML = `
+                <div class="collector-tasks">
+                    <div class="task-header">
+                        <h3>${config.collector.taskName || 'Collected Items'}</h3>
+                    </div>
+                    <div class="task-list">
+                        ${filteredNodes.map(node => `
+                            <div class="task-item ${node.completed ? 'completed' : ''}" data-id="${node.id}">
+                                <div class="task-content">
+                                    <input type="checkbox" ${node.completed ? 'checked' : ''}>
+                                    <span class="task-name">${node.name}</span>
+                                </div>
+                                <div class="task-actions">
+                                    <button class="copy-btn" data-format="${config.collector.copyFormat}">
+                                        复制
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+    };
+
+    // Add styles for task views
+    GM_addStyle(`
+        /* Loading and empty states */
+        .loading {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .empty-state {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Task list styles */
+        .task-header {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .task-header h3 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--text-color);
+        }
+
+        .task-list {
+            padding: 8px;
+        }
+
+        .task-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--section-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .task-item:hover {
+            background: var(--hover-bg);
+        }
+
+        .task-item.completed {
+            opacity: 0.7;
+        }
+
+        .task-item.completed .task-name {
+            text-decoration: line-through;
+        }
+
+        .task-content {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .task-name {
+            color: var(--text-color);
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .copy-btn {
+            padding: 4px 8px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .copy-btn:hover {
+            background: var(--hover-bg);
+        }
+
+        /* Target mode specific styles */
+        .target-section {
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-header h3 {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-secondary);
+        }
+
+        .refresh-btn {
+            padding: 4px 8px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .refresh-btn:hover {
+            background: var(--hover-bg);
+        }
+
+        .task-note {
+            margin-left: 24px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+    `);
+
+    // Update switchMode function to render content
+    // Move switchMode outside of initPanel
+    function switchMode(mode) {
+        // Hide all content
+        document.querySelectorAll('.mode-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Remove active class from all buttons
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        // Show selected mode content
+        const contentEl = document.getElementById(`${mode}-content`);
+        const buttonEl = document.getElementById(`mode-${mode}`);
+        
+        if (contentEl && buttonEl) {
+            contentEl.classList.add('active');
+            buttonEl.classList.add('active');
+            
+            // Render content based on mode
+            const config = ConfigManager.getConfig();
+            console.log('Switching to mode:', mode, 'with config:', config);
+            
+            try {
+                switch (mode) {
+                    case 'daily':
+                        ViewRenderer.renderDailyView(contentEl, config);
+                        break;
+                    case 'target':
+                        ViewRenderer.renderTargetView(contentEl, config);
+                        break;
+                    case 'collector':
+                        ViewRenderer.renderCollectorView(contentEl, config);
+                        break;
+                }
+            } catch (error) {
+                console.error('Error rendering mode content:', error);
+                contentEl.innerHTML = '<div class="error-state">加载失败，请刷新重试</div>';
+            }
+        }
+        
+        // Save current mode
+        localStorage.setItem('wf_current_mode', mode);
+    }
 })();
