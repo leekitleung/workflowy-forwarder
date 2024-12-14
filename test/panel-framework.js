@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.12
+// @version      0.0.13
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -96,8 +96,13 @@
             const errors = [];
 
             // Validate node ID (support single or multiple, comma-separated)
-            const validateNodeId = (id, name) => {
-                if (!id) return;
+            const validateNodeId = (id, name, required = true) => {
+                if (!id) {
+                    if (required) {
+                        errors.push(`${name}的节点ID不能为空`);
+                    }
+                    return;
+                }
                 const ids = id.split(',').map(i => i.trim());
                 for (const singleId of ids) {
                     if (singleId && !/^[0-9a-f]{12}$/.test(singleId)) {
@@ -125,7 +130,8 @@
             // Validate DailyPlanner
             if (config.dailyPlanner.enabled) {
                 validateNodeId(config.dailyPlanner.nodeId, 'DailyPlanner');
-                validateTags(config.dailyPlanner.tag, 'DailyPlanner');
+                // 日历节点ID可以为空
+                validateNodeId(config.dailyPlanner.calendarNodeId, 'DailyPlanner日历', false);
             }
 
             // Validate Target
@@ -417,7 +423,7 @@
             --divider-color: #e0e0e0;
         }
 
-        /* 设置面板内容样式 */
+        /* 设�������面板内容样式 */
         .config-header {
             padding: 24px 12px 12px;
             border-bottom: 1px solid var(--border-color);
@@ -1406,10 +1412,12 @@
     }
 
     // 显示提示信息
-    function showToast(message) {
+    function showToast(message, isError = false) {
         const toast = document.querySelector('.toast') || createToast();
         toast.textContent = message;
+        toast.className = 'toast' + (isError ? ' error' : ' success');
         toast.style.opacity = '1';
+        
         setTimeout(() => {
             toast.style.opacity = '0';
         }, 2000);
@@ -1542,27 +1550,44 @@
                 <button id="mode-collector" class="mode-btn">Collector</button>
             </div>
 
-            <!-- Links area -->
-            <div class="planner-links">
-                <div class="planner-links-row">
-                    <a href="#" class="planner-link today-link" id="goto-today">
-                        Today's Plan
-                    </a>
-                    <a href="#" class="planner-link scan-link">
-                        Daily
-                    </a>
+            <!-- Mode-specific link containers -->
+            <div class="mode-links">
+                <!-- Daily mode links -->
+                <div class="daily-links" style="display: none;">
+                    <div class="planner-links">
+                        <div class="planner-links-row">
+                            <a href="#" class="planner-link today-link" id="goto-today">
+                                Today's Plan
+                            </a>
+                            <a href="#" class="planner-link scan-link">
+                                Daily
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <div class="follow-links-wrapper">
-                    <a href="#" class="planner-link follow-link">
-                        Target
-                    </a>
-                    <a href="#" class="planner-link follow-link">
-                        Target
-                    </a>
+
+                <!-- Target mode links -->
+                <div class="target-links" style="display: none;">
+                    <div class="planner-links">
+                        <div class="follow-links-wrapper">
+                            <a href="#" class="planner-link follow-link">
+                                Target
+                            </a>
+                            <a href="#" class="planner-link follow-link">
+                                Target
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <a href="#" class="planner-link collect-link">
-                    Collector
-                </a>
+
+                <!-- Collector mode links -->
+                <div class="collector-links" style="display: none;">
+                    <div class="planner-links">
+                        <a href="#" class="planner-link collect-link">
+                            Collector
+                        </a>
+                    </div>
+                </div>
             </div>
 
             <!-- Mode content containers -->
@@ -1623,7 +1648,7 @@
                                     <div class="input-with-help">
                                         <input type="text" id="calendar-node-daily" 
                                                placeholder="输入日历节点ID"
-                                               title="用于Today's Plan功能的日历根节点ID">
+                                               title="���于Today's Plan功能的日历根节点ID">
                                         <span class="help-text">留空则不显示Today's Plan链接</span>
                                     </div>
                                 </div>
@@ -1787,65 +1812,7 @@
         }
 
         // 初始化链接更新
-        function updateLinks(mode) {
-            const config = ConfigManager.getConfig();
-            const links = {
-                daily: [
-                    {
-                        selector: '.today-link',
-                        display: !!config.dailyPlanner.calendarNodeId, // 只在有日历节点ID时显示
-                        href: '#',
-                        text: "Today's Plan"
-                    },
-                    {
-                        selector: '.scan-link',
-                        display: true,
-                        href: WF.getItemById(config.dailyPlanner.nodeId)?.getUrl() || '#',
-                        text: config.dailyPlanner.taskName || 'Daily'
-                    }
-                ],
-                target: [
-                    {
-                        selector: '.follow-link:nth-child(1)',
-                        display: true,
-                        href: WF.getItemById(config.target.work.nodeId)?.getUrl() || '#',
-                        text: config.target.work.taskName || 'Target'
-                    },
-                    {
-                        selector: '.follow-link:nth-child(2)',
-                        display: true,
-                        href: WF.getItemById(config.target.personal.nodeId)?.getUrl() || '#',
-                        text: config.target.personal.taskName || 'Target'
-                    }
-                ],
-                collector: [
-                    {
-                        selector: '.collect-link',
-                        display: true,
-                        href: WF.getItemById(config.collector.nodeId)?.getUrl() || '#',
-                        text: config.collector.taskName || 'Collector'
-                    }
-                ]
-            };
-
-            // 隐藏所有链接
-            document.querySelectorAll('.planner-link').forEach(link => {
-                link.style.display = 'none';
-            });
-
-            // 显示当前模式的链接
-            if (links[mode]) {
-                links[mode].forEach(link => {
-                    const element = document.querySelector(link.selector);
-                    if (element) {
-                        element.style.display = link.display ? 'flex' : 'none';
-                        element.href = link.href;
-                        element.textContent = link.text; // 更新链接文本
-                    }
-                });
-            }
-        }
-
+        
         // 初始化清除按钮
         document.getElementById('clear-all').onclick = () => {
             if (confirm('确定要清除当前模式的所有节点吗？')) {
@@ -1891,6 +1858,8 @@
         initTodayPlan();
     }
 
+    
+
     // 将 switchMode 函数移到模块作用域
     function switchMode(mode) {
         // Hide all content
@@ -1898,18 +1867,27 @@
             content.classList.remove('active');
         });
 
+        // Hide all mode-specific links
+        document.querySelectorAll('.mode-links > div').forEach(links => {
+            links.style.display = 'none';
+        });
+
         // Remove active class from all buttons
         document.querySelectorAll('.mode-btn').forEach(btn => {
             btn.classList.remove('active');
         });
 
-        // Show selected mode content
+        // Show selected mode content and links
         const contentEl = document.getElementById(`${mode}-content`);
         const buttonEl = document.getElementById(`mode-${mode}`);
+        const linksEl = document.querySelector(`.${mode}-links`);
 
         if (contentEl && buttonEl) {
             contentEl.classList.add('active');
             buttonEl.classList.add('active');
+            if (linksEl) {
+                linksEl.style.display = 'block';
+            }
 
             // 渲染内容
             const config = ConfigManager.getConfig();
@@ -1933,7 +1911,66 @@
 
         // Save current mode
         localStorage.setItem('wf_current_mode', mode);
+
+        // Update links for current mode
+        updateLinks(mode);
     }
+
+    function updateLinks(mode) {
+        const config = ConfigManager.getConfig();
+        const links = {
+            daily: [
+                {
+                    selector: '.today-link',
+                    display: config.dailyPlanner.enabled && !!config.dailyPlanner.calendarNodeId,
+                    href: '#',
+                    text: "Today's Plan"
+                },
+                {
+                    selector: '.scan-link',
+                    display: config.dailyPlanner.enabled,
+                    href: WF.getItemById(config.dailyPlanner.nodeId)?.getUrl() || '#',
+                    text: config.dailyPlanner.taskName || 'Daily'
+                }
+            ],
+            target: [
+                {
+                    selector: '.follow-link:nth-child(1)',
+                    display: config.target.work.enabled,
+                    href: WF.getItemById(config.target.work.nodeId)?.getUrl() || '#',
+                    text: config.target.work.taskName || 'Target'
+                },
+                {
+                    selector: '.follow-link:nth-child(2)',
+                    display: config.target.personal.enabled,
+                    href: WF.getItemById(config.target.personal.nodeId)?.getUrl() || '#',
+                    text: config.target.personal.taskName || 'Target'
+                }
+            ],
+            collector: [
+                {
+                    selector: '.collect-link',
+                    display: config.collector.enabled,
+                    href: WF.getItemById(config.collector.nodeId)?.getUrl() || '#',
+                    text: config.collector.taskName || 'Collector'
+                }
+            ]
+        };
+
+        // Only update links for current mode
+        const currentModeLinks = links[mode];
+        if (currentModeLinks) {
+            currentModeLinks.forEach(link => {
+                const element = document.querySelector(link.selector);
+                if (element) {
+                    element.style.display = link.display ? 'flex' : 'none';
+                    element.href = link.href;
+                    element.textContent = link.text;
+                }
+            });
+        }
+    }
+
 
     // 添加checkMirrorNodes函数定义
     function checkMirrorNodes(node) {
@@ -2031,7 +2068,7 @@
             border: 1px solid var(--border-color, rgba(58, 67, 71, 1));
             border-radius: 6px;
             margin-bottom: 8px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1));
             color: var(--text-color, #e8e8e8));
         }
 
@@ -2305,7 +2342,7 @@
                     if (timeInfo) {
                         const block = timeBlocks.find(b => b.time === timeInfo.time);
                         if (block) {
-                            // 只收集时间节点的子节点，并验证节点有效性
+                            // 只收集时间��点的子节点，并验证节点有效性
                             const children = timeInfo.node.getChildren();
                             if (children && children.length > 0) {
                                 const validChildren = children.filter(node => this.validateNode(node));
@@ -2962,15 +2999,16 @@
         // 保存按钮事件处理
         saveBtn.addEventListener('click', () => {
             try {
-                const config = ConfigManager.getConfig(); // 获取当前配置
-
-                // 收集表单数据
+                // 获取当前配置用于保持未修改的值
+                const currentConfig = ConfigManager.getConfig();
+                
                 const formData = {
+                    ...currentConfig, // 保持其他配置不变
                     dailyPlanner: {
                         enabled: document.getElementById('enable-daily').checked,
                         nodeId: document.getElementById('node-daily').value.trim(),
                         taskName: document.getElementById('task-daily').value.trim(),
-                        calendarNodeId: document.getElementById('calendar-node-daily').value.trim() || '35a73627730b'
+                        calendarNodeId: document.getElementById('calendar-node-daily').value.trim() // 移除默认值
                     },
                     target: {
                         work: {
@@ -3008,29 +3046,25 @@
                 // 验证配置
                 const errors = ConfigManager.validateConfig(formData);
                 if (errors.length > 0) {
-                    showToast('保存失败：' + errors[0]);
-                    console.error('配置验证失败:', errors);
+                    showToast('配置错误: ' + errors[0], true); // 添加 isError 参数
                     return;
                 }
 
                 // 保存配置
                 if (ConfigManager.saveConfig(formData)) {
                     showToast('配置已保存');
-                    // 更新模式按钮
-                    updateModeButtons();
-                    // 更新输入框状态
+                    // 更新界面
                     loadConfig();
                     // 刷新当前视图
                     const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
                     switchMode(currentMode);
-                    // 更新链接
                     updateLinks(currentMode);
                 } else {
-                    showToast('保存失败，请重试');
+                    showToast('保存失败，请重试', true); // 添加 isError 参数
                 }
             } catch (error) {
-                console.error('保存配置时发生错误:', error);
-                showToast('保存失败：' + error.message);
+                console.error('保存配置失败:', error);
+                showToast('保存失败: ' + error.message, true); // 添加 isError 参数
             }
         });
 
@@ -3070,76 +3104,116 @@
 
     // 改进日期节点处理
     function findDateNode(targetDate) {
-        const config = ConfigManager.getConfig();
-        const calendarNodeId = config.dailyPlanner.calendarNodeId;
-    
-        if (!calendarNodeId) {
-            throw new Error('未配置日历节点ID');
-        }
-    
-        const parser = new DOMParser();
-    
-        // Optimized timestamp getter
-        function getMsFromItemName(item) {
-            const name = item.getName();
-            if (!name.includes('<time')) return null;
-    
-            const time = parser.parseFromString(name, 'text/html').querySelector("time");
-            if (!time) return null;
-    
-            const ta = time.attributes;
-            if (!ta || !ta.startyear || ta.starthour || ta.endyear) return null;
-    
-            return Date.parse(`${ta.startyear.value}/${ta.startmonth.value}/${ta.startday.value}`);
-        }
-    
-        // Optimized search with year pre-check
-        function findFirstMatchingItem(targetTimestamp, parent) {
-            const name = parent.getName();
-            const currentYear = new Date(targetTimestamp).getFullYear();
-            if (name.includes('Plan of') && !name.includes(currentYear.toString())) {
+        try {
+            const config = ConfigManager.getConfig();
+            const calendarNodeId = config.dailyPlanner.calendarNodeId;
+        
+            if (!calendarNodeId) {
+                console.log('Calendar node ID not configured');
                 return null;
             }
-    
-            const nodeTimestamp = getMsFromItemName(parent);
-            if (nodeTimestamp === targetTimestamp) return parent;
-    
-            for (let child of parent.getChildren()) {
-                const match = findFirstMatchingItem(targetTimestamp, child);
-                if (match) return match;
+        
+            const parser = new DOMParser();
+            
+            // Get calendar root node
+            const calendarNode = WF.getItemById(calendarNodeId);
+            if (!calendarNode) {
+                console.log('Calendar node not found:', calendarNodeId);
+                return null;
             }
-    
+        
+            // Optimized timestamp getter
+            function getMsFromItemName(item) {
+                const name = item.getName();
+                if (!name.includes('<time')) return null;
+        
+                const time = parser.parseFromString(name, 'text/html').querySelector("time");
+                if (!time) return null;
+        
+                const ta = time.attributes;
+                if (!ta || !ta.startyear || ta.starthour || ta.endyear) return null;
+        
+                return Date.parse(`${ta.startyear.value}/${ta.startmonth.value}/${ta.startday.value}`);
+            }
+        
+            // Optimized search with year pre-check
+            function findFirstMatchingItem(targetTimestamp, parent) {
+                const name = parent.getName();
+                const currentYear = new Date(targetTimestamp).getFullYear();
+                if (name.includes('Plan of') && !name.includes(currentYear.toString())) {
+                    return null;
+                }
+        
+                const nodeTimestamp = getMsFromItemName(parent);
+                if (nodeTimestamp === targetTimestamp) return parent;
+        
+                for (let child of parent.getChildren()) {
+                    const match = findFirstMatchingItem(targetTimestamp, child);
+                    if (match) return match;
+                }
+        
+                return null;
+            }
+        
+            // Cache handling
+            const todayKey = targetDate.toDateString();
+            const cachedNode = sessionStorage.getItem(todayKey);
+        
+            if (cachedNode) {
+                try {
+                    const node = WF.getItemById(cachedNode);
+                    if (node) return node;
+                } catch (e) {
+                    sessionStorage.removeItem(todayKey);
+                }
+            }
+        
+            const todayTimestamp = targetDate.setHours(0,0,0,0);
+            const found = findFirstMatchingItem(todayTimestamp, calendarNode);
+        
+            if (found) {
+                sessionStorage.setItem(todayKey, found.getId());
+                return found;
+            }
+        
+            console.log('Date node not found for:', targetDate);
+            return null;
+        } catch (error) {
+            console.error('Error in findDateNode:', error);
             return null;
         }
-    
-        // Cache handling
-        const todayKey = targetDate.toDateString();
-        const cachedNode = sessionStorage.getItem(todayKey);
-    
-        if (cachedNode) {
+    }
+
+    // Update Today's Plan initialization
+    function initTodayPlan() {
+        const todayLink = document.querySelector('.today-link');
+        if (!todayLink) return;
+
+        todayLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+
             try {
-                const node = WF.getItemById(cachedNode);
-                if (node) return node;
-            } catch (e) {
-                sessionStorage.removeItem(todayKey);
+                const config = ConfigManager.getConfig();
+                if (!config.dailyPlanner.enabled || !config.dailyPlanner.calendarNodeId) {
+                    showToast('请先配置日历节点ID', true);
+                    return;
+                }
+
+                showToast('正在查找今天的日期节点...');
+                const today = new Date();
+                const node = findDateNode(today);
+                
+                if (node) {
+                    WF.zoomTo(node);
+                    showToast('已找到今天的日期节点');
+                } else {
+                    showToast('未找到今天的日期节点', true);
+                }
+            } catch (error) {
+                console.error('导航到今天失败:', error);
+                showToast('导航失败: ' + error.message, true);
             }
-        }
-    
-        // Get calendar root node
-        const calendarNode = WF.getItemById(calendarNodeId);
-        if (!calendarNode) {
-            throw new Error('未找到日历节点');
-        }
-    
-        const todayTimestamp = targetDate.setHours(0,0,0,0);
-        const found = findFirstMatchingItem(todayTimestamp, calendarNode);
-    
-        if (found) {
-            sessionStorage.setItem(todayKey, found.getId());
-            return found;
-        }
-    
-        return null;
+        });
     }
 
     // 添加clearAllReminders函数
@@ -3485,51 +3559,4 @@
             transform: translate(-50%, -50%) scale(1);
         }
     `);
-
-    // 更新Today's Plan功能
-    function initTodayPlan() {
-        const todayLink = document.querySelector('.today-link');
-        if (!todayLink) return;
-    
-        todayLink.addEventListener('click', async (e) => {
-            e.preventDefault();
-    
-            try {
-                const today = new Date();
-                const node = findDateNode(today);
-                
-                if (node) {
-                    WF.zoomTo(node);
-                } else {
-                    showToast('未找到今天的日期节点');
-                }
-            } catch (error) {
-                console.error('导航到今天失败:', error);
-                showToast('导航失败: ' + error.message);
-            }
-        });
-    }
-
-    // 添加递归获取节点函数
-    function getAllDescendants(node, maxDepth = 10, currentDepth = 0) {
-        if (!node || currentDepth >= maxDepth) return [];
-
-        let descendants = [];
-        try {
-            const children = node.getChildren();
-            if (!children || !Array.isArray(children)) return [];
-
-            // 添加直接子节点
-            descendants.push(...children);
-
-            // 递归获取每个子节点的后代
-            for (const child of children) {
-                descendants.push(...getAllDescendants(child, maxDepth, currentDepth + 1));
-            }
-        } catch (error) {
-            console.error('获��节点后代失败:', error);
-        }
-
-        return descendants;
-    }
 })();
