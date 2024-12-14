@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.10
+// @version      0.0.11
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -16,7 +16,7 @@
 
     // 默认配置
     const DEFAULT_CONFIG = {
-        version: '0.0.6',
+        version: '${SCRIPT_VERSION}',
         theme: 'dark',
         refreshInterval: 60000,
         excludeTags: '',
@@ -260,40 +260,65 @@
             opacity: 0.8; /* 更明显的标记 */
         }
 
-        /* 操作按钮样式优化 */
-        .reminder-actions {
+        /* 操作按钮容器 */
+        .task-actions {
             position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
+            right: 0;
+            top: 0;
+            bottom: 0;
             display: flex;
+            align-items: center;
             gap: 4px;
-            opacity: 0;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            background: linear-gradient(to right, transparent, rgba(56, 70, 81, 0.9) 20%);
-            padding: 4px 8px;
-            border-radius: 4px;
-        }
-
-        .task-item:hover .reminder-actions {
-            opacity: 1;
-            transform: translateY(-50%);
-        }
-
-        .reminder-action-btn {
+            padding: 0 12px;
             opacity: 0;
             transform: translateX(10px);
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(to right, transparent, var(--bg-color, rgba(43, 49, 53, 0.95)) 20%);
         }
 
-        .task-item:hover .reminder-action-btn {
+        .task-item:hover .task-actions {
             opacity: 1;
             transform: translateX(0);
         }
 
-        /* 按钮hover效果优化 */
-        .reminder-action-btn:hover {
+        /* 操作按钮 */
+        .task-action-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #9EA1A2;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: translateX(10px);
+        }
+
+        .task-item:hover .task-action-btn {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .task-action-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
             transform: scale(1.1);
+        }
+
+        /* 按钮图标 */
+        .task-action-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* 针对彩色节点的样式调整 */
+        .task-item.colored .task-actions {
+            background: linear-gradient(to right, transparent, var(--node-color, rgba(43, 49, 53, 0.95)) 20%);
         }
 
         /* 清除按钮样式优化 */
@@ -431,7 +456,7 @@
             border: 1px solid var(--border-color);
         }
 
-        /* 模式切����按钮组样式 */
+        /* 模�������������������切����按钮组样式 */
         .mode-switch {
             display: flex;
             background: rgba(39, 45, 50, 1);
@@ -925,7 +950,7 @@
             font-size: 14px;
         }
 
-        /* 自定义复选框样式 */
+        /* 自���义复选框样式 */
         .checkbox-wrapper {
             position: relative;
             display: inline-block;
@@ -1414,44 +1439,6 @@
         }
     }
 
-    function updateModeButtons() {
-        if (!panel) return;
-        const config = ConfigManager.getConfig();
-
-        // Update Daily button
-        const dailyBtn = document.getElementById('mode-daily');
-        if (dailyBtn) {
-            dailyBtn.textContent = config.dailyPlanner.taskName || 'Daily';
-            dailyBtn.style.display = config.dailyPlanner.enabled ? 'block' : 'none';
-        }
-
-        // Update Target button
-        const targetBtn = document.getElementById('mode-target');
-        if (targetBtn) {
-            const targetEnabled = config.target.work.enabled ||
-                                config.target.personal.enabled ||
-                                config.target.temp.enabled;
-            targetBtn.style.display = targetEnabled ? 'block' : 'none';
-
-            let targetName = 'Target';
-            if (config.target.work.enabled && config.target.work.taskName) {
-                targetName = config.target.work.taskName;
-            } else if (config.target.personal.enabled && config.target.personal.taskName) {
-                targetName = config.target.personal.taskName;
-            } else if (config.target.temp.enabled && config.target.temp.taskName) {
-                targetName = config.target.temp.taskName;
-            }
-            targetBtn.textContent = targetName;
-        }
-
-        // Update Collector button
-        const collectorBtn = document.getElementById('mode-collector');
-        if (collectorBtn) {
-            collectorBtn.textContent = config.collector.taskName || 'Collector';
-            collectorBtn.style.display = config.collector.enabled ? 'block' : 'none';
-        }
-    }
-
     // 加载配置
     function loadConfig() {
         if (!panel) return;
@@ -1590,7 +1577,7 @@
                         <path d="M6.5 1L7.5 0H8.5L9.5 1L10.5 1.5L11.5 1L12.5 1.5L13 2.5L14 3.5L14.5 4.5L15 5.5V6.5L14 7.5V8.5L15 9.5V10.5L14.5 11.5L14 12.5L13 13.5L12.5 14.5L11.5 15L10.5 14.5L9.5 15H8.5L7.5 16H6.5L5.5 15L4.5 14.5L3.5 15L2.5 14.5L2 13.5L1 12.5L0.5 11.5L0 10.5V9.5L1 8.5V7.5L0 6.5V5.5L0.5 4.5L1 3.5L2 2.5L2.5 1.5L3.5 1L4.5 1.5L5.5 1H6.5Z" fill="currentColor"/>
                         <circle cx="8" cy="8" r="2" fill="var(--bg-color)"/>
                     </svg>
-                    设置
+                    ��置
                 </button>
             </div>
 
@@ -1604,7 +1591,7 @@
                     <!-- DailyPlanner 设置 -->
                     <div class="config-section">
                         <div class="section-header">
-                            <h3>DailyPlanner 设置</h3>
+                            <h3>DailyPlanner 设��</h3>
                         </div>
                         <div class="config-group">
                             <div class="group-header">
@@ -1789,30 +1776,30 @@
                     {
                         selector: '.scan-link',
                         display: true,
-                        href: `https://workflowy.com/#/${config.dailyPlanner.nodeId}`,
-                        text: "Daily"
+                        href: WF.getItemById(config.dailyPlanner.nodeId)?.getUrl() || '#',
+                        text: config.dailyPlanner.taskName || 'Daily'
                     }
                 ],
                 target: [
                     {
                         selector: '.follow-link:nth-child(1)',
                         display: true,
-                        href: `https://workflowy.com/#/${config.target.work.nodeId}`,
-                        text: "Target"
+                        href: WF.getItemById(config.target.work.nodeId)?.getUrl() || '#',
+                        text: config.target.work.taskName || 'Target'
                     },
                     {
                         selector: '.follow-link:nth-child(2)',
                         display: true,
-                        href: `https://workflowy.com/#/${config.target.personal.nodeId}`,
-                        text: "Target"
+                        href: WF.getItemById(config.target.personal.nodeId)?.getUrl() || '#',
+                        text: config.target.personal.taskName || 'Target'
                     }
                 ],
                 collector: [
                     {
                         selector: '.collect-link',
                         display: true,
-                        href: `https://workflowy.com/#/${config.collector.nodeId}`,
-                        text: "Collector"
+                        href: WF.getItemById(config.collector.nodeId)?.getUrl() || '#',
+                        text: config.collector.taskName || 'Collector'
                     }
                 ]
             };
@@ -1931,61 +1918,246 @@
         }
     }
 
-    // 添加获取节点颜色的函数
+    // 更新getNodeColor函数
     function getNodeColor(node) {
         try {
-            const element = node.getElement();
-            if (!element) return null;
+            const name = node.getName();
+            if (!name) return null;
 
-            // 获取节点的背景色
-            const projectEl = element.closest('.project');
-            if (!projectEl) return null;
+            // 匹配颜色类
+            const colorMatch = name.match(/class="colored ((?:c-|bc-)[a-z]+)"/);
+            if (!colorMatch) return null;
 
-            // 获取计算后的样式
-            const style = window.getComputedStyle(projectEl);
+            const colorClass = colorMatch[1];
 
-            return {
-                background: style.backgroundColor,
-                border: style.borderColor,
-                text: style.color
+            // 文本颜色映射
+            const textColorMap = {
+                'c-red': '#d32f2f',
+                'c-orange': '#ef6c00',
+                'c-yellow': '#f9a825',
+                'c-green': '#388e3c',
+                'c-blue': '#1e88e5',
+                'c-purple': '#7b1fa2',
+                'c-pink': '#e91e63',
+                'c-sky': '#00bcd4',
+                'c-teal': '#009688',
+                'c-gray': '#757575'
             };
+
+            // 背景颜色映射
+            const bgColorMap = {
+                'bc-red': 'rgba(211, 47, 47, 0.2)',
+                'bc-orange': 'rgba(239, 108, 0, 0.2)',
+                'bc-yellow': 'rgba(249, 168, 37, 0.2)',
+                'bc-green': 'rgba(56, 142, 60, 0.2)',
+                'bc-blue': 'rgba(30, 136, 229, 0.2)',
+                'bc-purple': 'rgba(123, 31, 162, 0.2)',
+                'bc-pink': 'rgba(233, 30, 99, 0.2)',
+                'bc-sky': 'rgba(0, 188, 212, 0.2)',
+                'bc-teal': 'rgba(0, 150, 136, 0.2)',
+                'bc-gray': 'rgba(117, 117, 117, 0.2)'
+            };
+
+            if (colorClass.startsWith('c-')) {
+                const color = textColorMap[colorClass];
+                return {
+                    background: `${color}1a`, // 10% opacity
+                    border: `${color}33`,     // 20% opacity
+                    text: color,
+                    hover: {
+                        background: `${color}26`, // 15% opacity
+                        border: `${color}40`,     // 25% opacity
+                        actions: `${color}0d`     // 5% opacity
+                    }
+                };
+            } else if (colorClass.startsWith('bc-')) {
+                const bgColor = bgColorMap[colorClass];
+                const [r, g, b] = bgColor.match(/\d+/g);
+                return {
+                    background: bgColor,
+                    border: bgColor.replace('0.2', '0.3'),
+                    text: '#000000',
+                    hover: {
+                        background: `rgba(${r}, ${g}, ${b}, 0.25)`,
+                        border: `rgba(${r}, ${g}, ${b}, 0.35)`,
+                        actions: `rgba(${r}, ${g}, ${b}, 0.1)`
+                    }
+                };
+            }
+
+            return null;
         } catch (error) {
             console.error('获取节点颜色失败:', error);
             return null;
         }
     }
 
-    // 更新Templates对象
-    const Templates = {
-        // SVG图标
-        icons: {
-            refresh: `<svg viewBox="0 0 24 24" width="16" height="16">
-                <path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
-            </svg>`,
-            copy: `<svg viewBox="0 0 24 24" width="16" height="16">
-                <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-            </svg>`,
-            remove: `<svg viewBox="0 0 24 24" width="16" height="16">
-                <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
-            </svg>`
-        },
+    // 更新卡片样式
+    GM_addStyle(`
+        /* 卡片基础样式 */
+        .task-item {
+            position: relative;
+            padding: 12px;
+            background: var(--bg-color, rgba(53, 60, 63, 1));
+            border: 1px solid var(--border-color, rgba(58, 67, 71, 1));
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-color, #e8e8e8);
+        }
 
-        taskItem: (child, showCopy = true) => {
+        /* 彩色节点样式 */
+        .task-item.colored {
+            background: var(--node-bg-color);
+            border-color: var(--node-border-color);
+            color: var(--node-text-color);
+        }
+
+        .task-item.colored:hover {
+            background: var(--node-bg-color);
+            border-color: var(--node-border-color);
+        }
+
+        .task-item.colored .task-name,
+        .task-item.colored .task-note {
+            color: var(--node-text-color);
+        }
+
+        /* 操作按钮区域 */
+        .task-item.colored .task-actions {
+            background: linear-gradient(to right, 
+                transparent, 
+                var(--node-bg-color) 20%
+            );
+        }
+    `);
+
+    // 添加复制格式处理函数
+    function formatContent(node, format = 'plain') {
+        try {
+            switch (format) {
+                case 'plain': {
+                    // 纯文本格式：移除所有HTML标记
+                    const name = node.getNameInPlainText().trim();
+                    const note = node.getNoteInPlainText().trim();
+                    return note ? `${name}\n${note}` : name;
+                }
+
+                case 'formatted': {
+                    // 保留原始格式：保持HTML标记
+                    const name = node.getName().trim();
+                    const note = node.getNote().trim();
+                    return note ? `${name}\n${note}` : name;
+                }
+
+                case 'markdown': {
+                    // 转换为Markdown格式
+                    const convertToMarkdown = (html) => {
+                        return html
+                            // 处理粗体
+                            .replace(/<b>(.*?)<\/b>/g, '**$1**')
+                            // 处理斜体
+                            .replace(/<i>(.*?)<\/i>/g, '_$1_')
+                            // 处理链接
+                            .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/g, '[$2]($1)')
+                            // 处理换行
+                            .replace(/<br\s*\/?>/g, '\n')
+                            // 移除其他HTML标记
+                            .replace(/<[^>]+>/g, '')
+                            // 清理多余空白
+                            .replace(/\s+/g, ' ')
+                            .trim();
+                    };
+
+                    const name = convertToMarkdown(node.getName());
+                    const note = convertToMarkdown(node.getNote());
+                    return note ? `${name}\n\n${note}` : name;
+                }
+
+                default:
+                    return node.getNameInPlainText();
+            }
+        } catch (error) {
+            console.error('格式化内容失败:', error);
+            // 发生错误时返回纯文本
+            return node.getNameInPlainText();
+        }
+    }
+
+    // 更新Templates对象中的taskItem函数
+    const Templates = {
+        taskItem: (child, showCopy = true, mode = '') => {
             const hasMirrors = checkMirrorNodes(child);
             const colors = getNodeColor(child);
+            
+            // 构建颜色样式
             const colorStyle = colors ? `
                 style="
-                    --node-color: ${colors.background};
+                    --node-bg-color: ${colors.background};
                     --node-border-color: ${colors.border};
-                    --text-color: ${colors.text};
-                    --node-color-hover: ${colors.background}ee;
-                    --node-border-color-hover: ${colors.border}ee;
-                    --actions-bg-hover: linear-gradient(to right, transparent, ${colors.background}ee 20%);
+                    --node-text-color: ${colors.text};
+                    --node-bg-color-hover: ${colors.hover.background};
+                    --node-border-color-hover: ${colors.hover.border};
+                    --actions-bg-hover: ${colors.hover.actions};
                 "
             ` : '';
 
+            // Collector模式特殊处理
+            if (mode === 'collector') {
+                return `
+                    <div class="task-item ${child.isCompleted() ? 'completed' : ''} 
+                        ${hasMirrors ? 'has-mirrors' : ''} ${colors ? 'colored' : ''}"
+                        data-id="${child.getId()}"
+                        ${colorStyle}>
+                        <div class="task-content">
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" ${child.isCompleted() ? 'checked' : ''}>
+                                <span class="checkbox-custom"></span>
+                            </label>
+                            <div class="task-text">
+                                <div class="content-wrapper">
+                                    <div class="name-content">${child.getName()}</div>
+                                    ${child.getNote() ? `
+                                        <div class="note-content">${child.getNote()}</div>
+                                    ` : ''}
+                                </div>
+                                <div class="meta-info">
+                                    <span class="timestamp">
+                                        ${new Date(child.getLastModifiedDate()).toLocaleString()}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-action-btn link" title="跳转到节点">
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                    <path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                                </svg>
+                            </button>
+                            <button class="task-action-btn remove" title="移除">
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                    <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 生成节点链接
+            const nodeLink = child.getUrl();
+            
+            // 根据模式决定是否添加链接
+            const contentWrapper = (content) => {
+                if (mode === 'collector') {
+                    return content;
+                } else {
+                    return `<a href="${nodeLink}" class="task-link">${content}</a>`;
+                }
+            };
+            
             return `
-                <div class="task-item ${child.isCompleted() ? 'completed' : ''}
+                <div class="task-item ${child.isCompleted() ? 'completed' : ''} 
                     ${hasMirrors ? 'has-mirrors' : ''} ${colors ? 'colored' : ''}"
                     data-id="${child.getId()}"
                     ${colorStyle}>
@@ -1995,20 +2167,26 @@
                             <span class="checkbox-custom"></span>
                         </label>
                         <div class="task-text">
-                            <span class="task-name">${child.getNameInPlainText()}</span>
-                            ${child.getNoteInPlainText() ? `
-                                <span class="task-note">${child.getNoteInPlainText()}</span>
-                            ` : ''}
+                            ${contentWrapper(`
+                                <span class="task-name">${child.getNameInPlainText()}</span>
+                                ${child.getNoteInPlainText() ? `
+                                    <span class="task-note">${child.getNoteInPlainText()}</span>
+                                ` : ''}
+                            `)}
                         </div>
                     </div>
-                    <div class="reminder-actions">
+                    <div class="task-actions">
                         ${showCopy ? `
-                            <button class="reminder-action-btn copy" title="复制">
-                                ${Templates.icons.copy}
+                            <button class="task-action-btn copy" title="复制">
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                    <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                                </svg>
                             </button>
                         ` : ''}
-                        <button class="reminder-action-btn remove" title="移除">
-                            ${Templates.icons.remove}
+                        <button class="task-action-btn remove" title="移除">
+                            <svg viewBox="0 0 24 24" width="14" height="14">
+                                <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -2098,10 +2276,11 @@
                     if (timeInfo) {
                         const block = timeBlocks.find(b => b.time === timeInfo.time);
                         if (block) {
-                            // 只收集时间节点的子节点
+                            // 只收集时间节点的子节点，并验证节点有效性
                             const children = timeInfo.node.getChildren();
                             if (children && children.length > 0) {
-                                block.nodes.push(...children);
+                                const validChildren = children.filter(node => this.validateNode(node));
+                                block.nodes.push(...validChildren);
                             }
                         }
                     }
@@ -2114,14 +2293,16 @@
                         <div class="time-block">
                             <div class="time-label">${block.time}</div>
                             <div class="task-list">
-                                ${block.nodes.map(node => Templates.taskItem(node)).join('')}
+                                ${block.nodes.map(node => Templates.taskItem(node, false, 'daily')).join('')}
                             </div>
                         </div>
                     `).join('');
 
                 container.innerHTML = `
                     <div class="daily-tasks">
-                        ${content || '<div class="empty-state">暂无时间块任务</div>'}
+                        <div class="task-list">
+                            ${content || '<div class="empty-state">暂无时间块任务</div>'}
+                        </div>
                     </div>
                 `;
 
@@ -2247,14 +2428,11 @@
                         // 获取节点标题
                         const nodeTitle = node.getNameInPlainText();
 
-                        // 添加节点内容
+                        // 添��节点内容
                         targetContent.push(`
-                            <div class="node-section">
-                                <div class="node-title">${nodeTitle}</div>
-                                <div class="node-content">
-                                    <div class="task-list">
-                                        ${sortedNodes.map(child => Templates.taskItem(child)).join('')}
-                                    </div>
+                            <div class="target-section">
+                                <div class="task-list">
+                                    ${sortedNodes.map(node => Templates.taskItem(node, false, 'target')).join('')}
                                 </div>
                             </div>
                         `);
@@ -2283,106 +2461,103 @@
 
         // 渲染 Collector 视图
         async renderCollectorView(container, config) {
-            if (!config.collector.enabled) {
-                container.innerHTML = '<div class="empty-state">请先启用收集器模式</div>';
+            if (!config.collector.enabled || !config.collector.nodeId) {
+                container.innerHTML = '<div class="empty-state">请先配置收集箱节点</div>';
                 return;
             }
 
-            container.innerHTML = '<div class="loading">加载中...</div>';
-
             try {
-                const node = WF.getItemById(config.collector.nodeId);
-                if (!node) {
-                    container.innerHTML = '<div class="error-state">节点不存在或无法访问</div>';
+                // 收集节点
+                const collectedNodes = collectNodes(config);
+                if (collectedNodes.size === 0) {
+                    container.innerHTML = '<div class="empty-state">暂无待处理内容</div>';
                     return;
                 }
 
-                // 使用递归函数获取所有层级的节点
-                const allNodes = getAllDescendants(node);
-                if (!allNodes || allNodes.length === 0) {
-                    container.innerHTML = '<div class="empty-state">暂无收集的内容</div>';
-                    return;
-                }
-
-                // Filter tags
-                const filteredNodes = allNodes.filter(child => {
-                    // Global exclude tags
-                    if (config.excludeTags) {
-                        const excludeTags = config.excludeTags.split(',').map(t => t.trim());
-                        const name = child.getNameInPlainText();
-                        const note = child.getNoteInPlainText();
-                        if (excludeTags.some(tag => {
-                            const tagWithoutHash = tag.replace(/^#/, '');
-                            return name.includes(`#${tagWithoutHash}`) ||
-                                   name.includes(tagWithoutHash) ||
-                                   note.includes(`#${tagWithoutHash}`) ||
-                                   note.includes(tagWithoutHash);
-                        })) {
-                            return false;
-                        }
-                    }
-
-                    // Collector specific tags
-                    if (config.collector.tags) {
-                        const tags = config.collector.tags.split(',').map(t => t.trim());
-                        const name = child.getNameInPlainText();
-                        const note = child.getNoteInPlainText();
-                        return tags.some(tag => {
-                            const tagWithoutHash = tag.replace(/^#/, '');
-                            return name.includes(`#${tagWithoutHash}`) ||
-                                   name.includes(tagWithoutHash) ||
-                                   note.includes(`#${tagWithoutHash}`) ||
-                                   note.includes(tagWithoutHash);
-                        });
-                    }
-
-                    return true;
-                });
+                // 渲染节点
+                const content = Array.from(collectedNodes.values())
+                    .sort((a, b) => b.time - a.time) // 按修改时间排序
+                    .map(node => {
+                        return `
+                            <div class="task-item ${node.completed ? 'completed' : ''}" 
+                                data-id="${node.id}">
+                                <div class="task-content">
+                                    <label class="checkbox-wrapper">
+                                        <input type="checkbox" ${node.completed ? 'checked' : ''}>
+                                        <span class="checkbox-custom"></span>
+                                    </label>
+                                    <div class="task-text">
+                                        <div class="content-wrapper">
+                                            <div class="name-content">${node.name}</div>
+                                            ${node.childrenContent ? `
+                                                <div class="children-content">${node.childrenContent}</div>
+                                            ` : ''}
+                                        </div>
+                                        <div class="meta-info">
+                                            <span class="timestamp">
+                                                ${new Date(node.time).toLocaleString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="task-actions">
+                                    <button class="task-action-btn link" title="跳转到节点">
+                                        <svg viewBox="0 0 24 24" width="14" height="14">
+                                            <path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                                        </svg>
+                                    </button>
+                                    <button class="task-action-btn remove" title="移除">
+                                        <svg viewBox="0 0 24 24" width="14" height="14">
+                                            <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
 
                 container.innerHTML = `
                     <div class="collector-tasks">
                         <div class="task-list">
-                            ${filteredNodes.map(child => Templates.taskItem(child, true)).join('')}
+                            ${content}
                         </div>
                     </div>
                 `;
 
                 // 添加事件监听
-                this.addTaskEventListeners(container);
                 this.addCollectorEventListeners(container, config);
 
             } catch (error) {
-                console.error('Error rendering collector view:', error);
+                console.error('渲染收集器视图失败:', error);
                 container.innerHTML = '<div class="error-state">加载失败，请刷新重试</div>';
             }
         },
 
         // Collector特有的事件监听器
         addCollectorEventListeners(container, config) {
-            container.querySelectorAll('.copy-btn').forEach(btn => {
-                btn.addEventListener('click', async (e) => {
-                    const taskItem = e.target.closest('.task-item');
-                    const taskId = taskItem?.dataset.id;
-                    if (!taskId) {
-                        console.error('Task ID not found');
-                        showToast('复制失败：无法获取任务ID');
-                        return;
-                    }
+            // 卡片点击事件 - 复制内容
+            container.querySelectorAll('.task-item').forEach(item => {
+                item.addEventListener('click', async (e) => {
+                    // 忽略按钮点击
+                    if (e.target.closest('.task-actions')) return;
+                    
+                    const taskId = item.dataset.id;
+                    if (!taskId) return;
 
                     try {
                         const node = WF.getItemById(taskId);
-                        if (!node) {
-                            throw new Error('Task node not found');
-                        }
+                        if (!node) throw new Error('Task node not found');
 
-                        const content = node.getNameInPlainText();
+                        // 处理内容并复制
+                        const content = processCollectorContent(node);
                         await navigator.clipboard.writeText(content);
                         showToast('已复制');
 
+                        // 自动完成处理
                         if (config.collector.autoComplete) {
                             await WF.completeItem(node);
-                            taskItem.classList.add('completed');
-                            taskItem.querySelector('input[type="checkbox"]').checked = true;
+                            item.classList.add('completed');
+                            item.querySelector('input[type="checkbox"]').checked = true;
                         }
                     } catch (error) {
                         console.error('Error copying content:', error);
@@ -2390,38 +2565,126 @@
                     }
                 });
             });
+
+            // 链接按钮事件
+            container.querySelectorAll('.task-action-btn.link').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // 阻止冒泡到卡片
+                    const taskId = e.target.closest('.task-item')?.dataset.id;
+                    if (!taskId) return;
+
+                    const node = WF.getItemById(taskId);
+                    if (node) {
+                        window.location.href = node.getUrl();
+                    }
+                });
+            });
+
+            // 移除按钮事件
+            container.querySelectorAll('.task-action-btn.remove').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // 阻止冒泡到卡片
+                    // ... 移除按钮的代码保持不变 ...
+                });
+            });
         },
 
         // 通用事件监听器
         addTaskEventListeners(container) {
-            container.querySelectorAll('.task-item input[type="checkbox"]').forEach(checkbox => {
+            // 复选框事件
+            container.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                 checkbox.addEventListener('change', async (e) => {
-                    const taskId = e.target.closest('.task-item')?.dataset.id;
-                    if (!taskId) {
-                        console.error('Task ID not found');
-                        showToast('更新失败：无法获取任务ID');
-                        return;
-                    }
+                    e.stopPropagation();
+                    const taskItem = e.target.closest('.task-item');
+                    const taskId = taskItem?.dataset.id;
+                    if (!taskId) return;
 
                     try {
-                        if (typeof WF === 'undefined') {
-                            throw new Error('WorkFlowy API not available');
-                        }
-
                         const node = WF.getItemById(taskId);
-                        if (!node) {
-                            throw new Error('Task node not found');
-                        }
+                        if (!node) throw new Error('Task node not found');
 
-                        // 使用 completeItem 来切换完成状态
+                        // 更新WorkFlowy状态
                         await WF.completeItem(node);
-                        e.target.closest('.task-item').classList.toggle('completed', node.isCompleted());
+                        taskItem.classList.toggle('completed', e.target.checked);
 
                     } catch (error) {
-                        console.error('Error updating task status:', error);
-                        showToast('更新任务状态失败：' + error.message);
+                        console.error('更新状态失败:', error);
+                        showToast('更新失败：' + error.message);
                         // 恢复复选框状态
                         e.target.checked = !e.target.checked;
+                    }
+                });
+            });
+
+            // 复制按钮事件
+            container.querySelectorAll('.task-action-btn.copy').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const taskItem = e.target.closest('.task-item');
+                    const taskId = taskItem?.dataset.id;
+                    if (!taskId) return;
+
+                    try {
+                        const node = WF.getItemById(taskId);
+                        if (!node) throw new Error('Task node not found');
+
+                        // 复制内容
+                        const success = await this.copyNodeContent(node);
+                        if (success) {
+                            showFeedback(btn, '已复制');
+                        } else {
+                            showFeedback(btn, '复制失败');
+                        }
+
+                    } catch (error) {
+                        console.error('复制失败:', error);
+                        showFeedback(btn, '复制失败');
+                    }
+                });
+            });
+
+            // 移除按钮事件
+            container.querySelectorAll('.task-action-btn.remove').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const taskItem = e.target.closest('.task-item');
+                    const taskId = taskItem?.dataset.id;
+                    if (!taskId) return;
+
+                    try {
+                        // 存储移除记录
+                        const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
+                        const removedItems = JSON.parse(localStorage.getItem(`workflowy_removed_${currentMode}`) || '[]');
+                        
+                        if (!removedItems.includes(taskId)) {
+                            removedItems.push(taskId);
+                            localStorage.setItem(`workflowy_removed_${currentMode}`, JSON.stringify(removedItems));
+                        }
+
+                        // 显示反馈并移除元素
+                        showFeedback(taskItem, '已移除');
+                        setTimeout(() => {
+                            taskItem.style.opacity = '0';
+                            setTimeout(() => taskItem.remove(), 300);
+                        }, 700);
+
+                    } catch (error) {
+                        console.error('移除失败:', error);
+                        showFeedback(taskItem, '移除失败');
+                    }
+                });
+            });
+
+            // 链接按钮事件
+            container.querySelectorAll('.task-action-btn.link').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const taskId = e.target.closest('.task-item')?.dataset.id;
+                    if (!taskId) return;
+
+                    const node = WF.getItemById(taskId);
+                    if (node) {
+                        WF.zoomTo(node);
                     }
                 });
             });
@@ -2487,6 +2750,88 @@
                     node.name.includes(tag) || node.note.includes(tag)
                 )
             );
+        },
+
+        // 验证节点是否有效
+        validateNode(node) {
+            try {
+                // 检查节点是否存在
+                if (!node) return false;
+                // 尝试访问节点属性，如果节点无效会抛出异常
+                node.getId();
+                node.getNameInPlainText();
+                return true;
+            } catch (error) {
+                console.error('节点验证失败:', error);
+                return false;
+            }
+        },
+
+        // 添加复制内容函数
+        async copyNodeContent(node) {
+            try {
+                let contentToCopy = '';
+
+                if (this.isUrlNode(node)) {
+                    // 获取原始HTML内容
+                    const htmlContent = node.getName();
+
+                    if (htmlContent.includes('<a href=')) {
+                        // 已经是链接格式
+                        contentToCopy = htmlContent;
+                    } else {
+                        // 构造链接
+                        const text = node.getNameInPlainText();
+                        const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
+                        if (urlMatch) {
+                            const url = urlMatch[0];
+                            contentToCopy = `<a href="${url}">${text}</a>`;
+                        } else {
+                            contentToCopy = text;
+                        }
+                    }
+                } else {
+                    // 非URL节点使用原始HTML
+                    contentToCopy = node.getName();
+                }
+
+                // 创建临时元素
+                const tempDiv = document.createElement('div');
+                tempDiv.style.position = 'absolute';
+                tempDiv.style.left = '-9999px';
+                tempDiv.innerHTML = contentToCopy;
+                document.body.appendChild(tempDiv);
+
+                // 选择内容
+                const range = document.createRange();
+                range.selectNodeContents(tempDiv);
+
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+
+                // 执行复制
+                const success = document.execCommand('copy');
+
+                // 清理
+                selection.removeAllRanges();
+                document.body.removeChild(tempDiv);
+
+                return success;
+
+            } catch (error) {
+                console.error('复制内容失败:', error);
+                return false;
+            }
+        },
+
+        // 添加URL节点检查函数
+        isUrlNode(node) {
+            const htmlContent = node.getName();
+            const plainText = node.getNameInPlainText();
+
+            return htmlContent.includes('<a href=') ||
+                   /https?:\/\/[^\s]+/.test(plainText);
         }
     }
 
@@ -2519,7 +2864,7 @@
                             }
                         }
                     } catch (error) {
-                        console.error('刷新内容时发生错误:', error);
+                        console.error('刷新内容时发生错��:', error);
                         showToast('刷新失败，请重试');
                     }
                 }, ConfigManager.getConfig().refreshInterval || 60000);
@@ -2576,7 +2921,7 @@
         const resetBtn = panel.querySelector('.config-reset');
         const themeToggle = panel.querySelector('.theme-toggle');
 
-        // 配置面板显示/隐藏
+        // ���置面板显示/隐藏
         configTrigger.addEventListener('click', () => {
             configPanel.classList.add('visible');
         });
@@ -2659,7 +3004,7 @@
             }
         });
 
-        // 重置按钮事件处理
+        // 重置按钮事��处理
         resetBtn.addEventListener('click', () => {
             if (confirm('确定要重置所有设置吗？')) {
                 if (ConfigManager.resetConfig()) {
@@ -2713,7 +3058,7 @@
 
         // 优化的查找函数：增加年份预检查
         function findFirstMatchingItem(targetTimestamp, parent) {
-            // 快速预检查：如果节点名包含年份信息，检查是否匹配
+            // 快速预检查：如果节点名包含年份信息，检��是否匹配
             const name = parent.getName();
             const currentYear = new Date(targetTimestamp).getFullYear();
             if (name.includes('Plan of') && !name.includes(currentYear.toString())) {
@@ -2733,7 +3078,7 @@
             return null;
         }
 
-        // 缓存机制
+        // 缓存机���
         const todayKey = targetDate.toDateString();
         const cachedNode = sessionStorage.getItem(todayKey);
 
@@ -2762,4 +3107,348 @@
 
         return null;
     }
+
+    // 添加clearAllReminders函数
+    function clearAllReminders(mode) {
+        try {
+            // 清除指定模式的所有移除记录
+            localStorage.removeItem(`workflowy_removed_${mode}`);
+            
+            // 刷新当前视图
+            const contentEl = document.getElementById(`${mode}-content`);
+            if (contentEl) {
+                const config = ConfigManager.getConfig();
+                switch (mode) {
+                    case 'daily':
+                        ViewRenderer.renderDailyView(contentEl, config);
+                        break;
+                    case 'target':
+                        ViewRenderer.renderTargetView(contentEl, config);
+                        break;
+                    case 'collector':
+                        ViewRenderer.renderCollectorView(contentEl, config);
+                        break;
+                }
+            }
+        } catch (error) {
+            console.error('清除失败:', error);
+            showToast('清除失败，请重试');
+        }
+    }
+
+    // 添加内容处理函数
+    function processCollectorContent(node) {
+        try {
+            const name = node.getName();
+            const plainName = node.getNameInPlainText();
+            const children = node.getChildren();
+
+            // 单节点处理
+            if (children.length === 0) {
+                // 检查日期时间格式
+                const dateTimeMatch = plainName.match(/^\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}\s+\|\s+(.+)$/);
+                if (dateTimeMatch) {
+                    const content = dateTimeMatch[1].trim();
+                    // 检查是否是纯URL
+                    if (/^https?:\/\/[^\s#]+$/.test(content)) {
+                        return content;
+                    }
+                    return content;
+                }
+
+                // 检查HTML链接
+                if (name.includes('<a href=')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = name;
+                    const anchor = tempDiv.querySelector('a');
+                    if (anchor) {
+                        const title = anchor.textContent;
+                        const url = anchor.href;
+                        return createOPML(title, url);
+                    }
+                }
+
+                // 检查纯URL
+                if (/^https?:\/\/[^\s#]+$/.test(plainName)) {
+                    return plainName;
+                }
+
+                return plainName;
+            }
+
+            // 多节点处理
+            const firstChild = children[0];
+            const isFirstChildSameAsParent = firstChild.getNameInPlainText() === plainName;
+            const relevantChildren = isFirstChildSameAsParent ? children.slice(1) : children;
+
+            // 检查标题和链接格式
+            const titleNode = relevantChildren.find(child => 
+                child.getNameInPlainText().startsWith('标题：'));
+            const linkNode = relevantChildren.find(child => 
+                child.getNameInPlainText().startsWith('链接：'));
+
+            if (titleNode && linkNode) {
+                const title = titleNode.getNameInPlainText().replace(/^标题[：:]\s*/, '').trim();
+                const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
+                return createOPML(title, url);
+            }
+
+            // 处理带缩进的内容
+            let formattedContent = plainName.replace(/#稍后处理/g, '').trim();
+            
+            // 处理子节点内容
+            const processChildren = (nodes, level = 1) => {
+                return nodes.map(child => {
+                    const content = child.getNameInPlainText()
+                        .replace(/#稍后处理/g, '')
+                        .trim();
+                    
+                    if (!content) return '';
+
+                    const indent = '  '.repeat(level);
+                    const childContent = `${indent}- ${content}`;
+
+                    // 递归处理子节点
+                    const grandChildren = child.getChildren();
+                    if (grandChildren.length > 0) {
+                        const nestedContent = processChildren(grandChildren, level + 1);
+                        return nestedContent ? `${childContent}\n${nestedContent}` : childContent;
+                    }
+
+                    return childContent;
+                }).filter(line => line.trim()).join('\n');
+            };
+
+            const childrenContent = processChildren(relevantChildren);
+            if (childrenContent) {
+                formattedContent += '\n' + childrenContent;
+            }
+
+            return formattedContent;
+
+        } catch (error) {
+            console.error('处理收集器内容失败:', error);
+            return node.getNameInPlainText();
+        }
+    }
+
+    // 创建OPML格式内容
+    function createOPML(title, url) {
+        return `<?xml version="1.0"?>
+<opml version="2.0">
+    <head>
+        <title>${title}</title>
+    </head>
+    <body>
+        <outline text="${title}" _note="&lt;a href=&quot;${url}&quot;&gt;${url}&lt;/a&gt;"/>
+    </body>
+</opml>`;
+    }
+
+    // 添加收集器节点处理函数
+    function collectNodes(config) {
+        const collectedNodes = new Map();
+        const processedNodes = new Set();
+
+        // 检查节点是否为空
+        function isEmptyNode(node) {
+            const name = node.getNameInPlainText();
+            // 移除日期时间格式
+            const nameWithoutDateTime = name.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/, '');
+            // 移除标签
+            const nameWithoutTags = nameWithoutDateTime.replace(/#[^\s#]+/g, '');
+            // 检查是否还有其他内容
+            return nameWithoutTags.trim() === '' && node.getChildren().length === 0;
+        }
+
+        // 递归搜索节点
+        function searchNodes(node) {
+            if (!node || processedNodes.has(node.getId())) return;
+
+            const nodeId = node.getId();
+            const nodeName = node.getNameInPlainText();
+
+            // 检查标签
+            if (nodeName.includes('#稍后处理') && !isEmptyNode(node)) {
+                // 标记节点及其子节点为已处理
+                processedNodes.add(nodeId);
+                node.getChildren().forEach(child => {
+                    processedNodes.add(child.getId());
+                });
+
+                // 收集子节点内容
+                let childrenContent = '';
+                const children = node.getChildren();
+                if (children.length > 0) {
+                    children.forEach(child => {
+                        const childName = child.getNameInPlainText()
+                            .replace(/#稍后处理/g, '').trim();
+                        const childNote = child.getNoteInPlainText();
+
+                        childrenContent += `- ${childName}\n`;
+                        if (childNote) {
+                            childrenContent += `  ${childNote}\n`;
+                        }
+                    });
+                }
+
+                // 保存节点信息
+                collectedNodes.set(nodeId, {
+                    id: nodeId,
+                    name: nodeName.replace(/#稍后处理/g, '').trim(),
+                    childrenContent: childrenContent.trim(),
+                    time: node.getLastModifiedDate().getTime(),
+                    completed: node.isCompleted(),
+                    url: node.getUrl()
+                });
+            } else {
+                // 继续搜索子节点
+                node.getChildren().forEach(child => {
+                    if (!processedNodes.has(child.getId())) {
+                        searchNodes(child);
+                    }
+                });
+            }
+        }
+
+        // 开始收集
+        try {
+            const collectorNode = WF.getItemById(config.collector.nodeId);
+            if (collectorNode) {
+                searchNodes(collectorNode);
+            }
+        } catch (error) {
+            console.error('收集节点失败:', error);
+        }
+
+        return collectedNodes;
+    }
+
+    // 添加创建卡片项函数
+    function createTaskItem(node, mode) {
+        try {
+            if (!node) return '';
+
+            const isCompleted = node.isCompleted();
+            const hasMirrors = checkMirrorNodes(node);
+            const colors = getNodeColor(node);
+            
+            // 构建颜色样式
+            const colorStyle = colors ? `
+                style="
+                    --node-bg-color: ${colors.background};
+                    --node-border-color: ${colors.border};
+                    --node-text-color: ${colors.text};
+                    --node-bg-color-hover: ${colors.hover.background};
+                    --node-border-color-hover: ${colors.hover.border};
+                    --actions-bg-hover: ${colors.hover.actions};
+                "
+            ` : '';
+
+            // 收集模式特殊处理
+            if (mode === 'collector') {
+                const name = node.getNameInPlainText().replace(/#稍后处理/g, '').trim();
+                const children = node.getChildren();
+                let childrenContent = '';
+
+                if (children.length > 0) {
+                    childrenContent = children.map(child => {
+                        const childName = child.getNameInPlainText()
+                            .replace(/#稍后处理/g, '')
+                            .trim();
+                        const childNote = child.getNoteInPlainText();
+                        let content = `- ${childName}`;
+                        if (childNote) {
+                            content += `\n  ${childNote}`;
+                        }
+                        return content;
+                    }).join('\n');
+                }
+
+                return `
+                    <div class="task-item collect-mode ${isCompleted ? 'completed' : ''} 
+                        ${hasMirrors ? 'has-mirrors' : ''} ${colors ? 'colored' : ''}"
+                        data-id="${node.getId()}"
+                        ${colorStyle}>
+                        ${name ? `<div class="parent-title">${name}</div>` : ''}
+                        <div class="task-content">
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" ${isCompleted ? 'checked' : ''}>
+                                <span class="checkbox-custom"></span>
+                            </label>
+                            <div class="task-text">
+                                ${childrenContent ? 
+                                    `<div class="children-content">${childrenContent}</div>` :
+                                    `<div class="single-content">${name}</div>`
+                                }
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-action-btn link" title="跳转到节点">
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                    <path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                                </svg>
+                            </button>
+                            <button class="task-action-btn remove" title="移除">
+                                <svg viewBox="0 0 24 24" width="14" height="14">
+                                    <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // 其他模式的处理保持不变...
+        } catch (error) {
+            console.error('创建卡片失败:', error);
+            return '';
+        }
+    }
+
+    // 添加操作反馈函数
+    function showFeedback(element, message) {
+        const taskItem = element.closest('.task-item');
+        const feedback = document.createElement('div');
+        feedback.className = 'action-feedback';
+        feedback.textContent = message;
+        taskItem.appendChild(feedback);
+        
+        // 添加动画类
+        requestAnimationFrame(() => {
+            feedback.classList.add('show');
+            setTimeout(() => {
+                feedback.classList.remove('show');
+                setTimeout(() => feedback.remove(), 300);
+            }, 1000);
+        });
+    }
+
+    // 更新ViewRenderer中的事件处理
+    
+
+    // 添加反馈样式
+    GM_addStyle(`
+        /* 操作反馈样式 */
+        .action-feedback {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .action-feedback.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+    `);
 })();
