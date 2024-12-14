@@ -152,31 +152,173 @@
 
     // 添加基础样式
     GM_addStyle(`
-        /* 面板基础样式 */
+        /* 面板基础样式优化 */
         .wf-panel {
             position: fixed;
-            right: -320px;
+            right: -319px; /* 使用固定宽度 */
             top: 46px;
             height: calc(100vh - 46px);
-            width: 320px;
-            background: var(--bg-color, #2B3135);
-            border-left: 1px solid var(--border-color, #5c6062);
+            width: 319px;
+            background: #2B3135; /* 更深的背景色 */
+            border-left: 1px solid #5c6062; /* 更明显的边框 */
             z-index: 100;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 更流畅的动画 */
             display: flex;
             flex-direction: column;
         }
 
-        .wf-panel.visible {
-            transform: translateX(-320px);
+        /* 链接区域样式优化 */
+        .planner-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0px;
+            margin: 12px;
         }
 
-        .wf-panel.visible ~ #content {
-            padding-right: 320px;
+        .planner-links-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
         }
 
-        #content {
-            transition: padding-right 0.3s ease;
+        .planner-link {
+            display: flex;
+            justify-content: flex-end;
+            color: rgba(144, 147, 149, 0.5);
+            font-size: 12px;
+            text-decoration: none;
+            padding: 8px 16px 8px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23909395' fill-opacity='0.5'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23909395' fill-opacity='0.5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 12px;
+        }
+
+        .planner-link:hover {
+            color: rgba(53, 125, 166, 1);
+            text-decoration: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23357DA6'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23357DA6'/%3E%3C/svg%3E");
+            transform: translateX(-2px); /* 轻微位移效果 */
+        }
+
+        /* Today's Plan链接特殊样式 */
+        .today-link {
+            display: flex !important;
+            margin-right: auto;
+            background-image: none;
+            padding-left: 4px;
+        }
+
+        .today-link::before {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 4px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M8.5 1H8V0H7V1H3V0H2V1H1.5C0.67 1 0 1.67 0 2.5V9.5C0 10.33 0.67 11 1.5 11H8.5C9.33 11 10 10.33 10 9.5V2.5C10 1.67 9.33 1 8.5 1ZM9 9.5C9 9.78 8.78 10 8.5 10H1.5C1.22 10 1 9.78 1 9.5V4H9V9.5ZM9 3H1V2.5C1 2.22 1.22 2 1.5 2H2V3H3V2H7V3H8V2H8.5C8.78 2 9 2.22 9 2.5V3Z' fill='%23909395' fill-opacity='0.5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            vertical-align: middle;
+            transition: all 0.2s ease;
+        }
+
+        .today-link:hover::before {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M8.5 1H8V0H7V1H3V0H2V1H1.5C0.67 1 0 1.67 0 2.5V9.5C0 10.33 0.67 11 1.5 11H8.5C9.33 11 10 10.33 10 9.5V2.5C10 1.67 9.33 1 8.5 1ZM9 9.5C9 9.78 8.78 10 8.5 10H1.5C1.22 10 1 9.78 1 9.5V4H9V9.5ZM9 3H1V2.5C1 2.22 1.22 2 1.5 2H2V3H3V2H7V3H8V2H8.5C8.78 2 9 2.22 9 2.5V3Z' fill='%23357DA6'/%3E%3C/svg%3E");
+        }
+
+        /* 卡片样式优化 */
+        .task-item {
+            position: relative;
+            padding: 12px;
+            background: rgba(53, 60, 63, 1);
+            border: 1px solid rgba(58, 67, 71, 1);
+            border-radius: 6px;
+            margin-bottom: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .task-item:hover {
+            background: rgba(56, 70, 81, 1);
+            border-color: rgba(68, 80, 88, 1);
+            transform: translateY(-1px);
+        }
+
+        /* 镜像节点标记优化 */
+        .has-mirrors::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: #4a9eff;
+            border-radius: 3px 0 0 3px;
+            opacity: 0.8; /* 更明显的标记 */
+        }
+
+        /* 操作按钮样式优化 */
+        .reminder-actions {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(to right, transparent, rgba(56, 70, 81, 0.9) 20%);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .task-item:hover .reminder-actions {
+            opacity: 1;
+            transform: translateY(-50%);
+        }
+
+        .reminder-action-btn {
+            opacity: 0;
+            transform: translateX(10px);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .task-item:hover .reminder-action-btn {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* 按钮hover效果优化 */
+        .reminder-action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* 清除按钮样式优化 */
+        .clear-all-container {
+            padding: 12px;
+            background: #2c3135;
+            border-top: 1px solid #444;
+            margin-top: auto;
+        }
+
+        .clear-all-btn {
+            width: 100%;
+            height: 32px;
+            background: #42484b;
+            color: #e8e8e8;
+            border: none;
+            border-radius: 22px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .clear-all-btn:hover {
+            background: #d9534f;
+            transform: translateY(-1px);
         }
 
         /* 切换按钮样式 */
@@ -184,7 +326,7 @@
             position: fixed;
             right: 20px;
             top: 60px;
-            background: var(--bg-color, #2B3135);
+            background: #2B3135;
             border: none;
             padding: 8px;
             cursor: pointer;
@@ -195,10 +337,11 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
+            border-radius: 50%;
         }
 
         .wf-toggle:hover {
-            background: var(--hover-bg, #363b3f);
+            background: #363b3f;
         }
 
         .wf-toggle.active .toggle-arrow {
@@ -208,7 +351,7 @@
         .toggle-arrow {
             width: 20px;
             height: 20px;
-            color: var(--text-secondary, #9EA1A2);
+            color: rgba(158, 161, 162, 1);
             transition: transform 0.3s ease;
             opacity: 0.8;
         }
@@ -1001,6 +1144,93 @@
         .task-item .reminder-actions button:hover {
             transform: scale(1.1);
         }
+
+        /* 面板显示/隐藏状态 */
+        .wf-panel {
+            position: fixed;
+            right: -319px;
+            top: 46px;
+            height: calc(100vh - 46px);
+            width: 319px;
+            background: #2B3135;
+            border-left: 1px solid #5c6062;
+            z-index: 100;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wf-panel.visible {
+            transform: translateX(-319px);
+        }
+
+        .wf-panel.visible ~ #content {
+            padding-right: 319px;
+        }
+
+        #content {
+            transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 切换按钮样式 */
+        .wf-toggle {
+            position: fixed;
+            right: 20px;
+            top: 60px;
+            background: #2B3135;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+            z-index: 101;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            border-radius: 50%;
+        }
+
+        .wf-toggle:hover {
+            background: #363b3f;
+        }
+
+        .wf-toggle.active .toggle-arrow {
+            transform: rotate(180deg);
+        }
+
+        .toggle-arrow {
+            width: 20px;
+            height: 20px;
+            color: rgba(158, 161, 162, 1);
+            transition: transform 0.3s ease;
+            opacity: 0.8;
+        }
+
+        .wf-toggle:hover .toggle-arrow {
+            opacity: 1;
+        }
+
+        /* 卡片颜色支持 */
+        .task-item.colored {
+            background: var(--node-color);
+            border-color: var(--node-border-color);
+            color: var(--text-color);
+        }
+
+        .task-item.colored:hover {
+            background: var(--node-color-hover);
+            border-color: var(--node-border-color-hover);
+        }
+
+        .task-item.colored .reminder-actions {
+            background: var(--actions-bg-hover);
+        }
+
+        .task-item.colored .task-name,
+        .task-item.colored .task-note {
+            color: var(--text-color);
+        }
     `);
 
     // 面板切换函数
@@ -1012,6 +1242,8 @@
         if (panel && toggleBtn) {
             panel.classList.toggle('visible');
             toggleBtn.classList.toggle('active');
+            
+            // 更新内容区域padding
             if (content) {
                 content.style.paddingRight = panel.classList.contains('visible') ? '319px' : '0';
             }
@@ -1037,11 +1269,11 @@
         document.documentElement.setAttribute('data-theme', savedTheme);
     }
 
-    function handleKeyPress(event) {
-        if (event.ctrlKey && event.key === '/') {
-            setTimeout(() => {
-                togglePanel();
-            }, 50);
+    function handleKeyPress(e) {
+        // Ctrl + /
+        if (e.ctrlKey && e.key === '/') {
+            e.preventDefault();
+            togglePanel();
         }
     }
 
@@ -1643,7 +1875,31 @@
         }
     }
 
-    // 更新Templates对象,添加remove图标
+    // 添加获取节点颜色的函数
+    function getNodeColor(node) {
+        try {
+            const element = node.getElement();
+            if (!element) return null;
+            
+            // 获取节点的背景色
+            const projectEl = element.closest('.project');
+            if (!projectEl) return null;
+
+            // 获取计算后的样式
+            const style = window.getComputedStyle(projectEl);
+            
+            return {
+                background: style.backgroundColor,
+                border: style.borderColor,
+                text: style.color
+            };
+        } catch (error) {
+            console.error('获取节点颜色失败:', error);
+            return null;
+        }
+    }
+
+    // 更新Templates对象
     const Templates = {
         // SVG图标
         icons: {
@@ -1657,13 +1913,26 @@
                 <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
             </svg>`
         },
-    
-        // 任务项模板
+        
         taskItem: (child, showCopy = true) => {
             const hasMirrors = checkMirrorNodes(child);
+            const colors = getNodeColor(child);
+            const colorStyle = colors ? `
+                style="
+                    --node-color: ${colors.background};
+                    --node-border-color: ${colors.border};
+                    --text-color: ${colors.text};
+                    --node-color-hover: ${colors.background}ee;
+                    --node-border-color-hover: ${colors.border}ee;
+                    --actions-bg-hover: linear-gradient(to right, transparent, ${colors.background}ee 20%);
+                "
+            ` : '';
+            
             return `
-                <div class="task-item ${child.isCompleted() ? 'completed' : ''} ${hasMirrors ? 'has-mirrors' : ''}" 
-                    data-id="${child.getId()}">
+                <div class="task-item ${child.isCompleted() ? 'completed' : ''} 
+                    ${hasMirrors ? 'has-mirrors' : ''} ${colors ? 'colored' : ''}"
+                    data-id="${child.getId()}"
+                    ${colorStyle}>
                     <div class="task-content">
                         <label class="checkbox-wrapper">
                             <input type="checkbox" ${child.isCompleted() ? 'checked' : ''}>
@@ -1688,21 +1957,7 @@
                     </div>
                 </div>
             `;
-        },
-    
-        // 标题栏模板
-        header: (title, showRefresh = true) => `
-            <div class="task-header">
-                <h3>${title}</h3>
-                ${showRefresh ? `
-                    <div class="header-actions">
-                        <button class="refresh-btn" title="刷新">
-                            ${Templates.icons.refresh}
-                        </button>
-                    </div>
-                ` : ''}
-            </div>
-        `
+        }
     };
 
     // 添加extractReminderContent函数定义
@@ -1763,7 +2018,6 @@
     
                 container.innerHTML = `
                     <div class="daily-tasks">
-                        ${Templates.header(config.dailyPlanner.taskName || '日常计划')}
                         <div class="task-list">
                             ${filteredNodes.map(child => Templates.taskItem(child)).join('')}
                         </div>
@@ -1899,7 +2153,6 @@
                     
                     targetContent.push(`
                         <div class="target-section">
-                            ${Templates.header(config.target[type].taskName || type)}
                             <div class="task-list">
                                 ${sortedNodes.map(child => Templates.taskItem(child)).join('')}
                             </div>
@@ -1987,7 +2240,6 @@
 
                 container.innerHTML = `
                     <div class="collector-tasks">
-                        ${Templates.header(config.collector.taskName || '收集箱')}
                         <div class="task-list">
                             ${filteredNodes.map(child => Templates.taskItem(child, true)).join('')}
                         </div>
