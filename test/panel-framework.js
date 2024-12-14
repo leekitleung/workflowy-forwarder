@@ -94,7 +94,7 @@
         validateConfig(config) {
             const errors = [];
 
-            // 验证节点ID (支持单个或多个，用逗号分隔)
+            // Validate node ID (support single or multiple, comma-separated)
             const validateNodeId = (id, name) => {
                 if (!id) return;
                 const ids = id.split(',').map(i => i.trim());
@@ -105,29 +105,29 @@
                 }
             };
 
-            // 验证标签 (支持单个或多个，用逗号分隔)
+            // Validate tags (support single or multiple, comma-separated)
             const validateTags = (tags, name) => {
                 if (!tags) return;
                 const tagList = tags.split(',').map(t => t.trim());
                 for (const tag of tagList) {
-                    // 更新正则表达式以支持中文字符和数字
-                    // ^ - 开始
-                    // #? - 可选的#号
-                    // [0-9\u4e00-\u9fa5a-zA-Z\s_]+ - 支持数字、中文、英文、空格和下划线
-                    // $ - 结束
+                    // Update regex to support Chinese characters and numbers
+                    // ^ - start
+                    // #? - optional # symbol
+                    // [0-9\u4e00-\u9fa5a-zA-Z\s_]+ - support numbers, Chinese, English, spaces and underscore
+                    // $ - end
                     if (tag && !/^#?[0-9\u4e00-\u9fa5a-zA-Z\s_]+$/.test(tag)) {
                         errors.push(`${name}的标签 "${tag}" 格式不正确，标签只能包含数字、中文、英文、空格和下划线`);
                     }
                 }
             };
 
-            // 验证 DailyPlanner
+            // Validate DailyPlanner
             if (config.dailyPlanner.enabled) {
                 validateNodeId(config.dailyPlanner.nodeId, 'DailyPlanner');
                 validateTags(config.dailyPlanner.tag, 'DailyPlanner');
             }
 
-            // 验证 Target
+            // Validate Target
             Object.entries(config.target).forEach(([key, value]) => {
                 if (value.enabled) {
                     validateNodeId(value.nodeId, `Target-${key}`);
@@ -135,13 +135,13 @@
                 }
             });
 
-            // 验证 Collector
+            // Validate Collector
             if (config.collector.enabled) {
                 validateNodeId(config.collector.nodeId, 'Collector');
                 validateTags(config.collector.tags, 'Collector');
             }
 
-            // 验证排除标签
+            // Validate exclude tags
             if (config.excludeTags) {
                 validateTags(config.excludeTags, '排除标签');
             }
@@ -781,6 +781,165 @@
             margin: 12px;
             font-size: 14px;
         }
+
+        /* 自定义复选框样式 */
+        .checkbox-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            opacity: 0;
+            position: absolute;
+        }
+
+        .checkbox-custom {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--text-color);
+            border-radius: 3px;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 5px;
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        /* 任务项样式 */
+        .task-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 8px;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+
+        .task-item:hover {
+            background-color: var(--hover-color);
+        }
+
+        .task-content {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .task-text {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .task-name {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .task-note {
+            font-size: 12px;
+            color: var(--secondary-text-color);
+            margin-top: 4px;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .task-actions button {
+            padding: 4px;
+            border: none;
+            background: none;
+            color: var(--text-color);
+            opacity: 0.6;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        .task-actions button:hover {
+            opacity: 1;
+        }
+
+        /* 标题栏样式 */
+        .task-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .task-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Target模式样式 */
+        .target-tasks {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .target-section {
+            background: var(--background-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .target-section .task-header {
+            background: var(--header-background);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .target-section .task-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        /* 滚动条样式 */
+        .target-section .task-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .target-section .task-list::-webkit-scrollbar-track {
+            background: var(--background-color);
+        }
+
+        .target-section .task-list::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 3px;
+        }
+
+        .target-section .task-list::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-text-color);
+        }
     `);
 
     // 面板切换函数
@@ -1104,12 +1263,12 @@
                             <div class="group-content">
                                 <div class="config-item">
                                     <label>节点ID</label>
-                                    <input type="text" id="node-work" placeholder="输入节点ID">
+                                    <input type="text" id="node-work" placeholder="输入节点ID，多个用逗号分隔">
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
                                     <input type="text" id="tag-work" 
-                                        placeholder="输入标签，如: #01每日推进 (支持数字、中文、英文)">
+                                        placeholder="输入标签，如: #01每日推进,#重要 (支持数字、中文、英文，多个用逗号分隔)">
                                 </div>
                             </div>
                         </div>
@@ -1176,7 +1335,7 @@
                                     <span class="checkbox-label">复制内容后自动标记完成</span>
                                 </div>
                                 <div class="config-item">
-                                    <label>复制格式</label>
+                                    <label>��制格式</label>
                                     <select id="copy-format-collector" class="config-select">
                                         <option value="plain">纯文本</option>
                                         <option value="markdown">Markdown</option>
@@ -1345,7 +1504,7 @@
 
         initTheme();
 
-        // 添加模式切换事件处理
+        // 添加模式切换事��处理
         const modeButtons = panel.querySelectorAll('.mode-btn');
         modeButtons.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1484,7 +1643,56 @@
         localStorage.setItem('wf_current_mode', mode);
     }
 
+    const Templates = {
+        // SVG图标
+        icons: {
+            refresh: `<svg viewBox="0 0 24 24" width="16" height="16">
+                <path fill="currentColor" d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>`,
+            copy: `<svg viewBox="0 0 24 24" width="16" height="16">
+                <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+            </svg>`
+        },
     
+        // 任务项模板
+        taskItem: (child, showCopy = true) => `
+            <div class="task-item ${child.isCompleted() ? 'completed' : ''}" data-id="${child.getId()}">
+                <div class="task-content">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" ${child.isCompleted() ? 'checked' : ''}>
+                        <span class="checkbox-custom"></span>
+                    </label>
+                    <div class="task-text">
+                        <span class="task-name">${child.getNameInPlainText()}</span>
+                        ${child.getNoteInPlainText() ? `
+                            <span class="task-note">${child.getNoteInPlainText()}</span>
+                        ` : ''}
+                    </div>
+                </div>
+                ${showCopy ? `
+                    <div class="task-actions">
+                        <button class="copy-btn" title="复制">
+                            ${Templates.icons.copy}
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `,
+    
+        // 标题栏模板
+        header: (title, showRefresh = true) => `
+            <div class="task-header">
+                <h3>${title}</h3>
+                ${showRefresh ? `
+                    <div class="header-actions">
+                        <button class="refresh-btn" title="刷新">
+                            ${Templates.icons.refresh}
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `
+    };
 
     // 添加ViewRenderer对象
     const ViewRenderer = {
@@ -1510,42 +1718,69 @@
                     return;
                 }
     
-                // 过滤排除的标签
+                // Filter excluded tags
                 const filteredNodes = children.filter(child => {
                     if (!config.excludeTags) return true;
                     const tags = config.excludeTags.split(',').map(t => t.trim());
                     const name = child.getNameInPlainText();
                     const note = child.getNoteInPlainText();
-                    return !tags.some(tag => name.includes(tag) || note.includes(tag));
+                    return !tags.some(tag => {
+                        const tagWithoutHash = tag.replace(/^#/, '');
+                        return name.includes(`#${tagWithoutHash}`) || 
+                               name.includes(tagWithoutHash) ||
+                               note.includes(`#${tagWithoutHash}`) ||
+                               note.includes(tagWithoutHash);
+                    });
                 });
     
                 container.innerHTML = `
                     <div class="daily-tasks">
-                        <div class="task-header">
-                            <h3>${config.dailyPlanner.taskName || '日常计划'}</h3>
-                            <button class="refresh-btn">刷新</button>
-                        </div>
+                        ${Templates.header(config.dailyPlanner.taskName || '日常计划')}
                         <div class="task-list">
-                            ${filteredNodes.map(child => `
-                                <div class="task-item ${child.isCompleted() ? 'completed' : ''}" data-id="${child.getId()}">
-                                    <div class="task-content">
-                                        <input type="checkbox" ${child.isCompleted() ? 'checked' : ''}>
-                                        <span class="task-name">${child.getNameInPlainText()}</span>
-                                    </div>
-                                    ${child.getNoteInPlainText() ? `<div class="task-note">${child.getNoteInPlainText()}</div>` : ''}
-                                </div>
-                            `).join('')}
+                            ${filteredNodes.map(child => Templates.taskItem(child)).join('')}
                         </div>
                     </div>
                 `;
     
                 // 添加事件监听
                 this.addTaskEventListeners(container);
+                this.addDailyPlannerEventListeners(container);
                 
             } catch (error) {
                 console.error('Error rendering daily view:', error);
                 container.innerHTML = '<div class="error-state">加载失败，请刷新重试</div>';
             }
+        },
+
+        // 添加DailyPlanner特有��事件监听器
+        addDailyPlannerEventListeners(container) {
+            // 复制按钮事件
+            container.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const taskItem = e.target.closest('.task-item');
+                    const taskId = taskItem?.dataset.id;
+                    if (!taskId) {
+                        console.error('Task ID not found');
+                        showToast('复制失败：无法获取任务ID');
+                        return;
+                    }
+    
+                    try {
+                        const node = WF.getItemById(taskId);
+                        if (!node) {
+                            throw new Error('Task node not found');
+                        }
+    
+                        const content = node.getNameInPlainText();
+                        await navigator.clipboard.writeText(content);
+                        showToast('已复制');
+                        
+                    } catch (error) {
+                        console.error('Error copying content:', error);
+                        showToast('复制失败：' + error.message);
+                    }
+                });
+            });
         },
 
         // 渲染 Target 视图
@@ -1564,44 +1799,85 @@
                 const targetContent = [];
                 
                 for (const type of enabledTargets) {
-                    const node = WF.getItemById(config.target[type].nodeId);
-                    if (!node) continue;
+                    // 支持多节点ID
+                    const nodeIds = (config.target[type].nodeId || '').split(',').map(id => id.trim()).filter(Boolean);
+                    if (nodeIds.length === 0) continue;
                     
-                    const children = node.getChildren();
-                    if (!children || !Array.isArray(children)) continue;
+                    const allNodes = [];
                     
-                    // 过滤排除的标签
-                    const filteredNodes = children.filter(child => {
-                        if (!config.excludeTags) return true;
-                        const tags = config.excludeTags.split(',').map(t => t.trim());
-                        const name = child.getNameInPlainText();
-                        const note = child.getNoteInPlainText();
-                        return !tags.some(tag => name.includes(tag) || note.includes(tag));
+                    // 获取所有节点的数据
+                    for (const nodeId of nodeIds) {
+                        const node = WF.getItemById(nodeId);
+                        if (!node) {
+                            console.warn(`Node not found: ${nodeId}`);
+                            continue;
+                        }
+                        
+                        const children = node.getChildren();
+                        if (!children || !Array.isArray(children)) continue;
+                        
+                        allNodes.push(...children);
+                    }
+                    
+                    if (allNodes.length === 0) continue;
+                    
+                    // Filter tags for each target type
+                    const filteredNodes = allNodes.filter(child => {
+                        // Global exclude tags
+                        if (config.excludeTags) {
+                            const excludeTags = config.excludeTags.split(',').map(t => t.trim());
+                            const name = child.getNameInPlainText();
+                            const note = child.getNoteInPlainText();
+                            if (excludeTags.some(tag => {
+                                const tagWithoutHash = tag.replace(/^#/, '');
+                                return name.includes(`#${tagWithoutHash}`) || 
+                                       name.includes(tagWithoutHash) ||
+                                       note.includes(`#${tagWithoutHash}`) ||
+                                       note.includes(tagWithoutHash);
+                            })) {
+                                return false;
+                            }
+                        }
+                        
+                        // Target specific tags
+                        if (config.target[type].tag) {
+                            const tags = config.target[type].tag.split(',').map(t => t.trim());
+                            const name = child.getNameInPlainText();
+                            const note = child.getNoteInPlainText();
+                            return tags.some(tag => {
+                                const tagWithoutHash = tag.replace(/^#/, '');
+                                return name.includes(`#${tagWithoutHash}`) || 
+                                       name.includes(tagWithoutHash) ||
+                                       note.includes(`#${tagWithoutHash}`) ||
+                                       note.includes(tagWithoutHash);
+                            });
+                        }
+                        
+                        return true;
                     });
                     
                     if (filteredNodes.length === 0) continue;
                     
                     targetContent.push(`
                         <div class="target-section">
-                            <div class="section-header">
-                                <h3>${config.target[type].taskName || type}</h3>
-                            </div>
+                            ${Templates.header(config.target[type].taskName || type)}
                             <div class="task-list">
-                                ${filteredNodes.map(child => `
-                                    <div class="task-item ${child.isCompleted() ? 'completed' : ''}" data-id="${child.getId()}">
-                                        <div class="task-content">
-                                            <input type="checkbox" ${child.isCompleted() ? 'checked' : ''}>
-                                            <span class="task-name">${child.getNameInPlainText()}</span>
-                                        </div>
-                                        ${child.getNoteInPlainText() ? `<div class="task-note">${child.getNoteInPlainText()}</div>` : ''}
-                                    </div>
-                                `).join('')}
+                                ${filteredNodes.map(child => Templates.taskItem(child)).join('')}
                             </div>
                         </div>
                     `);
                 }
                 
-                container.innerHTML = targetContent.join('') || '<div class="empty-state">暂无数据</div>';
+                if (targetContent.length === 0) {
+                    container.innerHTML = '<div class="empty-state">暂无数据</div>';
+                    return;
+                }
+                
+                container.innerHTML = `
+                    <div class="target-tasks">
+                        ${targetContent.join('')}
+                    </div>
+                `;
                 
                 // 添加事件监听
                 this.addTaskEventListeners(container);
@@ -1634,33 +1910,46 @@
                     return;
                 }
 
-                // 过滤排除的标签
+                // Filter tags
                 const filteredNodes = children.filter(child => {
-                    if (!config.excludeTags) return true;
-                    const tags = config.excludeTags.split(',').map(t => t.trim());
-                    const name = child.getNameInPlainText();
-                    const note = child.getNoteInPlainText();
-                    return !tags.some(tag => name.includes(tag) || note.includes(tag));
+                    // Global exclude tags
+                    if (config.excludeTags) {
+                        const excludeTags = config.excludeTags.split(',').map(t => t.trim());
+                        const name = child.getNameInPlainText();
+                        const note = child.getNoteInPlainText();
+                        if (excludeTags.some(tag => {
+                            const tagWithoutHash = tag.replace(/^#/, '');
+                            return name.includes(`#${tagWithoutHash}`) || 
+                                   name.includes(tagWithoutHash) ||
+                                   note.includes(`#${tagWithoutHash}`) ||
+                                   note.includes(tagWithoutHash);
+                        })) {
+                            return false;
+                        }
+                    }
+                    
+                    // Collector specific tags
+                    if (config.collector.tags) {
+                        const tags = config.collector.tags.split(',').map(t => t.trim());
+                        const name = child.getNameInPlainText();
+                        const note = child.getNoteInPlainText();
+                        return tags.some(tag => {
+                            const tagWithoutHash = tag.replace(/^#/, '');
+                            return name.includes(`#${tagWithoutHash}`) || 
+                                   name.includes(tagWithoutHash) ||
+                                   note.includes(`#${tagWithoutHash}`) ||
+                                   note.includes(tagWithoutHash);
+                        });
+                    }
+                    
+                    return true;
                 });
 
                 container.innerHTML = `
                     <div class="collector-tasks">
-                        <div class="task-header">
-                            <h3>${config.collector.taskName || '收集箱'}</h3>
-                        </div>
+                        ${Templates.header(config.collector.taskName || '收集箱')}
                         <div class="task-list">
-                            ${filteredNodes.map(child => `
-                                <div class="task-item ${child.isCompleted() ? 'completed' : ''}" data-id="${child.getId()}">
-                                    <div class="task-content">
-                                        <input type="checkbox" ${child.isCompleted() ? 'checked' : ''}>
-                                        <span class="task-name">${child.getNameInPlainText()}</span>
-                                    </div>
-                                    ${child.getNoteInPlainText() ? `<div class="task-note">${child.getNoteInPlainText()}</div>` : ''}
-                                    <div class="task-actions">
-                                        <button class="copy-btn">复制</button>
-                                    </div>
-                                </div>
-                            `).join('')}
+                            ${filteredNodes.map(child => Templates.taskItem(child, true)).join('')}
                         </div>
                     </div>
                 `;
@@ -1679,7 +1968,8 @@
         addCollectorEventListeners(container, config) {
             container.querySelectorAll('.copy-btn').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
-                    const taskId = e.target.closest('.task-item')?.dataset.id;
+                    const taskItem = e.target.closest('.task-item');
+                    const taskId = taskItem?.dataset.id;
                     if (!taskId) {
                         console.error('Task ID not found');
                         showToast('复制失败：无法获取任务ID');
@@ -1697,9 +1987,9 @@
                         showToast('已复制');
 
                         if (config.collector.autoComplete) {
-                            WF.completeItem(node);
-                            e.target.closest('.task-item').classList.add('completed');
-                            e.target.closest('.task-item').querySelector('input[type="checkbox"]').checked = true;
+                            await WF.completeItem(node);
+                            taskItem.classList.add('completed');
+                            taskItem.querySelector('input[type="checkbox"]').checked = true;
                         }
                     } catch (error) {
                         console.error('Error copying content:', error);
