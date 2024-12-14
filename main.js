@@ -2067,47 +2067,47 @@
     };
 
 
-        // 初始化事件监听
-        document.getElementById('scan-reminders').onclick = () => {
-            if (currentMode === 'scan') {
-                // 如果点击当前模式，清除该模式的移除记录
-                localStorage.removeItem('workflowy_removed_scan');
-                // 检查并清理已删除的节点
-                cleanDeletedNodes('scan');
-            }
-            currentMode = 'scan';
-            scanReminders();
-            updateButtonStyles();
-            updateCardsColor();
-        };
+    // 初始化事件监听
+    document.getElementById('scan-reminders').onclick = () => {
+        if (currentMode === 'scan') {
+            // 如果点击当前模式，清除该模式的移除记录
+            localStorage.removeItem('workflowy_removed_scan');
+            // 检查并清理已删除的节点
+            cleanDeletedNodes('scan');
+        }
+        currentMode = 'scan';
+        scanReminders();
+        updateButtonStyles();
+        updateCardsColor();
+    };
 
-        document.getElementById('follow-reminders').onclick = () => {
-            if (currentMode === 'follow') {
-                // 如果点击当前模式，清除该模式的移除记录
-                localStorage.removeItem('workflowy_removed_follow');
-                // 检查并清理已删除的节点
-                cleanDeletedNodes('follow');
-            }
-            currentMode = 'follow';
-            followReminders();
-            updateButtonStyles();
-            updateCardsColor();
-        };
+    document.getElementById('follow-reminders').onclick = () => {
+        if (currentMode === 'follow') {
+            // 如果点击当前模式，清除该模式的移除记录
+            localStorage.removeItem('workflowy_removed_follow');
+            // 检查并清理已删除的节点
+            cleanDeletedNodes('follow');
+        }
+        currentMode = 'follow';
+        followReminders();
+        updateButtonStyles();
+        updateCardsColor();
+    };
 
-        document.getElementById('collect-reminders').onclick = () => {
-            if (currentMode === 'collect') {
-                // 如果点击当前模式，清除该模式的移除记录
-                localStorage.removeItem('workflowy_removed_collect');
-                // 检查并清理已删除的节点
-                cleanDeletedNodes('collect');
-            }
-            currentMode = 'collect';
-            collectReminders();
-            updateButtonStyles();
-            updateCardsColor();
-        };
+    document.getElementById('collect-reminders').onclick = () => {
+        if (currentMode === 'collect') {
+            // 如果点击当前模式，清除该模式的移除记录
+            localStorage.removeItem('workflowy_removed_collect');
+            // 检查并清理已删除的节点
+            cleanDeletedNodes('collect');
+        }
+        currentMode = 'collect';
+        collectReminders();
+        updateButtonStyles();
+        updateCardsColor();
+    };
 
-        document.getElementById('clear-all').onclick = clearAllReminders;
+    document.getElementById('clear-all').onclick = clearAllReminders;
 
         // 初始化界面状态
         updateButtonStyles();

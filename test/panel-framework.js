@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.11
+// @version      0.0.12
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -16,14 +16,15 @@
 
     // 默认配置
     const DEFAULT_CONFIG = {
-        version: '${SCRIPT_VERSION}',
+        version: 'v${SCRIPT_VERSION}',
         theme: 'dark',
         refreshInterval: 60000,
         excludeTags: '',
         dailyPlanner: {
             enabled: false,
             taskName: '',
-            nodeId: ''
+            nodeId: '',
+            calendarNodeId: '' // 默认为空
         },
         target: {
             work: {
@@ -1306,6 +1307,19 @@
         .node-content {
             margin-left: 12px;
         }
+
+        /* ... 其他样式 ... */
+        .input-with-help {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
     `);
 
     // 面板切换函数
@@ -1460,6 +1474,7 @@
             'node-daily': config.dailyPlanner.nodeId,
             'task-daily': config.dailyPlanner.taskName,
             'enable-daily': config.dailyPlanner.enabled,
+            'calendar-node-daily': config.dailyPlanner.calendarNodeId,
 
             'node-work': config.target.work.nodeId,
             'task-work': config.target.work.taskName,
@@ -1591,7 +1606,7 @@
                     <!-- DailyPlanner 设置 -->
                     <div class="config-section">
                         <div class="section-header">
-                            <h3>DailyPlanner 设��</h3>
+                            <h3>DailyPlanner 设置</h3>
                         </div>
                         <div class="config-group">
                             <div class="group-header">
@@ -1602,6 +1617,15 @@
                                 <div class="config-item">
                                     <label>节点ID</label>
                                     <input type="text" id="node-daily" placeholder="输入节点ID">
+                                </div>
+                                <div class="config-item">
+                                    <label>日历节点</label>
+                                    <div class="input-with-help">
+                                        <input type="text" id="calendar-node-daily" 
+                                               placeholder="输入日历节点ID"
+                                               title="用于Today's Plan功能的日历根节点ID">
+                                        <span class="help-text">留空则不显示Today's Plan链接</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1769,7 +1793,7 @@
                 daily: [
                     {
                         selector: '.today-link',
-                        display: true,
+                        display: !!config.dailyPlanner.calendarNodeId, // 只在有日历节点ID时显示
                         href: '#',
                         text: "Today's Plan"
                     },
@@ -1831,6 +1855,8 @@
             }
         };
 
+        initTodayPlan();
+
         // 初始化配置面板
         initConfigPanel();
 
@@ -1860,6 +1886,9 @@
 
         // 初始化主题
         initTheme();
+
+        // Initialize Today's Plan functionality
+        initTodayPlan();
     }
 
     // 将 switchMode 函数移到模块作用域
@@ -2003,7 +2032,7 @@
             border-radius: 6px;
             margin-bottom: 8px;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            color: var(--text-color, #e8e8e8);
+            color: var(--text-color, #e8e8e8));
         }
 
         /* 彩色节点样式 */
@@ -2348,115 +2377,118 @@
 
         // 渲染 Target 视图
         async renderTargetView(container, config) {
-            const targetTypes = ['work', 'personal', 'temp'];
-            const enabledTargets = targetTypes.filter(type => config.target[type].enabled);
-
-            if (enabledTargets.length === 0) {
-                container.innerHTML = '<div class="empty-state">请先启用目标追踪模式</div>';
+            if (!config.target.work.enabled && !config.target.personal.enabled && !config.target.temp.enabled) {
+                container.innerHTML = '<div class="empty-state">请先启用目标模式</div>';
                 return;
             }
 
-            container.innerHTML = '<div class="loading">加载中...</div>';
-
             try {
-                const targetContent = [];
+                const targetNodes = new Map();
+                const processedIds = new Set();
 
-                for (const type of enabledTargets) {
-                    // 支持多节点ID
-                    const nodeIds = (config.target[type].nodeId || '').split(',')
-                        .map(id => id.trim())
-                        .filter(Boolean);
+                // 处理节点函数
+                function processNode(node, config) {
+                    const id = node.getId();
+                    if (processedIds.has(id)) return;
+                    processedIds.add(id);
 
-                    if (nodeIds.length === 0) continue;
+                    const name = node.getNameInPlainText();
+                    const note = node.getNoteInPlainText();
+                    const tag = config.tag ? config.tag.replace(/^#/, '') : '01每日推进';
 
-                    // 处理每个节点
-                    for (const nodeId of nodeIds) {
-                        const node = WF.getItemById(nodeId);
-                        if (!node) {
-                            console.warn(`Node not found: ${nodeId}`);
-                            continue;
-                        }
+                    if (!name.includes('#index') && !note.includes('#index') &&
+                        (name.includes(`#${tag}`) || note.includes(`#${tag}`))) {
 
-                        // 获取节点内容
-                        const descendants = getAllDescendants(node);
-                        if (descendants.length === 0) continue;
+                        const content = note.includes(`#${tag}`) ? note : name;
+                        const hasMirrors = checkMirrorNodes(node);
 
-                        // 过滤和排序节点
-                        const filteredNodes = descendants.filter(child => {
-                            // 全局排除标签
-                            if (config.excludeTags) {
-                                const excludeTags = config.excludeTags.split(',').map(t => t.trim());
-                                const name = child.getNameInPlainText();
-                                const note = child.getNoteInPlainText();
-                                if (excludeTags.some(tag => {
-                                    const tagWithoutHash = tag.replace(/^#/, '');
-                                    return name.includes(`#${tagWithoutHash}`) ||
-                                           name.includes(tagWithoutHash) ||
-                                           note.includes(`#${tagWithoutHash}`) ||
-                                           note.includes(tagWithoutHash);
-                                })) {
-                                    return false;
-                                }
-                            }
-
-                            // 目标特定标签
-                            if (config.target[type].tag) {
-                                const tags = config.target[type].tag.split(',').map(t => t.trim());
-                                const name = child.getNameInPlainText();
-                                const note = child.getNoteInPlainText();
-                                return tags.some(tag => {
-                                    const tagWithoutHash = tag.replace(/^#/, '');
-                                    return name.includes(`#${tagWithoutHash}`) ||
-                                           name.includes(tagWithoutHash) ||
-                                           note.includes(`#${tagWithoutHash}`) ||
-                                           note.includes(tagWithoutHash);
-                                });
-                            }
-
-                            return true;
+                        targetNodes.set(id, {
+                            id,
+                            name: content,
+                            displayName: note.includes(`#${tag}`) ? name : content,
+                            time: node.getLastModifiedDate().getTime(),
+                            completed: node.isCompleted(),
+                            hasMirrors,
+                            url: node.getUrl()
                         });
-
-                        if (filteredNodes.length === 0) continue;
-
-                        // 排序节点
-                        const sortedNodes = filteredNodes.sort((a, b) => {
-                            const aContent = extractReminderContent(a.getNameInPlainText());
-                            const bContent = extractReminderContent(b.getNameInPlainText());
-                            return aContent.localeCompare(bContent);
-                        });
-
-                        // 获取节点标题
-                        const nodeTitle = node.getNameInPlainText();
-
-                        // 添��节点内容
-                        targetContent.push(`
-                            <div class="target-section">
-                                <div class="task-list">
-                                    ${sortedNodes.map(node => Templates.taskItem(node, false, 'target')).join('')}
-                                </div>
-                            </div>
-                        `);
                     }
+
+                    node.getChildren().forEach(child => processNode(child, config));
                 }
 
-                if (targetContent.length === 0) {
-                    container.innerHTML = '<div class="empty-state">暂无数据</div>';
-                    return;
+                // 处理每个启用的目标节点
+                if (config.target.work.enabled) {
+                    const workNode = WF.getItemById(config.target.work.nodeId);
+                    if (workNode) processNode(workNode, config.target.work);
                 }
 
-                container.innerHTML = `
-                    <div class="target-tasks">
-                        ${targetContent.join('')}
-                    </div>
-                `;
+                if (config.target.personal.enabled) {
+                    const personalNode = WF.getItemById(config.target.personal.nodeId);
+                    if (personalNode) processNode(personalNode, config.target.personal);
+                }
 
-                // 添加事件监听
+                if (config.target.temp.enabled) {
+                    const tempNode = WF.getItemById(config.target.temp.nodeId);
+                    if (tempNode) processNode(tempNode, config.target.temp);
+                }
+
+                // 渲染节点
+                const content = Array.from(targetNodes.values())
+                    .sort((a, b) => b.time - a.time)
+                    .map(node => this.createTargetItem(node))
+                    .join('');
+
+                container.innerHTML = content || '<div class="empty-state">暂无目标内容</div>';
                 this.addTaskEventListeners(container);
 
             } catch (error) {
-                console.error('Error rendering target view:', error);
+                console.error('渲染目标视图失败:', error);
                 container.innerHTML = '<div class="error-state">加载失败，请刷新重试</div>';
             }
+        },
+
+        // 添加目标项模板
+        createTargetItem(node) {
+            const colors = getNodeColor(WF.getItemById(node.id));
+            const colorStyle = colors ? `
+                style="
+                    --node-bg-color: ${colors.background};
+                    --node-border-color: ${colors.border};
+                    --node-text-color: ${colors.text};
+                    --node-bg-color-hover: ${colors.hover.background};
+                    --node-border-color-hover: ${colors.hover.border};
+                    --actions-bg-hover: ${colors.hover.actions};
+                "
+            ` : '';
+
+            return `
+                <div class="task-item ${node.completed ? 'completed' : ''} 
+                    ${node.hasMirrors ? 'has-mirrors' : ''} ${colors ? 'colored' : ''}"
+                    data-id="${node.id}"
+                    ${colorStyle}>
+                    <div class="task-content">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" ${node.completed ? 'checked' : ''}>
+                            <span class="checkbox-custom"></span>
+                        </label>
+                        <div class="task-text">
+                            <a href="${node.url}" class="task-link">${node.displayName}</a>
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="task-action-btn copy" title="复制链接">
+                            <svg viewBox="0 0 24 24" width="14" height="14">
+                                <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                            </svg>
+                        </button>
+                        <button class="task-action-btn remove" title="移除">
+                            <svg viewBox="0 0 24 24" width="14" height="14">
+                                <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
         },
 
         // 渲染 Collector 视图
@@ -2620,24 +2652,21 @@
             container.querySelectorAll('.task-action-btn.copy').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     e.stopPropagation();
-                    const taskItem = e.target.closest('.task-item');
-                    const taskId = taskItem?.dataset.id;
+                    const taskId = e.target.closest('.task-item')?.dataset.id;
                     if (!taskId) return;
-
+    
                     try {
                         const node = WF.getItemById(taskId);
                         if (!node) throw new Error('Task node not found');
-
-                        // 复制内容
-                        const success = await this.copyNodeContent(node);
-                        if (success) {
-                            showFeedback(btn, '已复制');
-                        } else {
-                            showFeedback(btn, '复制失败');
-                        }
-
+    
+                        // 获取完整URL
+                        const url = node.getUrl();
+                        const fullUrl = url.startsWith('http') ? url : `https://workflowy.com${url}`;
+                        
+                        await navigator.clipboard.writeText(fullUrl);
+                        showFeedback(btn, '已复制链接');
                     } catch (error) {
-                        console.error('复制失败:', error);
+                        console.error('复制链接失败:', error);
                         showFeedback(btn, '复制失败');
                     }
                 });
@@ -2864,7 +2893,7 @@
                             }
                         }
                     } catch (error) {
-                        console.error('刷新内容时发生错��:', error);
+                        console.error('刷新内容时发生错:', error);
                         showToast('刷新失败，请重试');
                     }
                 }, ConfigManager.getConfig().refreshInterval || 60000);
@@ -2921,7 +2950,7 @@
         const resetBtn = panel.querySelector('.config-reset');
         const themeToggle = panel.querySelector('.theme-toggle');
 
-        // ���置面板显示/隐藏
+        // 置面板显示/隐藏
         configTrigger.addEventListener('click', () => {
             configPanel.classList.add('visible');
         });
@@ -2940,7 +2969,8 @@
                     dailyPlanner: {
                         enabled: document.getElementById('enable-daily').checked,
                         nodeId: document.getElementById('node-daily').value.trim(),
-                        taskName: document.getElementById('task-daily').value.trim()
+                        taskName: document.getElementById('task-daily').value.trim(),
+                        calendarNodeId: document.getElementById('calendar-node-daily').value.trim() || '35a73627730b'
                     },
                     target: {
                         work: {
@@ -3004,7 +3034,7 @@
             }
         });
 
-        // 重置按钮事��处理
+        // 重置按钮事处理
         resetBtn.addEventListener('click', () => {
             if (confirm('确定要重置所有设置吗？')) {
                 if (ConfigManager.resetConfig()) {
@@ -3040,48 +3070,52 @@
 
     // 改进日期节点处理
     function findDateNode(targetDate) {
+        const config = ConfigManager.getConfig();
+        const calendarNodeId = config.dailyPlanner.calendarNodeId;
+    
+        if (!calendarNodeId) {
+            throw new Error('未配置日历节点ID');
+        }
+    
         const parser = new DOMParser();
-
-        // 优化的时间戳获取函数
+    
+        // Optimized timestamp getter
         function getMsFromItemName(item) {
             const name = item.getName();
             if (!name.includes('<time')) return null;
-
+    
             const time = parser.parseFromString(name, 'text/html').querySelector("time");
             if (!time) return null;
-
+    
             const ta = time.attributes;
             if (!ta || !ta.startyear || ta.starthour || ta.endyear) return null;
-
+    
             return Date.parse(`${ta.startyear.value}/${ta.startmonth.value}/${ta.startday.value}`);
         }
-
-        // 优化的查找函数：增加年份预检查
+    
+        // Optimized search with year pre-check
         function findFirstMatchingItem(targetTimestamp, parent) {
-            // 快速预检查：如果节点名包含年份信息，检��是否匹配
             const name = parent.getName();
             const currentYear = new Date(targetTimestamp).getFullYear();
             if (name.includes('Plan of') && !name.includes(currentYear.toString())) {
                 return null;
             }
-
-            // 检查当前节点
+    
             const nodeTimestamp = getMsFromItemName(parent);
             if (nodeTimestamp === targetTimestamp) return parent;
-
-            // 递归检查子节点
+    
             for (let child of parent.getChildren()) {
                 const match = findFirstMatchingItem(targetTimestamp, child);
                 if (match) return match;
             }
-
+    
             return null;
         }
-
-        // 缓存机���
+    
+        // Cache handling
         const todayKey = targetDate.toDateString();
         const cachedNode = sessionStorage.getItem(todayKey);
-
+    
         if (cachedNode) {
             try {
                 const node = WF.getItemById(cachedNode);
@@ -3090,21 +3124,21 @@
                 sessionStorage.removeItem(todayKey);
             }
         }
-
-        // 获取日历根节点
-        const calendarNode = WF.getItemById('35a73627730b');
+    
+        // Get calendar root node
+        const calendarNode = WF.getItemById(calendarNodeId);
         if (!calendarNode) {
             throw new Error('未找到日历节点');
         }
-
+    
         const todayTimestamp = targetDate.setHours(0,0,0,0);
         const found = findFirstMatchingItem(todayTimestamp, calendarNode);
-
+    
         if (found) {
             sessionStorage.setItem(todayKey, found.getId());
             return found;
         }
-
+    
         return null;
     }
 
@@ -3424,7 +3458,7 @@
         });
     }
 
-    // 更新ViewRenderer中的事件处理
+   
     
 
     // 添加反馈样式
@@ -3451,4 +3485,51 @@
             transform: translate(-50%, -50%) scale(1);
         }
     `);
+
+    // 更新Today's Plan功能
+    function initTodayPlan() {
+        const todayLink = document.querySelector('.today-link');
+        if (!todayLink) return;
+    
+        todayLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+    
+            try {
+                const today = new Date();
+                const node = findDateNode(today);
+                
+                if (node) {
+                    WF.zoomTo(node);
+                } else {
+                    showToast('未找到今天的日期节点');
+                }
+            } catch (error) {
+                console.error('导航到今天失败:', error);
+                showToast('导航失败: ' + error.message);
+            }
+        });
+    }
+
+    // 添加递归获取节点函数
+    function getAllDescendants(node, maxDepth = 10, currentDepth = 0) {
+        if (!node || currentDepth >= maxDepth) return [];
+
+        let descendants = [];
+        try {
+            const children = node.getChildren();
+            if (!children || !Array.isArray(children)) return [];
+
+            // 添加直接子节点
+            descendants.push(...children);
+
+            // 递归获取每个子节点的后代
+            for (const child of children) {
+                descendants.push(...getAllDescendants(child, maxDepth, currentDepth + 1));
+            }
+        } catch (error) {
+            console.error('获��节点后代失败:', error);
+        }
+
+        return descendants;
+    }
 })();
