@@ -1701,7 +1701,7 @@
                                 <div class="config-item">
                                     <label>标签</label>
                                     <input type="text" id="tag-work"
-                                        placeholder="输入标签，如: #01每日推进,#重要 (支持数字、中文、英文，多个用逗号分隔)">
+                                        placeholder="输入标签，如: #重要 (支持数字、中文、英文，多个用逗号分隔)">
                                 </div>
                             </div>
                         </div>
@@ -1719,7 +1719,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-personal" placeholder="输入标签，如: #01每日推进 (支持数字、中文、英文)">
+                                    <input type="text" id="tag-personal" placeholder="输入标签，如: #重要 (支持数字、中文、英文)">
                                 </div>
                             </div>
                         </div>
@@ -1737,7 +1737,7 @@
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-temp" placeholder="输入标签，如: #01每日推进 (支持数字、中文、英文)">
+                                    <input type="text" id="tag-temp" placeholder="输入标签，如: #重要 (支持数字、中文、英文)">
                                 </div>
                             </div>
                         </div>
