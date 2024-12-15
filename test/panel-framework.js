@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.14
+// @version      0.0.15
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -423,7 +423,7 @@
             --divider-color: #e0e0e0;
         }
 
-        /* 设�������面板内容样式 */
+        /* 设�������������面板内容样式 */
         .config-header {
             padding: 24px 12px 12px;
             border-bottom: 1px solid var(--border-color);
@@ -1326,6 +1326,33 @@
             color: var(--text-secondary);
             font-style: italic;
         }
+
+        /* 完成状态样式 */
+        .task-item.completed {
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+
+        .task-item.completed .task-name,
+        .task-item.completed .task-text,
+        .task-item.completed .children-content,
+        .task-item.completed .single-content {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        /* 确保所有模式下的样式一致性 */
+        .task-item.completed.colored,
+        .task-item.completed.highlighted {
+            opacity: 0.6;
+        }
+
+        .task-item.completed.colored .task-name,
+        .task-item.completed.highlighted .task-name {
+            text-decoration: line-through;
+            color: var(--text-color);
+            opacity: 0.8;
+        }
     `);
 
     // 面板切换函数
@@ -1388,13 +1415,13 @@
             return false;
         }
 
-        // Only disable/enable inputs, don't clear values
+        // 更新相关输入框的状态
         const group = checkbox.closest('.config-group');
         if (group) {
             const inputs = group.querySelectorAll('input:not([type="checkbox"]), select');
             inputs.forEach(input => {
                 input.disabled = !checkbox.checked;
-                // Remove value clearing
+                // 移除清空输入框的代码
             });
         }
 
@@ -1464,7 +1491,19 @@
         if (!panel) return;
         const config = ConfigManager.getConfig();
 
-        // Set form values regardless of enabled state
+        // 设置表单值并控制输入框状态
+        const setInputsState = (prefix, enabled) => {
+            const group = document.getElementById(`enable-${prefix}`)?.closest('.config-group');
+            if (group) {
+                const inputs = group.querySelectorAll('input:not([type="checkbox"]), select');
+                inputs.forEach(input => {
+                    input.disabled = !enabled;
+                    // 不清空禁用的输入框
+                });
+            }
+        };
+
+        // 设置表单值
         Object.entries({
             'node-daily': config.dailyPlanner.nodeId,
             'task-daily': config.dailyPlanner.taskName,
@@ -1501,20 +1540,19 @@
                 if (element.type === 'checkbox') {
                     element.checked = value;
                 } else {
-                    element.value = value;
-                    // Disable input if mode is disabled
-                    if (id.startsWith('node-') || id.startsWith('task-') || id.startsWith('tag-')) {
-                        const mode = id.split('-')[1];
-                        const enabledCheckbox = document.getElementById(`enable-${mode}`);
-                        if (enabledCheckbox) {
-                            element.disabled = !enabledCheckbox.checked;
-                        }
-                    }
+                    element.value = value || ''; // 使用空字符串代替 null/undefined
                 }
             }
         });
 
-        // Update mode buttons
+        // 设置各模式输入框状态
+        setInputsState('daily', config.dailyPlanner.enabled);
+        setInputsState('work', config.target.work.enabled);
+        setInputsState('personal', config.target.personal.enabled);
+        setInputsState('temp', config.target.temp.enabled);
+        setInputsState('collector', config.collector.enabled);
+
+        // 更新模式按钮
         updateModeButtons();
     }
 
@@ -1844,6 +1882,9 @@
 
         // Initialize Today's Plan functionality
         initTodayPlan();
+
+        // 添加定期同步检查
+        setInterval(synchronizeWorkflowyStates, 5000); // 每5秒检查一次
     }
 
 
@@ -2668,15 +2709,23 @@
                         const node = WF.getItemById(taskId);
                         if (!node) throw new Error('Task node not found');
 
-                        // 更新WorkFlowy状态
-                        await WF.completeItem(node);
-                        taskItem.classList.toggle('completed', e.target.checked);
+                        const isCompleted = e.target.checked;
+                        
+                        // 更新 UI
+                        taskItem.classList.toggle('completed', isCompleted);
+                        
+                        // 同步到 WorkFlowy
+                        await syncWorkflowyState(taskId, isCompleted);
+                        
+                        // 显示反馈
+                        showFeedback(taskItem, isCompleted ? '已完成' : '已取消完成');
 
                     } catch (error) {
                         console.error('更新状态失败:', error);
-                        showToast('更新失败：' + error.message);
                         // 恢复复选框状态
                         e.target.checked = !e.target.checked;
+                        taskItem.classList.toggle('completed');
+                        showFeedback(taskItem, '更新失败', true);
                     }
                 });
             });
@@ -2857,7 +2906,7 @@
                     contentToCopy = node.getName();
                 }
 
-                // ��建临时元素
+                // 创建临时元素
                 const tempDiv = document.createElement('div');
                 tempDiv.style.position = 'absolute';
                 tempDiv.style.left = '-9999px';
@@ -3056,7 +3105,7 @@
                     switchMode(currentMode);
                     updateLinks(currentMode);
                 } else {
-                    showToast('保存失败，请重试', true); // 添加 isError 参数
+                    showToast('保存失败，��重试', true); // 添加 isError 参数
                 }
             } catch (error) {
                 console.error('保存配置失败:', error);
@@ -3555,4 +3604,53 @@
             transform: translate(-50%, -50%) scale(1);
         }
     `);
+
+    // 在文件顶部添加状态同步相关函数
+
+    // 同步到 WorkFlowy 的状态
+    function syncWorkflowyState(itemId, completed) {
+        try {
+            const item = WF.getItemById(itemId);
+            if (item) {
+                WF.editGroup(() => {
+                    if (item.isCompleted() !== completed) {
+                        WF.completeItem(item);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('同步 WorkFlowy 状态失败:', error);
+        }
+    }
+
+    // 定期检查并同步状态
+    function synchronizeWorkflowyStates() {
+        try {
+            const config = ConfigManager.getConfig();
+            const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
+            const contentEl = document.getElementById(`${currentMode}-content`);
+            
+            if (!contentEl) return;
+            
+            // 获取当前显示的所有卡片
+            const cards = contentEl.querySelectorAll('.task-item');
+            cards.forEach(card => {
+                const id = card.dataset.id;
+                if (!id) return;
+                
+                const item = WF.getItemById(id);
+                if (!item) return;
+                
+                const isCompleted = item.isCompleted();
+                const checkbox = card.querySelector('input[type="checkbox"]');
+                
+                if (checkbox && checkbox.checked !== isCompleted) {
+                    checkbox.checked = isCompleted;
+                    card.classList.toggle('completed', isCompleted);
+                }
+            });
+        } catch (error) {
+            console.error('同步状态检查失败:', error); 
+        }
+    }
 })();
