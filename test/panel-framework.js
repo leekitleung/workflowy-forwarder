@@ -423,7 +423,7 @@
             --divider-color: #e0e0e0;
         }
 
-        /* 设���������������面板内容样式 */
+        /* 设�����������������面板内容样式 */
         .config-header {
             padding: 24px 12px 12px;
             border-bottom: 1px solid var(--border-color);
@@ -2181,11 +2181,11 @@
 
     // 更新Templates对象中的taskItem函数
     const Templates = {
-        taskItem: (child, showCopy = true, mode = '') => {
+        taskItem: (child, mode = '') => {
             const hasMirrors = checkMirrorNodes(child);
             const colors = getNodeColor(child);
 
-            // 构建颜色样式
+            // Build color style
             const colorStyle = colors ? `
                 style="
                     --node-bg-color: ${colors.background};
@@ -2197,92 +2197,39 @@
                 "
             ` : '';
 
-            // Collector模式特殊处理
-            if (mode === 'collector') {
-                return `
-                    <div class="task-item ${child.isCompleted() ? 'completed' : ''}
-                        ${hasMirrors ? 'has-mirrors' : ''} ${colors ? 'colored' : ''}"
-                        data-id="${child.getId()}"
-                        ${colorStyle}>
-                        <div class="task-content">
-                            <label class="checkbox-wrapper">
-                                <input type="checkbox" ${child.isCompleted() ? 'checked' : ''}>
-                                <span class="checkbox-custom"></span>
-                            </label>
-                            <div class="task-text">
-                                <div class="content-wrapper">
-                                    <div class="name-content">${child.getName()}</div>
-                                    ${child.getNote() ? `
-                                        <div class="note-content">${child.getNote()}</div>
-                                    ` : ''}
-                                </div>
-                                <div class="meta-info">
-                                    <span class="timestamp">
-                                        ${new Date(child.getLastModifiedDate()).toLocaleString()}
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="task-actions">
-                            <button class="task-action-btn link" title="跳转到节点">
-                                <svg viewBox="0 0 24 24" width="14" height="14">
-                                    <path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
-                                </svg>
-                            </button>
-                            <button class="task-action-btn remove" title="移除">
-                                <svg viewBox="0 0 24 24" width="14" height="14">
-                                    <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // 生成节点链接
-            const nodeLink = child.getUrl();
-
-            // 根据模式决定是否添加链接
-            const contentWrapper = (content) => {
-                if (mode === 'collector') {
-                    return content;
-                } else {
-                    return `<a href="${nodeLink}" class="task-link">${content}</a>`;
-                }
-            };
+            // Get node URL
+            const nodeUrl = child.getUrl();
+            const fullUrl = nodeUrl.startsWith('http') ? nodeUrl : `https://workflowy.com${nodeUrl}`;
 
             return `
                 <div class="task-item ${child.isCompleted() ? 'completed' : ''}
                     ${hasMirrors ? 'has-mirrors' : ''} ${colors ? 'colored' : ''}"
                     data-id="${child.getId()}"
+                    data-mode="${mode}"
                     ${colorStyle}>
-                    <div class="task-content">
-                        <label class="checkbox-wrapper">
-                            <input type="checkbox" ${child.isCompleted() ? 'checked' : ''}>
-                            <span class="checkbox-custom"></span>
-                        </label>
-                        <div class="task-text">
-                            ${contentWrapper(`
-                                <span class="task-name">${child.getNameInPlainText()}</span>
-                            `)}
-                        </div>
-                    </div>
-                    <div class="task-actions">
-                        ${showCopy ? `
-                            <button class="task-action-btn copy" title="复制">
-                                <svg viewBox="0 0 24 24" width="14" height="14">
-                                    <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-                                </svg>
-                            </button>
-                        ` : ''}
-                        <button class="task-action-btn remove" title="移除">
-                            <svg viewBox="0 0 24 24" width="14" height="14">
-                                <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
-                            </svg>
-                        </button>
+                <div class="task-content">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" ${child.isCompleted() ? 'checked' : ''}>
+                        <span class="checkbox-custom"></span>
+                    </label>
+                    <div class="task-text">
+                        <span class="task-name">${child.getNameInPlainText()}</span>
                     </div>
                 </div>
-            `;
+                <div class="task-actions">
+                    <button class="task-action-btn copy" title="复制链接">
+                        <svg viewBox="0 0 24 24" width="14" height="14">
+                            <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                    </button>
+                    <button class="task-action-btn remove" title="移除">
+                        <svg viewBox="0 0 24 24" width="14" height="14">
+                            <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        `;
         }
     };
 
@@ -2646,7 +2593,7 @@
                 content.addEventListener('click', async (e) => {
                     // Ignore if clicking checkbox area
                     if (e.target.closest('.checkbox-wrapper')) return;
-                    
+
                     const taskItem = e.target.closest('.task-item');
                     const taskId = taskItem?.dataset.id;
                     if (!taskId) return;
@@ -2677,7 +2624,7 @@
             container.querySelectorAll('.checkbox-wrapper input[type="checkbox"]').forEach(checkbox => {
                 checkbox.addEventListener('change', async (e) => {
                     e.stopPropagation(); // Prevent event from bubbling
-                    
+
                     const taskItem = e.target.closest('.task-item');
                     const taskId = taskItem?.dataset.id;
                     if (!taskId) return;
@@ -2687,13 +2634,13 @@
                         if (!node) throw new Error('Task node not found');
 
                         const isCompleted = e.target.checked;
-                        
+
                         // Update UI
                         taskItem.classList.toggle('completed', isCompleted);
-                        
+
                         // Sync with WorkFlowy
                         await syncWorkflowyState(taskId, isCompleted);
-                        
+
                         // Show feedback
                         showFeedback(taskItem, isCompleted ? '已完成' : '已取消完成');
 
@@ -2767,13 +2714,13 @@
                         if (!node) throw new Error('Task node not found');
 
                         const isCompleted = e.target.checked;
-                        
+
                         // 更新 UI
                         taskItem.classList.toggle('completed', isCompleted);
-                        
+
                         // 同步到 WorkFlowy
                         await syncWorkflowyState(taskId, isCompleted);
-                        
+
                         // 显示反馈
                         showFeedback(taskItem, isCompleted ? '已完成' : '已取消完成');
 
@@ -3686,28 +3633,28 @@
             const config = ConfigManager.getConfig();
             const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
             const contentEl = document.getElementById(`${currentMode}-content`);
-            
+
             if (!contentEl) return;
-            
+
             // 获取当前显示的所有卡片
             const cards = contentEl.querySelectorAll('.task-item');
             cards.forEach(card => {
                 const id = card.dataset.id;
                 if (!id) return;
-                
+
                 const item = WF.getItemById(id);
                 if (!item) return;
-                
+
                 const isCompleted = item.isCompleted();
                 const checkbox = card.querySelector('input[type="checkbox"]');
-                
+
                 if (checkbox && checkbox.checked !== isCompleted) {
                     checkbox.checked = isCompleted;
                     card.classList.toggle('completed', isCompleted);
                 }
             });
         } catch (error) {
-            console.error('同步状态检查失败:', error); 
+            console.error('同步状态检查失败:', error);
         }
     }
 })();
