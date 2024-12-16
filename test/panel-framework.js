@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.17
+// @version      0.0.18
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
