@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.15
+// @version      0.0.16
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -423,7 +423,7 @@
             --divider-color: #e0e0e0;
         }
 
-        /* 设�������������面板内容样式 */
+        /* 设���������������面板内容样式 */
         .config-header {
             padding: 24px 12px 12px;
             border-bottom: 1px solid var(--border-color);
@@ -2641,29 +2641,30 @@
 
         // Collector特有的事件监听器
         addCollectorEventListeners(container, config) {
-            // 卡片点击事件 - 复制内容
-            container.querySelectorAll('.task-item').forEach(item => {
-                item.addEventListener('click', async (e) => {
-                    // 忽略按钮点击
-                    if (e.target.closest('.task-actions')) return;
-
-                    const taskId = item.dataset.id;
+            // Content click handler for copying
+            container.querySelectorAll('.task-content .task-text').forEach(content => {
+                content.addEventListener('click', async (e) => {
+                    // Ignore if clicking checkbox area
+                    if (e.target.closest('.checkbox-wrapper')) return;
+                    
+                    const taskItem = e.target.closest('.task-item');
+                    const taskId = taskItem?.dataset.id;
                     if (!taskId) return;
 
                     try {
                         const node = WF.getItemById(taskId);
                         if (!node) throw new Error('Task node not found');
 
-                        // 处理内容并复制
+                        // Process and copy content
                         const content = processCollectorContent(node);
                         await navigator.clipboard.writeText(content);
                         showToast('已复制');
 
-                        // 自动完成处理
+                        // Auto complete if enabled
                         if (config.collector.autoComplete) {
                             await WF.completeItem(node);
-                            item.classList.add('completed');
-                            item.querySelector('input[type="checkbox"]').checked = true;
+                            taskItem.classList.add('completed');
+                            taskItem.querySelector('input[type="checkbox"]').checked = true;
                         }
                     } catch (error) {
                         console.error('Error copying content:', error);
@@ -2672,10 +2673,44 @@
                 });
             });
 
-            // 链接按钮事件
+            // Checkbox click handler
+            container.querySelectorAll('.checkbox-wrapper input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', async (e) => {
+                    e.stopPropagation(); // Prevent event from bubbling
+                    
+                    const taskItem = e.target.closest('.task-item');
+                    const taskId = taskItem?.dataset.id;
+                    if (!taskId) return;
+
+                    try {
+                        const node = WF.getItemById(taskId);
+                        if (!node) throw new Error('Task node not found');
+
+                        const isCompleted = e.target.checked;
+                        
+                        // Update UI
+                        taskItem.classList.toggle('completed', isCompleted);
+                        
+                        // Sync with WorkFlowy
+                        await syncWorkflowyState(taskId, isCompleted);
+                        
+                        // Show feedback
+                        showFeedback(taskItem, isCompleted ? '已完成' : '已取消完成');
+
+                    } catch (error) {
+                        console.error('更新状态失败:', error);
+                        // Restore checkbox state
+                        e.target.checked = !e.target.checked;
+                        taskItem.classList.toggle('completed');
+                        showFeedback(taskItem, '更新失败', true);
+                    }
+                });
+            });
+
+            // Link button handler
             container.querySelectorAll('.task-action-btn.link').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // 阻止冒泡到卡片
+                    e.stopPropagation();
                     const taskId = e.target.closest('.task-item')?.dataset.id;
                     if (!taskId) return;
 
@@ -2686,11 +2721,33 @@
                 });
             });
 
-            // 移除按钮事件
+            // Remove button handler
             container.querySelectorAll('.task-action-btn.remove').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // 阻止冒泡到卡片
-                    // ... 移除按钮的代码保持不变 ...
+                    e.stopPropagation();
+                    const taskItem = e.target.closest('.task-item');
+                    const taskId = taskItem?.dataset.id;
+                    if (!taskId) return;
+
+                    try {
+                        const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
+                        const removedItems = JSON.parse(localStorage.getItem(`workflowy_removed_${currentMode}`) || '[]');
+
+                        if (!removedItems.includes(taskId)) {
+                            removedItems.push(taskId);
+                            localStorage.setItem(`workflowy_removed_${currentMode}`, JSON.stringify(removedItems));
+                        }
+
+                        showFeedback(taskItem, '已移除');
+                        setTimeout(() => {
+                            taskItem.style.opacity = '0';
+                            setTimeout(() => taskItem.remove(), 300);
+                        }, 700);
+
+                    } catch (error) {
+                        console.error('移除失败:', error);
+                        showFeedback(taskItem, '移除失败');
+                    }
                 });
             });
         },
@@ -3346,7 +3403,7 @@
                 return createOPML(title, url);
             }
 
-            // 处理带缩进的内容
+            // ���理带缩进的内容
             let formattedContent = plainName.replace(/#稍后处理/g, '').trim();
 
             // 处理子节点内容
