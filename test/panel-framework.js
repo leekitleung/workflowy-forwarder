@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.16
+// @version      0.0.17
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -31,19 +31,19 @@
                 enabled: false,
                 taskName: '',
                 nodeId: '',
-                tag: ''
+                tag: '' // 修改默认值为空字符串
             },
             personal: {
                 enabled: false,
                 taskName: '',
                 nodeId: '',
-                tag: ''
+                tag: '' // 修改默认值为空字符串
             },
             temp: {
                 enabled: false,
                 taskName: '',
                 nodeId: '',
-                tag: ''
+                tag: '' // 修改默认值为空字符串
             }
         },
         collector: {
@@ -2405,32 +2405,34 @@
 
                     const name = node.getNameInPlainText();
                     const note = node.getNoteInPlainText();
-                    const tag = config.tag ? config.tag.replace(/^#/, '') : '01每日推进';
+                    const tag = config.tag ? config.tag.replace(/^#/, '') : ''; // 修改默认值为空字符串
 
-                    if (!name.includes('#index') && !note.includes('#index') &&
-                        (name.includes(`#${tag}`) || note.includes(`#${tag}`))) {
+                    if (!name.includes('#index') && !note.includes('#index')) {
+                        // 当tag为空时不进行标签检查
+                        if (!tag || name.includes(`#${tag}`) || note.includes(`#${tag}`)) {
+                            const normalizedContent = name.trim().replace(/\s+/g, ' ');
+                            const hasMirrors = checkMirrorNodes(node);
 
-                        const normalizedContent = name.trim().replace(/\s+/g, ' ');
-                        const hasMirrors = checkMirrorNodes(node);
+                            const nodeData = {
+                                id,
+                                name: name,
+                                displayName: name,
+                                time: node.getLastModifiedDate().getTime(),
+                                completed: node.isCompleted(),
+                                hasMirrors,
+                                url: node.getUrl()
+                            };
 
-                        const nodeData = {
-                            id,
-                            name: name,
-                            displayName: name,
-                            time: node.getLastModifiedDate().getTime(),
-                            completed: node.isCompleted(),
-                            hasMirrors,
-                            url: node.getUrl()
-                        };
-
-                        // Handle duplicates - prefer nodes with hasMirrors
-                        const existingNode = contentMap.get(normalizedContent);
-                        if (!existingNode || (hasMirrors && !existingNode.hasMirrors)) {
-                            contentMap.set(normalizedContent, nodeData);
-                            targetNodes.set(id, nodeData);
+                            // Handle duplicates - prefer nodes with hasMirrors
+                            const existingNode = contentMap.get(normalizedContent);
+                            if (!existingNode || (hasMirrors && !existingNode.hasMirrors)) {
+                                contentMap.set(normalizedContent, nodeData);
+                                targetNodes.set(id, nodeData);
+                            }
                         }
                     }
 
+                    // 递归处理子节点
                     node.getChildren().forEach(child => processNode(child, config));
                 }
 
