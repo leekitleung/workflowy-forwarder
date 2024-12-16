@@ -1,12 +1,15 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.18
+// @version      0.0.19
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
 // @grant        GM_addStyle
 // ==/UserScript==
+
+// 在文件顶部定义版本常量
+const SCRIPT_VERSION = '0.0.19'; // 当前版本号
 
 (function() {
     'use strict';
@@ -16,7 +19,7 @@
 
     // 默认配置
     const DEFAULT_CONFIG = {
-        version: 'v${SCRIPT_VERSION}',
+        version: `v${SCRIPT_VERSION}`, // 使用模板字符串
         theme: 'dark',
         refreshInterval: 60000,
         excludeTags: '',
@@ -159,201 +162,178 @@
 
     // 添加基础样式
     GM_addStyle(`
-        /* 面板基础样式优化 */
+        /* 面板基础布局 */
         .wf-panel {
             position: fixed;
-            right: -319px; /* 使用固定宽度 */
+            right: -319px;
             top: 46px;
             height: calc(100vh - 46px);
             width: 319px;
-            background: #2B3135; /* 更深的背景色 */
-            border-left: 1px solid #5c6062; /* 更明显的边框 */
+            background: #2B3135;
+            border-left: 1px solid #5c6062;
             z-index: 100;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* 更流畅的动画 */
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
-        /* 链接区域样式优化 */
-        .planner-links {
+        .wf-panel.visible {
+            transform: translateX(-319px);
+        }
+
+        .wf-panel.visible ~ #content {
+            padding-right: 319px;
+        }
+
+        /* 配置头部 */
+        .config-header {
+            padding: 24px 12px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .config-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        /* 模式切换 */
+        .mode-switch {
             display: flex;
-            flex-direction: column;
-            gap: 0px;
-            margin: 12px;
-        }
-
-        .planner-links-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-            width: 100%;
-        }
-
-        .planner-link {
-            display: flex;
-            justify-content: flex-end;
-            color: rgba(144, 147, 149, 0.5);
-            font-size: 12px;
-            text-decoration: none;
-            padding: 8px 16px 8px;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23909395' fill-opacity='0.5'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23909395' fill-opacity='0.5'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 8px center;
-            background-size: 12px;
-        }
-
-        .planner-link:hover {
-            color: rgba(53, 125, 166, 1);
-            text-decoration: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23357DA6'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23357DA6'/%3E%3C/svg%3E");
-            transform: translateX(-2px); /* 轻微位移效果 */
-        }
-
-        /* Today's Plan链接特殊样式 */
-        .today-link {
-            display: flex !important;
-            margin-right: auto;
-            background-image: none;
-            padding-left: 4px;
-        }
-
-        .today-link::before {
-            content: '';
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            margin-right: 4px;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M8.5 1H8V0H7V1H3V0H2V1H1.5C0.67 1 0 1.67 0 2.5V9.5C0 10.33 0.67 11 1.5 11H8.5C9.33 11 10 10.33 10 9.5V2.5C10 1.67 9.33 1 8.5 1ZM9 9.5C9 9.78 8.78 10 8.5 10H1.5C1.22 10 1 9.78 1 9.5V4H9V9.5ZM9 3H1V2.5C1 2.22 1.22 2 1.5 2H2V3H3V2H7V3H8V2H8.5C8.78 2 9 2.22 9 2.5V3Z' fill='%23909395' fill-opacity='0.5'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: center;
-            vertical-align: middle;
-            transition: all 0.2s ease;
-        }
-
-        .today-link:hover::before {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M8.5 1H8V0H7V1H3V0H2V1H1.5C0.67 1 0 1.67 0 2.5V9.5C0 10.33 0.67 11 1.5 11H8.5C9.33 11 10 10.33 10 9.5V2.5C10 1.67 9.33 1 8.5 1ZM9 9.5C9 9.78 8.78 10 8.5 10H1.5C1.22 10 1 9.78 1 9.5V4H9V9.5ZM9 3H1V2.5C1 2.22 1.22 2 1.5 2H2V3H3V2H7V3H8V2H8.5C8.78 2 9 2.22 9 2.5V3Z' fill='%23357DA6'/%3E%3C/svg%3E");
-        }
-
-        /* 卡片样式优化 */
-        .task-item {
-            position: relative;
-            padding: 12px;
-            background: rgba(53, 60, 63, 1);
-            border: 1px solid rgba(58, 67, 71, 1);
+            background: rgba(39, 45, 50, 1);
             border-radius: 6px;
-            margin-bottom: 8px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 6px;
+            margin: 16px 12px;
         }
 
-        .task-item:hover {
-            background: rgba(56, 70, 81, 1);
-            border-color: rgba(68, 80, 88, 1);
-            transform: translateY(-1px);
-        }
-
-        /* 镜像节点标记优化 */
-        .has-mirrors::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 3px;
-            background: #4a9eff;
-            border-radius: 3px 0 0 3px;
-            opacity: 0.8; /* 更明显的标记 */
-        }
-
-        /* 操作按钮容器 */
-        .task-actions {
-            position: absolute;
-            right: 0;
-            top: 0;
-            bottom: 0;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 0 12px;
-            opacity: 0;
-            transform: translateX(10px);
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            background: linear-gradient(to right, transparent, var(--bg-color, rgba(43, 49, 53, 0.95)) 20%);
-        }
-
-        .task-item:hover .task-actions {
-            opacity: 1;
-            transform: translateX(0);
-        }
-
-        /* 操作按钮 */
-        .task-action-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
+        .mode-btn {
+            flex: 1;
+            padding: 6px 10px;
             border: none;
-            background: rgba(255, 255, 255, 0.1);
-            color: #9EA1A2;
+            background: transparent;
+            color: var(--text-secondary);
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 0;
-            transform: translateX(10px);
+            border-radius: 4px;
+            transition: all 0.3s;
+            font-size: 14px;
+            margin: 2px;
         }
 
-        .task-item:hover .task-action-btn {
-            opacity: 1;
-            transform: translateX(0);
+        .mode-btn.active {
+            background: rgba(56, 70, 81, 1);
+            color: var(--text-color);
         }
 
-        .task-action-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: #fff;
-            transform: scale(1.1);
+        .mode-btn:hover {
+            background: var(--hover-bg);
+            color: var(--text-color);
         }
 
-        /* 按钮图标 */
-        .task-action-btn svg {
-            width: 14px;
-            height: 14px;
-        }
-
-        /* 针对彩色节点的样式调整 */
-        .task-item.colored .task-actions {
-            background: linear-gradient(to right, transparent, var(--node-color, rgba(43, 49, 53, 0.95)) 20%);
-        }
-
-        /* 清除按钮样式优化 */
-        .clear-all-container {
+        /* 模式内容区域 */
+        .mode-contents {
+            flex: 1;
+            overflow-y: auto;
             padding: 12px;
-            background: #2c3135;
-            border-top: 1px solid #444;
-            margin-top: auto;
+            padding-bottom: 140px;
         }
 
-        .clear-all-btn {
+        .mode-content {
+            display: none;
+        }
+
+        .mode-content.active {
+            display: block;
+        }
+
+        /* 按钮组 */
+        .panel-btn-group {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-color);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-top: 1px solid var(--border-color);
+            z-index: 101;
+        }
+
+        .panel-btn-group button {
             width: 100%;
-            height: 32px;
-            background: #42484b;
-            color: #e8e8e8;
+            padding: 10px;
             border: none;
-            border-radius: 22px;
+            border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
             transition: all 0.2s ease;
+            background: rgba(65, 70, 74, 1);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
-        .clear-all-btn:hover {
-            background: #d9534f;
+        .panel-btn-group button:hover {
+            background: rgba(75, 80, 84, 1);
             transform: translateY(-1px);
         }
 
-        /* 切换按钮样式 */
+        .panel-btn-group button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+
+
+        /* 配置触发器 */
+        .config-trigger {
+            position: static;
+            padding: 0;
+            border: none;
+        }
+
+        /* 配置面板 */
+        .config-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-color);
+            z-index: 102;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease;
+        }
+
+        .config-panel.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Toast提示 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            opacity: 0;
+        }
+
+        /* 切换按钮 */
         .wf-toggle {
             position: fixed;
             right: 20px;
@@ -423,7 +403,7 @@
             --divider-color: #e0e0e0;
         }
 
-        /* 设�����������������面板内容样式 */
+        /* 设面板内容样式 */
         .config-header {
             padding: 24px 12px 12px;
             border-bottom: 1px solid var(--border-color);
@@ -463,7 +443,7 @@
             border: 1px solid var(--border-color);
         }
 
-        /* 模�����������������切按钮组样式 */
+        /* 模切按钮组样式 */
         .mode-switch {
             display: flex;
             background: rgba(39, 45, 50, 1);
@@ -957,7 +937,7 @@
             font-size: 14px;
         }
 
-        /* 自���义复选框样式 */
+        /* 自义复选框样式 */
         .checkbox-wrapper {
             position: relative;
             display: inline-block;
@@ -1353,6 +1333,143 @@
             color: var(--text-color);
             opacity: 0.8;
         }
+
+        /* 按钮组容器 */
+        .panel-btn-group {
+            position: absolute;  // 改为absolute定位
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-color);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-top: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        /* 统一按钮基础样式 */
+        .panel-btn-group button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background: rgba(65, 70, 74, 1);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .panel-btn-group button:hover {
+            background: rgba(75, 80, 84, 1);
+            transform: translateY(-1px);
+        }
+
+
+
+        /* 调整配置触发器样式 */
+        .config-trigger {
+            position: static;
+            padding: 0;
+            border: none;
+        }
+
+        /* 确保内容区域不被按钮组遮挡 */
+        .mode-contents {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 120px;  // 改用margin-bottom
+        }
+
+        /* 按钮图标样式 */
+        .panel-btn-group button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 确保面板内容正确显示 */
+        .wf-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;  // 添加overflow控制
+        }
+
+        /* 面板基础布局 */
+        .wf-panel {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 46px);
+        }
+
+        /* 模式内容区域 */
+        .mode-contents {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            padding-bottom: 140px; /* 为底部按钮组留出空间 */
+        }
+
+        /* 按钮组容器 */
+        .panel-btn-group {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-color);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-top: 1px solid var(--border-color);
+            z-index: 101; /* 确保在内容之上 */
+        }
+
+        /* 统一按钮基础样式 */
+        .panel-btn-group button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            background: rgba(65, 70, 74, 1);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .panel-btn-group button:hover {
+            background: rgba(75, 80, 84, 1);
+            transform: translateY(-1px);
+        }
+
+
+        /* 调整配置触发器样式 */
+        .config-trigger {
+            position: static;
+            padding: 0;
+            border: none;
+        }
+
+        /* 按钮图标样式 */
+        .panel-btn-group button svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 确保配置面板正确显示 */
+        .config-panel {
+            z-index: 102; /* 确保在按钮组之上 */
+        }
     `);
 
     // 面板切换函数
@@ -1448,7 +1565,7 @@
         }, 2000);
     }
 
-    // 修改updateModeButtons函数
+    // 修改updateModeButtons数
     function updateModeButtons() {
         if (!panel) return;
         const config = ConfigManager.getConfig();
@@ -1584,7 +1701,7 @@
                 <h2>
                     Workflowy<br/>
                     Forwarder Plus
-                    <span class="version-tag">v${DEFAULT_CONFIG.version}</span>
+                    <span class="version-tag">v${SCRIPT_VERSION}</span>
                 </h2>
             </div>
 
@@ -1656,25 +1773,25 @@
                 <!-- Collector mode content -->
                 <div id="collector-content" class="mode-content"></div>
             </div>
+            <div class="panel-btn-group">
+                <!-- 添加清除按钮容器 -->
+                <div class="panel-footer">
+                    <button id="clear-all" class="clear-all-btn">
+                        清除当前模式所有卡片
+                    </button>
+                </div>
 
-            <!-- 添加清除按钮容器 -->
-            <div class="panel-footer">
-                <button id="clear-all" class="clear-all-btn">
-                    清除当前节点
-                </button>
+                <!-- Config trigger -->
+                <div class="config-trigger">
+                    <button class="config-trigger-btn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6.5 1L7.5 0H8.5L9.5 1L10.5 1.5L11.5 1L12.5 1.5L13 2.5L14 3.5L14.5 4.5L15 5.5V6.5L14 7.5V8.5L15 9.5V10.5L14.5 11.5L14 12.5L13 13.5L12.5 14.5L11.5 15L10.5 14.5L9.5 15H8.5L7.5 16H6.5L5.5 15L4.5 14.5L3.5 15L2.5 14.5L2 13.5L1 12.5L0.5 11.5L0 10.5V9.5L1 8.5V7.5L0 6.5V5.5L0.5 4.5L1 3.5L2 2.5L2.5 1.5L3.5 1L4.5 1.5L5.5 1H6.5Z" fill="currentColor"/>
+                            <circle cx="8" cy="8" r="2" fill="var(--bg-color)"/>
+                        </svg>
+                        设置
+                    </button>
+                </div>
             </div>
-
-            <!-- Config trigger -->
-            <div class="config-trigger">
-                <button class="config-trigger-btn">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6.5 1L7.5 0H8.5L9.5 1L10.5 1.5L11.5 1L12.5 1.5L13 2.5L14 3.5L14.5 4.5L15 5.5V6.5L14 7.5V8.5L15 9.5V10.5L14.5 11.5L14 12.5L13 13.5L12.5 14.5L11.5 15L10.5 14.5L9.5 15H8.5L7.5 16H6.5L5.5 15L4.5 14.5L3.5 15L2.5 14.5L2 13.5L1 12.5L0.5 11.5L0 10.5V9.5L1 8.5V7.5L0 6.5V5.5L0.5 4.5L1 3.5L2 2.5L2.5 1.5L3.5 1L4.5 1.5L5.5 1H6.5Z" fill="currentColor"/>
-                        <circle cx="8" cy="8" r="2" fill="var(--bg-color)"/>
-                    </svg>
-                    ��置
-                </button>
-            </div>
-
             <!-- Config panel -->
             <div class="config-panel">
                 <div class="config-panel-header">
@@ -1702,7 +1819,7 @@
                                     <div class="input-with-help">
                                         <input type="text" id="calendar-node-daily"
                                                placeholder="输入日历节点ID"
-                                               title="���于Today's Plan功能的日历根节点ID">
+                                               title="于Today's Plan功能的日历根节点ID">
                                         <span class="help-text">留空则不显示Today's Plan链接</span>
                                     </div>
                                 </div>
@@ -1729,7 +1846,7 @@
                                 <div class="config-item">
                                     <label>标签</label>
                                     <input type="text" id="tag-work"
-                                        placeholder="输入标签，如: #重要 (支持数字、中文、英文，多个用��号分隔)">
+                                        placeholder="输入标签，如: #重要 (支持数字、中文、英文，多个用号分隔)">
                                 </div>
                             </div>
                         </div>
@@ -1783,7 +1900,7 @@
                             </div>
                             <div class="group-content">
                                 <div class="config-item">
-                                    <label>节点ID</label>
+                                    <label>节ID</label>
                                     <input type="text" id="node-collector" placeholder="输入节点ID">
                                 </div>
                                 <div class="config-item">
@@ -1821,7 +1938,7 @@
                                 </button>
                             </div>
                             <div class="config-item">
-                                <label>刷新���隔</label>
+                                <label>刷新间隔</label>
                                 <input type="number" id="refresh-interval" placeholder="毫秒">
                             </div>
                             <div class="config-item">
@@ -1840,17 +1957,6 @@
 
         // 添加面板样式
         GM_addStyle(`
-            /* 面板底部样式 */
-            .panel-footer {
-                position: sticky;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                padding: 12px;
-                background: var(--bg-color);
-                border-top: 1px solid var(--border-color);
-                z-index: 10;
-            }
 
             /* 清除按钮样式 */
             .clear-all-btn {
@@ -1869,13 +1975,6 @@
                 background: var(--danger-hover-color, #c82333);
                 transform: translateY(-1px);
             }
-
-            /* 确保内容区域不会被底部按钮遮挡 */
-            .mode-contents {
-                flex: 1;
-                overflow-y: auto;
-                padding-bottom: 60px; /* 留出底部按钮的空间 */
-            }
         `);
 
         document.body.appendChild(panel);
@@ -1884,13 +1983,9 @@
         const clearAllBtn = document.getElementById('clear-all');
         if (clearAllBtn) {
             clearAllBtn.onclick = () => {
-                if (confirm('确定要清除当前模式的所有节点吗？')) {
-                    const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
-                    clearAllReminders(currentMode);
-                }
+                const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
+                clearAllReminders(currentMode);
             };
-        } else {
-            console.error('Clear all button not found');
         }
 
         // 统一使用一个modeButtons变量
@@ -2350,7 +2445,7 @@
         return null;
     }
 
-    // ��加ViewRenderer对象
+    // 加ViewRenderer对象
     const ViewRenderer = {
         // 渲染 DailyPlanner 视图
         async renderDailyView(container, config) {
@@ -2384,7 +2479,7 @@
                     if (timeInfo) {
                         const block = timeBlocks.find(b => b.time === timeInfo.time);
                         if (block) {
-                            // 只收集时间��点的子节点，并验证节点有效性
+                            // 只收集时间点的子节点，并验证节点有效性
                             const children = timeInfo.node.getChildren();
                             if (children && children.length > 0) {
                                 const validChildren = children.filter(node => this.validateNode(node));
@@ -3180,7 +3275,7 @@
                     switchMode(currentMode);
                     updateLinks(currentMode);
                 } else {
-                    showToast('保存失败，��重试', true); // 添加 isError 参数
+                    showToast('保存失败，重试', true); // 添加 isError 参数
                 }
             } catch (error) {
                 console.error('保存配置失败:', error);
@@ -3199,7 +3294,7 @@
                     switchMode(currentMode);
                     updateLinks(currentMode);
                 } else {
-                    showToast('重���失败');
+                    showToast('重置失败');
                 }
             }
         });
@@ -3327,7 +3422,7 @@
                     WF.zoomTo(node);
                     showToast('已找到今天的日期节点');
                 } else {
-                    showToast('未找到今天的日期��点', true);
+                    showToast('未找到今天的日期节点', true);
                 }
             } catch (error) {
                 console.error('导航到今天失败:', error);
@@ -3345,38 +3440,25 @@
             // 清除指定模式的所有移除记录
             localStorage.removeItem(`workflowy_removed_${currentMode}`);
 
-            // 获取配置
-            const config = ConfigManager.getConfig();
-            
-            // 获取内容元素
+            // 获取当前模式的内容容器
             const contentEl = document.getElementById(`${currentMode}-content`);
             if (!contentEl) {
                 throw new Error('Content element not found');
             }
 
-            // 根据不同模式刷新视图
-            switch (currentMode) {
-                case 'daily':
-                    ViewRenderer.renderDailyView(contentEl, config);
-                    break;
-                case 'work':
-                case 'personal': 
-                case 'temp':
-                    ViewRenderer.renderTargetView(contentEl, config, currentMode);
-                    break;
-                case 'collector':
-                    ViewRenderer.renderCollectorView(contentEl, config);
-                    break;
-                default:
-                    throw new Error('Invalid mode');
-            }
+            // 直接清除所有卡片
+            const cards = contentEl.querySelectorAll('.task-item');
+            cards.forEach(card => {
+                card.style.opacity = '0';
+                setTimeout(() => card.remove(), 300);
+            });
 
             // 显示成功提示
             showToast('已清除所有节点');
 
         } catch (error) {
             console.error('清除失败:', error);
-            showToast('清除失败: ' + error.message, true);
+            showToast('清除失败: ' + error.message);
         }
     }
 
@@ -3393,7 +3475,7 @@
                 const dateTimeMatch = plainName.match(/^\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}\s+\|\s+(.+)$/);
                 if (dateTimeMatch) {
                     const content = dateTimeMatch[1].trim();
-                    // 检���是否是纯URL
+                    // 检查是否是纯URL
                     if (/^https?:\/\/[^\s#]+$/.test(content)) {
                         return content;
                     }
@@ -3437,7 +3519,7 @@
                 return createOPML(title, url);
             }
 
-            // ���理带缩进的内容
+            // 处理带缩进的内容
             let formattedContent = plainName.replace(/#稍后处理/g, '').trim();
 
             // 处理子节点内容
@@ -3568,7 +3650,7 @@
         return collectedNodes;
     }
 
-    // 添加创��卡片项函数
+    // 添加创卡片项函数
     function createTaskItem(node, mode) {
         try {
             if (!node) return '';
