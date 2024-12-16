@@ -463,7 +463,7 @@
             border: 1px solid var(--border-color);
         }
 
-        /* 模���������������������切����按钮组样式 */
+        /* 模�����������������切按钮组样式 */
         .mode-switch {
             display: flex;
             background: rgba(39, 45, 50, 1);
@@ -1657,9 +1657,11 @@
                 <div id="collector-content" class="mode-content"></div>
             </div>
 
-            <!-- Clear button -->
-            <div class="clear-all-container">
-                <button class="clear-all-btn" id="clear-all">清除当前节点</button>
+            <!-- 添加清除按钮容器 -->
+            <div class="panel-footer">
+                <button id="clear-all" class="clear-all-btn">
+                    清除当前节点
+                </button>
             </div>
 
             <!-- Config trigger -->
@@ -1727,7 +1729,7 @@
                                 <div class="config-item">
                                     <label>标签</label>
                                     <input type="text" id="tag-work"
-                                        placeholder="输入标签，如: #重要 (支持数字、中文、英文，多个用逗号分隔)">
+                                        placeholder="输入标签，如: #重要 (支持数字、中文、英文，多个用��号分隔)">
                                 </div>
                             </div>
                         </div>
@@ -1836,7 +1838,60 @@
             </div>
         `;
 
+        // 添加面板样式
+        GM_addStyle(`
+            /* 面板底部样式 */
+            .panel-footer {
+                position: sticky;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                padding: 12px;
+                background: var(--bg-color);
+                border-top: 1px solid var(--border-color);
+                z-index: 10;
+            }
+
+            /* 清除按钮样式 */
+            .clear-all-btn {
+                width: 100%;
+                padding: 10px;
+                background: var(--danger-color, #dc3545);
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.2s ease;
+            }
+
+            .clear-all-btn:hover {
+                background: var(--danger-hover-color, #c82333);
+                transform: translateY(-1px);
+            }
+
+            /* 确保内容区域不会被底部按钮遮挡 */
+            .mode-contents {
+                flex: 1;
+                overflow-y: auto;
+                padding-bottom: 60px; /* 留出底部按钮的空间 */
+            }
+        `);
+
         document.body.appendChild(panel);
+
+        // 初始化清除按钮事件
+        const clearAllBtn = document.getElementById('clear-all');
+        if (clearAllBtn) {
+            clearAllBtn.onclick = () => {
+                if (confirm('确定要清除当前模式的所有节点吗？')) {
+                    const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
+                    clearAllReminders(currentMode);
+                }
+            };
+        } else {
+            console.error('Clear all button not found');
+        }
 
         // 统一使用一个modeButtons变量
         const modeButtons = document.querySelectorAll('.mode-btn');
@@ -1864,17 +1919,6 @@
         }
 
         // 初始化链接更新
-
-        // 初始化清除按钮
-        document.getElementById('clear-all').onclick = () => {
-            if (confirm('确定要清除当前模式的所有节点吗？')) {
-                const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
-                clearAllReminders(currentMode);
-                showToast('已清除所有节点');
-            }
-        };
-
-        initTodayPlan();
 
         // 初始化配置面板
         initConfigPanel();
@@ -2306,7 +2350,7 @@
         return null;
     }
 
-    // 添加ViewRenderer对象
+    // ��加ViewRenderer对象
     const ViewRenderer = {
         // 渲染 DailyPlanner 视图
         async renderDailyView(container, config) {
@@ -3295,28 +3339,44 @@
     // 添加clearAllReminders函数
     function clearAllReminders(mode) {
         try {
-            // 清除指定模式的所有���除记录
-            localStorage.removeItem(`workflowy_removed_${mode}`);
+            // 获取当前模式
+            const currentMode = mode || localStorage.getItem('wf_current_mode') || 'daily';
+            
+            // 清除指定模式的所有移除记录
+            localStorage.removeItem(`workflowy_removed_${currentMode}`);
 
-            // 刷新当前视图
-            const contentEl = document.getElementById(`${mode}-content`);
-            if (contentEl) {
-                const config = ConfigManager.getConfig();
-                switch (mode) {
-                    case 'daily':
-                        ViewRenderer.renderDailyView(contentEl, config);
-                        break;
-                    case 'target':
-                        ViewRenderer.renderTargetView(contentEl, config);
-                        break;
-                    case 'collector':
-                        ViewRenderer.renderCollectorView(contentEl, config);
-                        break;
-                }
+            // 获取配置
+            const config = ConfigManager.getConfig();
+            
+            // 获取内容元素
+            const contentEl = document.getElementById(`${currentMode}-content`);
+            if (!contentEl) {
+                throw new Error('Content element not found');
             }
+
+            // 根据不同模式刷新视图
+            switch (currentMode) {
+                case 'daily':
+                    ViewRenderer.renderDailyView(contentEl, config);
+                    break;
+                case 'work':
+                case 'personal': 
+                case 'temp':
+                    ViewRenderer.renderTargetView(contentEl, config, currentMode);
+                    break;
+                case 'collector':
+                    ViewRenderer.renderCollectorView(contentEl, config);
+                    break;
+                default:
+                    throw new Error('Invalid mode');
+            }
+
+            // 显示成功提示
+            showToast('已清除所有节点');
+
         } catch (error) {
             console.error('清除失败:', error);
-            showToast('清除失败，请重试');
+            showToast('清除失败: ' + error.message, true);
         }
     }
 
