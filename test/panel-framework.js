@@ -1448,41 +1448,60 @@
         }, 2000);
     }
 
+    // 修改updateModeButtons函数
     function updateModeButtons() {
         if (!panel) return;
         const config = ConfigManager.getConfig();
 
-        // Update Daily button
-        const dailyBtn = document.getElementById('mode-daily');
-        if (dailyBtn) {
-            dailyBtn.textContent = config.dailyPlanner.taskName || 'Daily';
-            dailyBtn.style.display = config.dailyPlanner.enabled ? 'block' : 'none';
+        // 获取所有模式按钮
+        const modeButtons = {
+            daily: document.getElementById('mode-daily'),
+            work: document.getElementById('mode-work'),
+            personal: document.getElementById('mode-personal'),
+            temp: document.getElementById('mode-temp'),
+            collector: document.getElementById('mode-collector')
+        };
+
+        // 更新Daily按钮
+        if (modeButtons.daily) {
+            modeButtons.daily.textContent = config.dailyPlanner.taskName || 'Daily';
+            modeButtons.daily.style.display = config.dailyPlanner.enabled ? 'block' : 'none';
         }
 
-        // Update Target button
-        const targetBtn = document.getElementById('mode-target');
-        if (targetBtn) {
-            const targetEnabled = config.target.work.enabled ||
-                                config.target.personal.enabled ||
-                                config.target.temp.enabled;
-            targetBtn.style.display = targetEnabled ? 'block' : 'none';
-
-            let targetName = 'Target';
-            if (config.target.work.enabled && config.target.work.taskName) {
-                targetName = config.target.work.taskName;
-            } else if (config.target.personal.enabled && config.target.personal.taskName) {
-                targetName = config.target.personal.taskName;
-            } else if (config.target.temp.enabled && config.target.temp.taskName) {
-                targetName = config.target.temp.taskName;
-            }
-            targetBtn.textContent = targetName;
+        // 更新Work按钮
+        if (modeButtons.work) {
+            modeButtons.work.textContent = config.target.work.taskName || 'Work';
+            modeButtons.work.style.display = config.target.work.enabled ? 'block' : 'none';
         }
 
-        // Update Collector button
-        const collectorBtn = document.getElementById('mode-collector');
-        if (collectorBtn) {
-            collectorBtn.textContent = config.collector.taskName || 'Collector';
-            collectorBtn.style.display = config.collector.enabled ? 'block' : 'none';
+        // 更新Personal按钮
+        if (modeButtons.personal) {
+            modeButtons.personal.textContent = config.target.personal.taskName || 'Personal';
+            modeButtons.personal.style.display = config.target.personal.enabled ? 'block' : 'none';
+        }
+
+        // 更新Temp按钮
+        if (modeButtons.temp) {
+            modeButtons.temp.textContent = config.target.temp.taskName || 'Temp';
+            modeButtons.temp.style.display = config.target.temp.enabled ? 'block' : 'none';
+        }
+
+        // 更新Collector按钮
+        if (modeButtons.collector) {
+            modeButtons.collector.textContent = config.collector.taskName || 'Collector';
+            modeButtons.collector.style.display = config.collector.enabled ? 'block' : 'none';
+        }
+
+        // 重新排列可见按钮
+        const modeSwitch = document.querySelector('.mode-switch');
+        if (modeSwitch) {
+            const visibleButtons = Array.from(modeSwitch.children)
+                .filter(btn => btn.style.display !== 'none');
+            
+            // 更新按钮样式以保持均匀分布
+            visibleButtons.forEach(btn => {
+                btn.style.flex = `1 1 ${100 / visibleButtons.length}%`;
+            });
         }
     }
 
@@ -1572,7 +1591,9 @@
             <!-- Mode switching buttons -->
             <div class="mode-switch">
                 <button id="mode-daily" class="mode-btn">Daily</button>
-                <button id="mode-target" class="mode-btn">Target</button>
+                <button id="mode-work" class="mode-btn">Work</button>
+                <button id="mode-personal" class="mode-btn">Personal</button>
+                <button id="mode-temp" class="mode-btn">Temp</button>
                 <button id="mode-collector" class="mode-btn">Collector</button>
             </div>
 
@@ -1585,50 +1606,55 @@
                             <a href="#" class="planner-link today-link" id="goto-today">
                                 Today's Plan
                             </a>
-                            <a href="#" class="planner-link scan-link">
-                                Daily
-                            </a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Target mode links -->
-                <div class="target-links" style="display: none;">
+                <!-- Work mode links -->
+                <div class="work-links" style="display: none;">
                     <div class="planner-links">
-                        <div class="follow-links-wrapper">
-                            <a href="#" class="planner-link follow-link">
-                                Target
-                            </a>
-                            <a href="#" class="planner-link follow-link">
-                                Target
-                            </a>
-                        </div>
+                        <a href="#" class="planner-link work-link">Work</a>
+                    </div>
+                </div>
+
+                <!-- Personal mode links -->
+                <div class="personal-links" style="display: none;">
+                    <div class="planner-links">
+                        <a href="#" class="planner-link personal-link">Personal</a>
+                    </div>
+                </div>
+
+                <!-- Temp mode links -->
+                <div class="temp-links" style="display: none;">
+                    <div class="planner-links">
+                        <a href="#" class="planner-link temp-link">Temp</a>
                     </div>
                 </div>
 
                 <!-- Collector mode links -->
                 <div class="collector-links" style="display: none;">
                     <div class="planner-links">
-                        <a href="#" class="planner-link collect-link">
-                            Collector
-                        </a>
+                        <a href="#" class="planner-link collect-link">Collector</a>
                     </div>
                 </div>
             </div>
 
-            <!-- Mode content containers -->
+            <!-- Mode contents -->
             <div class="mode-contents">
-                <div class="mode-content" id="daily-content"></div>
-                <div class="mode-content" id="target-content">
-                    <div class="task-list">
-                        <!-- Target tasks will be rendered here -->
-                    </div>
-                </div>
-                <div class="mode-content" id="collector-content">
-                    <div class="task-list">
-                        <!-- Collected items will be rendered here -->
-                    </div>
-                </div>
+                <!-- Daily mode content -->
+                <div id="daily-content" class="mode-content"></div>
+                
+                <!-- Work mode content -->
+                <div id="work-content" class="mode-content"></div>
+                
+                <!-- Personal mode content -->
+                <div id="personal-content" class="mode-content"></div>
+                
+                <!-- Temp mode content -->
+                <div id="temp-content" class="mode-content"></div>
+                
+                <!-- Collector mode content -->
+                <div id="collector-content" class="mode-content"></div>
             </div>
 
             <!-- Clear button -->
@@ -1793,7 +1819,7 @@
                                 </button>
                             </div>
                             <div class="config-item">
-                                <label>刷新间隔</label>
+                                <label>刷新���隔</label>
                                 <input type="number" id="refresh-interval" placeholder="毫秒">
                             </div>
                             <div class="config-item">
@@ -1891,51 +1917,50 @@
 
     // 将 switchMode 函数移到模块作用域
     function switchMode(mode) {
-        // Hide all content
+        console.log('Switching to mode:', mode);
+
+        // 隐藏所有内容和链接
         document.querySelectorAll('.mode-content').forEach(content => {
             content.classList.remove('active');
         });
-
-        // Hide all mode-specific links
         document.querySelectorAll('.mode-links > div').forEach(links => {
             links.style.display = 'none';
         });
 
-        // Remove active class from all buttons
-        document.querySelectorAll('.mode-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-
-        // Show selected mode content and links
+        // 获取目标内容和链接元素
         const contentEl = document.getElementById(`${mode}-content`);
-        const buttonEl = document.getElementById(`mode-${mode}`);
         const linksEl = document.querySelector(`.${mode}-links`);
+        
+        if (!contentEl) {
+            console.error(`Content element not found for mode: ${mode}`);
+            return;
+        }
 
-        if (contentEl && buttonEl) {
-            contentEl.classList.add('active');
-            buttonEl.classList.add('active');
-            if (linksEl) {
-                linksEl.style.display = 'block';
-            }
+        // 显示当前模式的内容和链接
+        contentEl.classList.add('active');
+        if (linksEl) {
+            linksEl.style.display = 'block';
+        }
 
-            // 渲染内容
-            const config = ConfigManager.getConfig();
-            try {
-                switch (mode) {
-                    case 'daily':
-                        ViewRenderer.renderDailyView(contentEl, config);
-                        break;
-                    case 'target':
-                        ViewRenderer.renderTargetView(contentEl, config);
-                        break;
-                    case 'collector':
-                        ViewRenderer.renderCollectorView(contentEl, config);
-                        break;
-                }
-            } catch (error) {
-                console.error('Error rendering mode content:', error);
-                contentEl.innerHTML = '<div class="error-state">加载失败，请刷新重试</div>';
+        // 渲染内容
+        const config = ConfigManager.getConfig();
+        try {
+            switch (mode) {
+                case 'daily':
+                    ViewRenderer.renderDailyView(contentEl, config);
+                    break;
+                case 'work':
+                case 'personal':
+                case 'temp':
+                    ViewRenderer.renderTargetView(contentEl, config, mode);
+                    break;
+                case 'collector':
+                    ViewRenderer.renderCollectorView(contentEl, config);
+                    break;
             }
+        } catch (error) {
+            console.error('Error rendering mode content:', error);
+            contentEl.innerHTML = '<div class="error-state">加载失败，请刷新重试</div>';
         }
 
         // Save current mode
@@ -2386,9 +2411,16 @@
         },
 
         // 渲染 Target 视图
-        async renderTargetView(container, config) {
-            if (!config.target.work.enabled && !config.target.personal.enabled && !config.target.temp.enabled) {
-                container.innerHTML = '<div class="empty-state">请先启用目标模式</div>';
+        async renderTargetView(container, config, mode) {
+            // 检查参数
+            if (!mode || !config.target[mode]) {
+                console.error('Invalid mode:', mode);
+                container.innerHTML = '<div class="error-state">无效的模式</div>';
+                return;
+            }
+
+            if (!config.target[mode].enabled || !config.target[mode].nodeId) {
+                container.innerHTML = '<div class="error-state">请先配置并启用该模式</div>';
                 return;
             }
 
@@ -2398,17 +2430,19 @@
                 const processedIds = new Set();
 
                 // Process node function with duplicate handling
-                function processNode(node, config) {
+                function processNode(node, config, currentDepth = 0, maxDepth = 10) {
+                    // 达到最大深度时返回
+                    if (currentDepth >= maxDepth) return;
+                    
                     const id = node.getId();
                     if (processedIds.has(id)) return;
                     processedIds.add(id);
 
                     const name = node.getNameInPlainText();
                     const note = node.getNoteInPlainText();
-                    const tag = config.tag ? config.tag.replace(/^#/, '') : ''; // 修改默认值为空字符串
+                    const tag = config.tag ? config.tag.replace(/^#/, '') : '';
 
                     if (!name.includes('#index') && !note.includes('#index')) {
-                        // 当tag为空时不进行标签检查
                         if (!tag || name.includes(`#${tag}`) || note.includes(`#${tag}`)) {
                             const normalizedContent = name.trim().replace(/\s+/g, ' ');
                             const hasMirrors = checkMirrorNodes(node);
@@ -2423,7 +2457,6 @@
                                 url: node.getUrl()
                             };
 
-                            // Handle duplicates - prefer nodes with hasMirrors
                             const existingNode = contentMap.get(normalizedContent);
                             if (!existingNode || (hasMirrors && !existingNode.hasMirrors)) {
                                 contentMap.set(normalizedContent, nodeData);
@@ -2432,24 +2465,16 @@
                         }
                     }
 
-                    // 递归处理子节点
-                    node.getChildren().forEach(child => processNode(child, config));
+                    // 递归处理子节点时传递深度参数
+                    node.getChildren().forEach(child => 
+                        processNode(child, config, currentDepth + 1, maxDepth)
+                    );
                 }
 
                 // Process each enabled target node
-                if (config.target.work.enabled) {
-                    const workNode = WF.getItemById(config.target.work.nodeId);
-                    if (workNode) processNode(workNode, config.target.work);
-                }
-
-                if (config.target.personal.enabled) {
-                    const personalNode = WF.getItemById(config.target.personal.nodeId);
-                    if (personalNode) processNode(personalNode, config.target.personal);
-                }
-
-                if (config.target.temp.enabled) {
-                    const tempNode = WF.getItemById(config.target.temp.nodeId);
-                    if (tempNode) processNode(tempNode, config.target.temp);
+                if (config.target[mode].enabled) {
+                    const targetNode = WF.getItemById(config.target[mode].nodeId);
+                    if (targetNode) processNode(targetNode, config.target[mode], 0, 10);
                 }
 
                 // Render nodes using Templates.taskItem
@@ -2457,7 +2482,7 @@
                     .sort((a, b) => b.time - a.time)
                     .map(nodeData => {
                         const node = WF.getItemById(nodeData.id);
-                        return node ? Templates.taskItem(node, true, 'target') : '';
+                        return node ? Templates.taskItem(node, true, mode) : '';
                     })
                     .join('');
 
@@ -2465,7 +2490,7 @@
                 this.addTaskEventListeners(container);
 
             } catch (error) {
-                console.error('渲染目标视图失败:', error);
+                console.error(`渲染${mode}视图失败:`, error);
                 container.innerHTML = '<div class="error-state">加载失败，请刷新重试</div>';
             }
         },
@@ -3130,7 +3155,7 @@
                     switchMode(currentMode);
                     updateLinks(currentMode);
                 } else {
-                    showToast('重置失败');
+                    showToast('重���失败');
                 }
             }
         });
@@ -3483,7 +3508,7 @@
         return collectedNodes;
     }
 
-    // 添加创建卡片项函数
+    // 添加创��卡片项函数
     function createTaskItem(node, mode) {
         try {
             if (!node) return '';
