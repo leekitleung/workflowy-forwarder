@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.0.19
+// @version      0.2.0
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 // 在文件顶部定义版本常量
-const SCRIPT_VERSION = '0.0.19'; // 当前版本号
+const SCRIPT_VERSION = '0.2.0'; // 当前版本号
 
 (function() {
     'use strict';
@@ -169,8 +169,8 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             top: 46px;
             height: calc(100vh - 46px);
             width: 319px;
-            background: #2B3135;
-            border-left: 1px solid #5c6062;
+            background: var(--panel-bg);
+            border-left: 1px solid var(--border-color);
             z-index: 100;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
@@ -182,37 +182,12 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             transform: translateX(-319px);
         }
 
-        .wf-panel.visible ~ #content {
-            padding-right: 319px;
-        }
-
-        /* 配置头部 */
-        .config-header {
-            padding: 24px 12px 12px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .config-header h2 {
-            margin: 0;
-            font-size: 18px;
-            color: var(--text-color);
-            font-weight: 500;
-        }
-
-        /* 模式切换 */
-        .mode-switch {
-            display: flex;
-            background: rgba(39, 45, 50, 1);
-            border-radius: 6px;
-            padding: 6px;
-            margin: 16px 12px;
-        }
 
         .mode-btn {
             flex: 1;
             padding: 6px 10px;
             border: none;
-            background: transparent;
+            background: none;
             color: var(--text-secondary);
             cursor: pointer;
             border-radius: 4px;
@@ -221,15 +196,8 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             margin: 2px;
         }
 
-        .mode-btn.active {
-            background: rgba(56, 70, 81, 1);
-            color: var(--text-color);
-        }
 
-        .mode-btn:hover {
-            background: var(--hover-bg);
-            color: var(--text-color);
-        }
+
 
         /* 模式内容区域 */
         .mode-contents {
@@ -239,48 +207,20 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             padding-bottom: 140px;
         }
 
-        .mode-content {
-            display: none;
-        }
+
 
         .mode-content.active {
             display: block;
         }
 
-        /* 按钮组 */
-        .panel-btn-group {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg-color);
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            border-top: 1px solid var(--border-color);
-            z-index: 101;
-        }
 
-        .panel-btn-group button {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            background: rgba(65, 70, 74, 1);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
+
 
         .panel-btn-group button:hover {
-            background: rgba(75, 80, 84, 1);
-            transform: translateY(-1px);
+            background: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            
         }
 
         .panel-btn-group button svg {
@@ -304,7 +244,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             left: 0;
             right: 0;
             bottom: 0;
-            background: var(--bg-color);
+            background: var(--panel-bg);
             z-index: 102;
             opacity: 0;
             visibility: hidden;
@@ -338,7 +278,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             position: fixed;
             right: 20px;
             top: 60px;
-            background: #2B3135;
+            background: var(--bg-color);
             border: none;
             padding: 8px;
             cursor: pointer;
@@ -353,7 +293,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         }
 
         .wf-toggle:hover {
-            background: #363b3f;
+            background: var(--button-hover-bg);
         }
 
         .wf-toggle.active .toggle-arrow {
@@ -363,7 +303,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         .toggle-arrow {
             width: 20px;
             height: 20px;
-            color: rgba(158, 161, 162, 1);
+            color: var(--text-color);
             transition: transform 0.3s ease;
             opacity: 0.8;
         }
@@ -374,11 +314,18 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
 
         /* 主题变量 */
         :root[data-theme="dark"] {
-            --bg-color: #1e2124;
+            --bg-color: rgba(39, 45, 50, 1);
             --panel-bg: #2B3135;
             --border-color: #5c6062;
-            --text-color: #d9dbdb;
+            --text-color: #9ea1a2;
             --text-secondary: #9ea1a2;
+            --button-active-bg: rgba(56, 70, 81, 1);
+            --button-hover-bg: rgba(53, 125, 166, 1);
+            --button-hover-text: rgba(185, 207, 221, 1);
+            --card-bg: rgba(53, 60, 63, 1);
+            --card-border-color: rgba(58, 67, 71, 1);
+            --card-hover-bg: rgba(56, 70, 81, 1);
+            --card-hover-border-color: rgba(68, 80, 88, 1);
             --input-bg: #383f44;
             --input-border: #5c6062;
             --input-focus-border: #4a9eff;
@@ -389,24 +336,40 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         }
 
         :root[data-theme="light"] {
-            --bg-color: #f5f5f5;
+            --bg-color: #eee;
             --panel-bg: #ffffff;
-            --border-color: #e0e0e0;
-            --text-color: #333333;
-            --text-secondary: #666666;
+            --border-color: #e4e6e8;
+            --text-color: #333333;  // 更深的文字颜色
+            --text-secondary: #666666;  // 更深的次要文字颜色
+            --button-active-bg: #f0f2f4;
+            --button-hover-bg: #49baf2;
+            --button-hover-text: #eee;
+            --card-bg: #ffffff;
+            --card-border-color: #e4e6e8;
+            --card-hover-bg: #f8f9fa;
+            --card-hover-border-color: #d1d5d9;
             --input-bg: #ffffff;
-            --input-border: #d0d0d0;
-            --input-focus-border: #2196f3;
+            --input-border: #e4e6e8;
+            --input-focus-border: #4a9eff;
             --input-focus-bg: #f8f9fa;
-            --section-bg: rgba(0, 0, 0, 0.02);
-            --group-bg: rgba(0, 0, 0, 0.01);
-            --divider-color: #e0e0e0;
+            --section-bg: rgba(134, 140, 144, 0.05);
+            --group-bg: rgba(134, 140, 144, 0.03);
+            --divider-color: #e4e6e8;
+            --hover-bg: rgba(134, 140, 144, 0.08);
+            --active-bg: rgba(134, 140, 144, 0.12);
+            
+            /* 新增侧边栏相关样式 */
+            --sidebar-bg: #ffffff;
+            --sidebar-border: #e4e6e8;
+            --sidebar-hover-bg: #f5f7f9;
+            --sidebar-text: #333333;
+            --sidebar-icon: #666666;
         }
 
         /* 设面板内容样式 */
         .config-header {
             padding: 24px 12px 12px;
-            border-bottom: 1px solid var(--border-color);
+
         }
 
         .config-header h2 {
@@ -443,37 +406,12 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             border: 1px solid var(--border-color);
         }
 
-        /* 模切按钮组样式 */
-        .mode-switch {
-            display: flex;
-            background: rgba(39, 45, 50, 1);
-            border-radius: 6px;
-            padding: 6px;
-            margin: 16px 12px;
-        }
 
-        .mode-btn {
-            flex: 1;
-            padding: 6px 10px;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.3s;
-            font-size: 14px;
-            margin: 2px;
-        }
 
-        .mode-btn.active {
-            background: rgba(56, 70, 81, 1);
-            color: var(--text-color);
-        }
 
-        .mode-btn:hover {
-            background: var(--hover-bg);
-            color: var(--text-color);
-        }
+
+
+
 
         /* 配置按钮样式 */
         .config-trigger {
@@ -503,7 +441,9 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         }
 
         .config-trigger-btn:hover {
-            background: var(--hover-bg);
+            background: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
         }
 
         /* 配置面板样式 */
@@ -525,6 +465,9 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         .config-panel.visible {
             opacity: 1;
             visibility: visible;
+        }
+        .config-panel h3{
+            margin:0 0 12px;
         }
 
         .config-panel-header {
@@ -575,8 +518,8 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         .task-name-input {
             flex: 1;
             padding: 8px 12px;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
+            // background: var(--input-bg);
+            // border: 1px solid var(--input-border);
             border-radius: 4px;
             color: var(--text-color);
             font-size: 14px;
@@ -621,8 +564,9 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         }
 
         .config-save {
-            background: var(--btn-bg);
-            color: var(--btn-text);
+            background: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
         }
 
         .config-reset {
@@ -677,8 +621,8 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
 
         .task-name-input:hover,
         .task-name-input:focus {
-            background: var(--input-bg);
-            border-color: var(--input-border);
+            // background: var(--input-bg);
+            // border-color: var(--input-border);
             outline: none;
         }
 
@@ -714,8 +658,8 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         .config-item input:not([type="checkbox"]) {
             flex: 1;
             padding: 8px 12px;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
+            // background: var(--input-bg);
+            // border: 1px solid var(--input-border);
             border-radius: 4px;
             color: var(--text-color);
             font-size: 14px;
@@ -724,41 +668,11 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
 
         .config-item input:focus {
             outline: none;
-            border-color: var(--input-focus-border);
-            background: var(--input-focus-bg);
+            // border-color: var(--input-focus-border);
+            // background: var(--input-focus-bg);
         }
 
-        /* 模式切换样式 */
-        .mode-switch {
-            display: flex;
-            background: rgba(39, 45, 50, 1);
-            border-radius: 6px;
-            padding: 6px;
-            margin: 16px 12px;
-        }
 
-        .mode-btn {
-            flex: 1;
-            padding: 6px 10px;
-            border: none;
-            background: transparent;
-            color: var(--text-secondary);
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.3s;
-            font-size: 14px;
-            margin: 2px;
-        }
-
-        .mode-btn.active {
-            background: rgba(56, 70, 81, 1);
-            color: var(--text-color);
-        }
-
-        .mode-btn:hover {
-            background: var(--hover-bg);
-            color: var(--text-color);
-        }
 
 
         .mode-contents {
@@ -778,27 +692,18 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             padding:16px;
         }
 
-        .mode-content.active {
-            display: block;
-        }
-
-        /* 任务列表样式 */
-        .task-list {
-            margin: 0;
-            padding: 0;
-            list-style: none;
-        }
-
         .task-item {
-            padding: 8px 12px;
+            padding: 10px;
             border-radius: 4px;
             margin-bottom: 8px;
-            background: var(--section-bg);
-            border: 1px solid var(--border-color);
-        }
-
-        .task-item:hover {
-            background: var(--group-bg);
+            background: var(--card-bg);
+            border: 1px solid var(--card-border-color);
+            position: relative;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: flex-start;
+            background: var(--card-bg);
+            cursor: pointer;
         }
 
         .task-header {
@@ -814,23 +719,44 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         }
 
         .task-actions {
+            position: absolute;
+            right: 6px;
+            top: 19px;
+            transform: translateY(-50%);
             display: flex;
-            gap: 8px;
+            gap: 2px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .collector-tasks .task-actions {
+
+            top: 16px;
+
         }
 
 
+        /* 操作按钮样式 */
         .task-action-btn {
-            padding: 4px 8px;
+            width: 14px;
+            height: 14px;
+            padding: 0px;
             border: none;
-            background: var(--input-bg);
-            color: var(--text-color);
-            border-radius: 4px;
+            background: transparent;
+            color: var(--text-secondary);
             cursor: pointer;
-            font-size: 12px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
         }
 
         .task-action-btn:hover {
-            background: var(--input-focus-bg);
+            background: var(--section-bg);
+            color: var(--text-color);
+            transform: translateY(-1px);
         }
 
         /* Toast 提示样式 */
@@ -868,45 +794,68 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         /* Mode switching styles */
         .mode-switch {
             display: flex;
-            background: var(--section-bg);
+            background: var(--bg-color);
             border-radius: 6px;
             padding: 6px;
             gap: 6px;
-            margin: 16px 12px;
+            margin: 0px 4px;
         }
 
-        .mode-btn {
-            flex: 1;
-            padding: 8px 12px;
-            border: none;
-            background: transparent;
+        .planner-links{
+            display: flex;
+            justify-content: flex-end;
             color: var(--text-secondary);
-            cursor: pointer;
+            font-size: 12px;
+            text-decoration: none;
+            padding: 8px 16px 8px;
+            margin-right: 8px;
             border-radius: 4px;
             transition: all 0.3s;
-            font-size: 14px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23909395' fill-opacity='0.5'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23909395' fill-opacity='0.5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px;
+            background-size: 12px;
+        }
+
+        .planner-links:hover{
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23357DA6'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23357DA6'/%3E%3C/svg%3E");
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .today-link::before{
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 4px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M8.5 1H8V0H7V1H3V0H2V1H1.5C0.67 1 0 1.67 0 2.5V9.5C0 10.33 0.67 11 1.5 11H8.5C9.33 11 10 10.33 10 9.5V2.5C10 1.67 9.33 1 8.5 1ZM9 9.5C9 9.78 8.78 10 8.5 10H1.5C1.22 10 1 9.78 1 9.5V4H9V9.5ZM9 3H1V2.5C1 2.22 1.22 2 1.5 2H2V3H3V2H7V3H8V2H8.5C8.78 2 9 2.22 9 2.5V3Z' fill='%23909395' fill-opacity='0.5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            vertical-align: middle;
+        }
+
+        .planner-links-row{
+            position:relative;
+        }
+
+        .planner-links-row .today-link{
+            position:absolute;
+            right:0;
+            top:0;
         }
 
         .mode-btn.active {
-            background: var(--input-bg);
+            background: var(--button-active-bg);
             color: var(--text-color);
         }
 
         .mode-btn:hover {
-            background: var(--hover-bg);
-            color: var(--text-color);
+            background: var(--button-hover-bg);
+            color: var(--button-hover-text);
         }
 
-        .mode-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px;
-            display: none;
-        }
 
-        .mode-content.active {
-            display: block;
-        }
 
         /* Task list styles */
         .task-list {
@@ -915,17 +864,39 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             list-style: none;
         }
 
-        .task-item {
-            padding: 12px;
-            background: var(--section-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-bottom: 8px;
+        .collector-tasks .children-content{
+            white-space: pre-wrap;
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.2;
+            margin-left: 22px;
         }
 
-        .task-item:hover {
-            background: var(--hover-bg);
+        .children-content{
+            white-space: pre-wrap;
+            color: var(--text-color);
+            font-size: 14px;
+            line-height: 1.2;
         }
+
+        .children-content-item {
+            margin-top: 4px;
+        }
+
+        .single-content {
+            white-space: pre-wrap;
+            padding: 4px 0;
+        }
+
+        .name-content{
+            margin-bottom: 2px;
+            padding-bottom: 4px;
+            color: rgba(144, 147, 149, 0.5);
+            font-size: 10px;
+
+        }
+
+
 
         .error-state {
             text-align: center;
@@ -944,7 +915,57 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             width: 16px;
             height: 16px;
             margin-right: 8px;
+            margin-top: 2px;
         }
+
+        .collector-tasks .checkbox-wrapper {
+            position: absolute;
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            top: 27px;
+            left: 10px;
+            margin-top: 0px;
+        }
+
+
+        .task-action-btn.link, .task-action-btn.copy, .task-action-btn.remove{
+            background-size: 14px 14px;
+            background-position: center;
+            background-repeat: no-repeat;
+            width: 14px;
+            height: 14px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+        }
+
+        .task-action-btn.link {
+             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234C5861'/%3E%3Cpath d='M4 3.01014L5.00844 2L10 7L5.00844 12L4 10.9899L7.98312 7L4 3.01014Z' fill='%239EA1A2'/%3E%3C/svg%3E");
+        }
+
+        .task-action-btn.link:hover {
+             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%2346A753'/%3E%3Cpath d='M4 3.01014L5.00844 2L10 7L5.00844 12L4 10.9899L7.98312 7L4 3.01014Z' fill='white'/%3E%3C/svg%3E");
+        }
+
+        .task-action-btn.remove{
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect opacity='0.2' width='14' height='14' rx='2' fill='%239EA1A2'/%3E%3Cpath d='M7.00001 7.92035L10.0796 11L11 10.0796L7.92037 7L11 3.92038L10.0796 3.00003L7.00001 6.07965L3.92035 3L3 3.92035L6.07966 7L3 10.0796L3.92035 11L7.00001 7.92035Z' fill='%239EA1A2'/%3E%3C/svg%3E");
+        }
+
+        .task-action-btn.remove:hover {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%23B04042'/%3E%3Cpath d='M7.00001 7.92035L10.0796 11L11 10.0796L7.92037 7L11 3.92038L10.0796 3.00003L7.00001 6.07965L3.92035 3L3 3.92035L6.07966 7L3 10.0796L3.92035 11L7.00001 7.92035Z' fill='white'/%3E%3C/svg%3E");
+        }
+
+        .task-action-btn.copy {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234C5861'/%3E%3Cpath d='M5.34119 10.6494L7.33176 8.65881L7.99529 9.32233L6.00472 11.3129C5.08858 12.229 3.60323 12.229 2.6871 11.3129C1.77097 10.3968 1.77097 8.91142 2.6871 7.99528L4.67767 6.00472L5.34119 6.66824L3.35062 8.65881C2.80094 9.20849 2.80094 10.0997 3.35062 10.6494C3.9003 11.1991 4.79151 11.1991 5.34119 10.6494Z' fill='%239EA1A2'/%3E%3Cpath d='M9.32233 7.99528L8.65881 7.33176L10.6494 5.34119C11.1991 4.79151 11.1991 3.9003 10.6494 3.35062C10.0997 2.80094 9.20849 2.80094 8.65881 3.35062L6.66824 5.34119L6.00472 4.67767L7.99528 2.6871C8.91142 1.77097 10.3968 1.77097 11.3129 2.6871C12.229 3.60323 12.229 5.08858 11.3129 6.00472L9.32233 7.99528Z' fill='%239EA1A2'/%3E%3Cpath d='M7.99543 5.34121L8.65895 6.00473L6.00486 8.65883L5.34133 7.9953L7.99543 5.34121Z' fill='%239EA1A2'/%3E%3C/svg%3E");
+        }
+
+        .task-action-btn.copy:hover {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234988B1'/%3E%3Cpath d='M5.34119 10.6494L7.33176 8.65881L7.99529 9.32233L6.00472 11.3129C5.08858 12.229 3.60323 12.229 2.6871 11.3129C1.77097 10.3968 1.77097 8.91142 2.6871 7.99528L4.67767 6.00472L5.34119 6.66824L3.35062 8.65881C2.80094 9.20849 2.80094 10.0997 3.35062 10.6494C3.9003 11.1991 4.79151 11.1991 5.34119 10.6494Z' fill='white'/%3E%3Cpath d='M9.32233 7.99528L8.65881 7.33176L10.6494 5.34119C11.1991 4.79151 11.1991 3.9003 10.6494 3.35062C10.0997 2.80094 9.20849 2.80094 8.65881 3.35062L6.66824 5.34119L6.00472 4.67767L7.99528 2.6871C8.91142 1.77097 10.3968 1.77097 11.3129 2.6871C12.229 3.60323 12.229 5.08858 11.3129 6.00472L9.32233 7.99528Z' fill='white'/%3E%3Cpath d='M7.99543 5.34121L8.65895 6.00473L6.00486 8.65883L5.34133 7.9953L7.99543 5.34121Z' fill='white'/%3E%3C/svg%3E");
+        }
+
 
         .checkbox-wrapper input[type="checkbox"] {
             opacity: 0;
@@ -955,10 +976,10 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             position: absolute;
             top: 0;
             left: 0;
-            width: 16px;
-            height: 16px;
-            border: 2px solid var(--text-color);
-            border-radius: 3px;
+            width: 12px;
+            height: 12px;
+            border: 1px solid var(--text-color);
+            border-radius: 2px;
             transition: all 0.2s ease;
         }
 
@@ -979,34 +1000,26 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             transform: rotate(45deg);
         }
 
-        /* 任务项样式 */
-        .task-item {
-            display: flex;
-            align-items: flex-start;
-            padding: 8px;
-            border-bottom: 1px solid var(--border-color);
-            transition: background-color 0.2s ease;
-        }
 
-        .task-item:hover {
-            background-color: var(--hover-color);
-        }
 
         .task-content {
             flex: 1;
             display: flex;
             align-items: flex-start;
+
         }
 
         .task-text {
             flex: 1;
             display: flex;
             flex-direction: column;
+            word-break: break-word;
         }
 
         .task-name {
             font-size: 14px;
             line-height: 1.4;
+            color: #9ea1a2;  // 修改为统一的颜色
         }
 
         .task-note {
@@ -1015,10 +1028,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             margin-top: 4px;
         }
 
-        .task-actions {
-            display: flex;
-            gap: 4px;
-        }
+
 
         .task-actions button {
             padding: 4px;
@@ -1124,20 +1134,11 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         }
 
         /* 统一卡片样式 */
-        .task-item {
-            position: relative;
-            padding: 12px;
-            background: var(--section-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            margin-bottom: 8px;
-            transition: all 0.2s ease;
-        }
+
 
         .task-item:hover {
-            background: var(--hover-bg);
-            border-color: var(--border-color-hover);
-            transform: translateY(-1px);
+            background: var(--card-hover-bg);
+            border-color: var(--card-hover-border-color);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
@@ -1153,28 +1154,17 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             transform: translateX(0);
         }
 
+        .task-item:hover .task-actions {
+            opacity: 1;
+            visibility: visible;
+        }
+
         .task-item .reminder-actions button:hover {
             transform: scale(1.1);
         }
 
-        /* 面板显示/隐藏状态 */
-        .wf-panel {
-            position: fixed;
-            right: -319px;
-            top: 46px;
-            height: calc(100vh - 46px);
-            width: 319px;
-            background: #2B3135;
-            border-left: 1px solid #5c6062;
-            z-index: 100;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            flex-direction: column;
-        }
 
-        .wf-panel.visible {
-            transform: translateX(-319px);
-        }
+
 
         .wf-panel.visible ~ #content {
             padding-right: 319px;
@@ -1184,44 +1174,15 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             transition: padding-right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* 切换按钮样式 */
-        .wf-toggle {
-            position: fixed;
-            right: 20px;
-            top: 60px;
-            background: #2B3135;
-            border: none;
-            padding: 8px;
-            cursor: pointer;
-            z-index: 101;
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            border-radius: 50%;
-        }
 
-        .wf-toggle:hover {
-            background: #363b3f;
-        }
 
-        .wf-toggle.active .toggle-arrow {
-            transform: rotate(180deg);
-        }
+       
 
-        .toggle-arrow {
-            width: 20px;
-            height: 20px;
-            color: rgba(158, 161, 162, 1);
-            transition: transform 0.3s ease;
-            opacity: 0.8;
-        }
+        
 
-        .wf-toggle:hover .toggle-arrow {
-            opacity: 1;
-        }
+        
+
+        
 
         /* 卡片颜色支持 */
         .task-item.colored {
@@ -1253,15 +1214,12 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             font-family: "Aclonica", sans-serif;
             font-weight: 400;
             font-style: italic;
-            color: #d9dbdb;
+            color: #9ea1a2;  // 修改为统一的颜色
             font-size: 14px;
             margin-bottom: 4px;
             padding: 4px;
         }
 
-        .time-block .task-list {
-            margin-left: 12px;
-        }
 
         .time-block:last-child {
             margin-bottom: 0;
@@ -1284,7 +1242,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             font-family: "Aclonica", sans-serif;
             font-weight: 400;
             font-style: italic;
-            color: #d9dbdb;
+            color: #9ea1a2;  // 修改为统一的颜色
             font-size: 14px;
             margin-bottom: 12px;
             padding: 4px;
@@ -1334,42 +1292,27 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             opacity: 0.8;
         }
 
-        /* 按钮组容器 */
-        .panel-btn-group {
-            position: absolute;  // 改为absolute定位
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg-color);
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            border-top: 1px solid var(--border-color);
-            z-index: 10;
-        }
+
 
         /* 统一按钮基础样式 */
         .panel-btn-group button {
             width: 100%;
             padding: 10px;
-            border: none;
+            
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
             transition: all 0.2s ease;
-            background: rgba(65, 70, 74, 1);
-            color: #fff;
+            background: var(--input-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
         }
 
-        .panel-btn-group button:hover {
-            background: rgba(75, 80, 84, 1);
-            transform: translateY(-1px);
-        }
 
 
 
@@ -1387,25 +1330,9 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             margin-bottom: 120px;  // 改用margin-bottom
         }
 
-        /* 按钮图标样式 */
-        .panel-btn-group button svg {
-            width: 16px;
-            height: 16px;
-        }
 
-        /* 确保面板内容正确显示 */
-        .wf-panel {
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;  // 添加overflow控制
-        }
 
-        /* 面板基础布局 */
-        .wf-panel {
-            display: flex;
-            flex-direction: column;
-            height: calc(100vh - 46px);
-        }
+
 
         /* 模式内容区域 */
         .mode-contents {
@@ -1430,27 +1357,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             z-index: 101; /* 确保在内容之上 */
         }
 
-        /* 统一按钮基础样式 */
-        .panel-btn-group button {
-            width: 100%;
-            padding: 10px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            background: rgba(65, 70, 74, 1);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
 
-        .panel-btn-group button:hover {
-            background: rgba(75, 80, 84, 1);
-            transform: translateY(-1px);
-        }
 
 
         /* 调整配置触发器样式 */
@@ -1460,15 +1367,93 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             border: none;
         }
 
-        /* 按钮图标样式 */
-        .panel-btn-group button svg {
-            width: 16px;
-            height: 16px;
-        }
 
         /* 确保配置面板正确显示 */
         .config-panel {
             z-index: 102; /* 确保在按钮组之上 */
+        }
+
+
+        /* 状态样式 */
+        .error-state {
+            color: var(--text-color);
+            background: var(--section-bg);
+            padding: 16px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .empty-state {
+            color: var(--text-secondary);
+            padding: 24px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        /* 输入框样式优化 */
+        .config-group input:not([type="checkbox"]),
+        .config-group select,
+        .config-group textarea {
+            color: var(--text-color);
+            // background: var(--input-bg);
+            // border: 1px solid var(--input-border);
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .config-group input:not([type="checkbox"]):hover,
+        .config-group select:hover,
+        .config-group textarea:hover {
+            // border-color: var(--input-focus-border);
+            // background: var(--input-focus-bg);
+        }
+
+        .config-group input:not([type="checkbox"]):focus,
+        .config-group select:focus,
+        .config-group textarea:focus {
+            // border-color: var(--input-focus-border);
+            // background: var(--input-focus-bg);
+            // outline: none;
+            // box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+        }
+
+        /* 按钮样式优化 */
+        button {
+            color: var(--text-color);
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: var(--hover-bg);
+            border-color: var(--input-focus-border);
+        }
+
+        button:active {
+            background: var(--active-bg);
+        }
+
+        /* 链接样式优化 */
+        a {
+            color: var(--text-color);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        a:hover {
+            color: var(--input-focus-border);
+        }
+
+        .collector-content{
+
         }
     `);
 
@@ -1614,7 +1599,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         if (modeSwitch) {
             const visibleButtons = Array.from(modeSwitch.children)
                 .filter(btn => btn.style.display !== 'none');
-            
+
             // 更新按钮样式以保持均匀分布
             visibleButtons.forEach(btn => {
                 btn.style.flex = `1 1 ${100 / visibleButtons.length}%`;
@@ -1723,6 +1708,9 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
                             <a href="#" class="planner-link today-link" id="goto-today">
                                 Today's Plan
                             </a>
+                            <a href="#" class="planner-link scan-link">
+                                DailyPlanner
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -1760,16 +1748,16 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             <div class="mode-contents">
                 <!-- Daily mode content -->
                 <div id="daily-content" class="mode-content"></div>
-                
+
                 <!-- Work mode content -->
                 <div id="work-content" class="mode-content"></div>
-                
+
                 <!-- Personal mode content -->
                 <div id="personal-content" class="mode-content"></div>
-                
+
                 <!-- Temp mode content -->
                 <div id="temp-content" class="mode-content"></div>
-                
+
                 <!-- Collector mode content -->
                 <div id="collector-content" class="mode-content"></div>
             </div>
@@ -1962,18 +1950,20 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             .clear-all-btn {
                 width: 100%;
                 padding: 10px;
-                background: var(--danger-color, #dc3545);
-                color: white;
-                border: none;
+                background: var(--input-bg);
+                color: var(--text-color);
+                border: 1px solid var(--border-color);
                 border-radius: 4px;
                 cursor: pointer;
                 font-size: 14px;
                 transition: all 0.2s ease;
+                
             }
 
             .clear-all-btn:hover {
-                background: var(--danger-hover-color, #c82333);
-                transform: translateY(-1px);
+                background: var(--button-hover-bg);
+                
+                border: 1px solid var(--border-color)
             }
         `);
 
@@ -2069,7 +2059,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         // 获取目标内容和链接元素
         const contentEl = document.getElementById(`${mode}-content`);
         const linksEl = document.querySelector(`.${mode}-links`);
-        
+
         if (!contentEl) {
             console.error(`Content element not found for mode: ${mode}`);
             return;
@@ -2235,7 +2225,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
                 return {
                     background: bgColor,
                     border: bgColor.replace('0.2', '0.3'),
-                    text: '#000000',
+                    text: '#9ea1a2',
                     hover: {
                         background: `rgba(${r}, ${g}, ${b}, 0.25)`,
                         border: `rgba(${r}, ${g}, ${b}, 0.35)`,
@@ -2253,17 +2243,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
 
     // 更新卡片样式
     GM_addStyle(`
-        /* 卡片基础样式 */
-        .task-item {
-            position: relative;
-            padding: 12px;
-            background: var(--bg-color, rgba(53, 60, 63, 1));
-            border: 1px solid var(--border-color, rgba(58, 67, 71, 1));
-            border-radius: 6px;
-            margin-bottom: 8px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1));
-            color: var(--text-color, #e8e8e8));
-        }
+
 
         /* 彩色节点样式 */
         .task-item.colored {
@@ -2284,11 +2264,16 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
 
         /* 操作按钮区域 */
         .task-item.colored .task-actions {
-            background: linear-gradient(to right,
-                transparent,
-                var(--node-bg-color) 20%
+            background: linear-gradient(to left,
+                var(--node-bg-color) 70%,
+                transparent
             );
         }
+
+        .task-item.colored .task-action-btn {
+            color: var(--node-text-color);
+        }
+
     `);
 
     // 添加复制格式处理函数
@@ -2382,14 +2367,10 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
                 </div>
                 <div class="task-actions">
                     <button class="task-action-btn copy" title="复制链接">
-                        <svg viewBox="0 0 24 24" width="14" height="14">
-                            <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-                        </svg>
+
                     </button>
                     <button class="task-action-btn remove" title="移除">
-                        <svg viewBox="0 0 24 24" width="14" height="14">
-                            <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
-                        </svg>
+
                     </button>
                 </div>
             </div>
@@ -2572,7 +2553,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
                 function processNode(node, config, currentDepth = 0, maxDepth = 10) {
                     // 达到最大深度时返回
                     if (currentDepth >= maxDepth) return;
-                    
+
                     const id = node.getId();
                     if (processedIds.has(id)) return;
                     processedIds.add(id);
@@ -2605,7 +2586,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
                     }
 
                     // 递归处理子节点时传递深度参数
-                    node.getChildren().forEach(child => 
+                    node.getChildren().forEach(child =>
                         processNode(child, config, currentDepth + 1, maxDepth)
                     );
                 }
@@ -2664,14 +2645,10 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
                     </div>
                     <div class="task-actions">
                         <button class="task-action-btn copy" title="复制链接">
-                            <svg viewBox="0 0 24 24" width="14" height="14">
-                                <path fill="currentColor" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
-                            </svg>
+
                         </button>
                         <button class="task-action-btn remove" title="移除">
-                            <svg viewBox="0 0 24 24" width="14" height="14">
-                                <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
-                            </svg>
+
                         </button>
                     </div>
                 </div>
@@ -2712,23 +2689,15 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
                                                 <div class="children-content">${node.childrenContent}</div>
                                             ` : ''}
                                         </div>
-                                        <div class="meta-info">
-                                            <span class="timestamp">
-                                                ${new Date(node.time).toLocaleString()}
-                                            </span>
-                                        </div>
+
                                     </div>
                                 </div>
                                 <div class="task-actions">
                                     <button class="task-action-btn link" title="跳转到节点">
-                                        <svg viewBox="0 0 24 24" width="14" height="14">
-                                            <path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
-                                        </svg>
+
                                     </button>
                                     <button class="task-action-btn remove" title="移除">
-                                        <svg viewBox="0 0 24 24" width="14" height="14">
-                                            <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
-                                        </svg>
+
                                     </button>
                                 </div>
                             </div>
@@ -2974,6 +2943,32 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
             container.querySelector('.refresh-btn')?.addEventListener('click', () => {
                 const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
                 switchMode(currentMode);
+            });
+
+            // 添加卡片点击事件
+            container.querySelectorAll('.task-item').forEach(taskItem => {
+                taskItem.addEventListener('click', (e) => {
+                    // 如果点击的是复选框、按钮或其他控件,不处理跳转
+                    if (e.target.closest('.checkbox-wrapper') ||
+                        e.target.closest('.task-actions') ||
+                        e.target.closest('button')) {
+                        return;
+                    }
+
+                    const taskId = taskItem.dataset.id;
+                    if (!taskId) return;
+
+                    try {
+                        const node = WF.getItemById(taskId);
+                        if (node) {
+                            // 使用 WF.zoomTo 进行跳转
+                            WF.zoomTo(node);
+                        }
+                    } catch (error) {
+                        console.error('跳转失败:', error);
+                        showFeedback(taskItem, '跳转失败');
+                    }
+                });
             });
         },
 
@@ -3436,7 +3431,7 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
         try {
             // 获取当前模式
             const currentMode = mode || localStorage.getItem('wf_current_mode') || 'daily';
-            
+
             // 清除指定模式的所有移除记录
             localStorage.removeItem(`workflowy_removed_${currentMode}`);
 
@@ -3692,37 +3687,31 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
                 }
 
                 return `
-                    <div class="task-item collect-mode ${isCompleted ? 'completed' : ''}
-                        ${hasMirrors ? 'has-mirrors' : ''} ${colors ? 'colored' : ''}"
-                        data-id="${node.getId()}"
-                        ${colorStyle}>
-                        ${name ? `<div class="parent-title">${name}</div>` : ''}
-                        <div class="task-content">
-                            <label class="checkbox-wrapper">
-                                <input type="checkbox" ${isCompleted ? 'checked' : ''}>
-                                <span class="checkbox-custom"></span>
-                            </label>
-                            <div class="task-text">
-                                ${childrenContent ?
-                                    `<div class="children-content">${childrenContent}</div>` :
-                                    `<div class="single-content">${name}</div>`
-                                }
-                            </div>
-                        </div>
-                        <div class="task-actions">
-                            <button class="task-action-btn link" title="跳转到节点">
-                                <svg viewBox="0 0 24 24" width="14" height="14">
-                                    <path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
-                                </svg>
-                            </button>
-                            <button class="task-action-btn remove" title="移除">
-                                <svg viewBox="0 0 24 24" width="14" height="14">
-                                    <path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/>
-                                </svg>
-                            </button>
+                <div class="task-item collect-mode ${isCompleted ? 'completed' : ''}
+                    ${hasMirrors ? 'has-mirrors' : ''} ${colors ? 'colored' : ''}"
+                    data-id="${node.getId()}"
+                    ${colorStyle}>
+                    ${name ? `<div class="parent-title">${name}</div>` : ''}
+                    <div class="task-content">
+                        <label class="checkbox-wrapper">
+                            <input type="checkbox" ${isCompleted ? 'checked' : ''}>
+                            <span class="checkbox-custom"></span>
+                        </label>
+                        <div class="task-text">
+                            ${childrenContent ?
+                                `<div class="children-content">${childrenContent}</div>` :
+                                `<div class="single-content">${name}</div>`
+                            }
                         </div>
                     </div>
-                `;
+                    <div class="task-actions">
+                        <button class="task-action-btn link" title="跳转到节点">
+                        </button>
+                        <button class="task-action-btn remove" title="移除">
+                        </button>
+                    </div>
+                </div>
+            `;
             }
 
             // 其他模式的处理保持不变...
@@ -3755,6 +3744,13 @@ const SCRIPT_VERSION = '0.0.19'; // 当前版本号
 
     // 添加反馈样式
     GM_addStyle(`
+
+        @import url('https://fonts.googleapis.com/css2?family=Aclonica&display=swap');
+
+        .right-bar > div:first-child {
+            width: 300px !important;
+        }
+
         /* 操作反馈样式 */
         .action-feedback {
             position: absolute;
