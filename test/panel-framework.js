@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.2.0
+// @version      0.2.1
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -214,27 +214,9 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
         }
 
 
-
-
-        .panel-btn-group button:hover {
-            background: var(--input-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            
-        }
-
         .panel-btn-group button svg {
             width: 16px;
             height: 16px;
-        }
-
-
-
-        /* 配置触发器 */
-        .config-trigger {
-            position: static;
-            padding: 0;
-            border: none;
         }
 
         /* 配置面板 */
@@ -409,43 +391,6 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
 
 
 
-
-
-
-
-        /* 配置按钮样式 */
-        .config-trigger {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 16px;
-            border-top: 1px solid var(--border-color);
-            background: var(--bg-color);
-        }
-
-        .config-trigger-btn {
-            width: 100%;
-            padding: 12px;
-            background: var(--bg-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .config-trigger-btn:hover {
-            background: var(--input-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-        }
-
         /* 配置面板样式 */
         .config-panel {
             position: absolute;
@@ -546,22 +491,7 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
             font-size: 14px;
         }
 
-        .config-buttons {
-            padding: 16px;
-            border-top: 1px solid var(--border-color);
-            background: var(--bg-color);
-        }
 
-        .config-btn {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 8px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s ease;
-        }
 
         .config-save {
             background: var(--input-bg);
@@ -756,7 +686,7 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
         .task-action-btn:hover {
             background: var(--section-bg);
             color: var(--text-color);
-            transform: translateY(-1px);
+            
         }
 
         /* Toast 提示样式 */
@@ -1176,13 +1106,27 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
 
 
 
-       
+       /* 清除按钮样式 */
+        .config-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
 
-        
-
-        
-
-        
+        .config-btn:hover{
+            background: var(--card-hover-bg);
+            border-color: var(--card-hover-border-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
 
         /* 卡片颜色支持 */
         .task-item.colored {
@@ -1294,35 +1238,6 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
 
 
 
-        /* 统一按钮基础样式 */
-        .panel-btn-group button {
-            width: 100%;
-            padding: 10px;
-            
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            background: var(--input-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-
-
-
-        /* 调整配置触发器样式 */
-        .config-trigger {
-            position: static;
-            padding: 0;
-            border: none;
-        }
-
         /* 确保内容区域不被按钮组遮挡 */
         .mode-contents {
             flex: 1;
@@ -1343,7 +1258,7 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
         }
 
         /* 按钮组容器 */
-        .panel-btn-group {
+        .panel-btn-group,.config-buttons {
             position: absolute;
             bottom: 0;
             left: 0;
@@ -1358,14 +1273,6 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
         }
 
 
-
-
-        /* 调整配置触发器样式 */
-        .config-trigger {
-            position: static;
-            padding: 0;
-            border: none;
-        }
 
 
         /* 确保配置面板正确显示 */
@@ -1414,10 +1321,10 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
         .config-group input:not([type="checkbox"]):focus,
         .config-group select:focus,
         .config-group textarea:focus {
-            // border-color: var(--input-focus-border);
-            // background: var(--input-focus-bg);
-            // outline: none;
-            // box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+            color: var(--input-focus-border);
+            background: var(--wf-gray-500);
+            outline: none;
+            
         }
 
         /* 按钮样式优化 */
@@ -1763,22 +1670,19 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
             </div>
             <div class="panel-btn-group">
                 <!-- 添加清除按钮容器 -->
-                <div class="panel-footer">
-                    <button id="clear-all" class="clear-all-btn">
+
+                    <button id="clear-all" class="config-btn clear-all-btn">
                         清除当前模式所有卡片
                     </button>
-                </div>
 
-                <!-- Config trigger -->
-                <div class="config-trigger">
-                    <button class="config-trigger-btn">
+                    <button class="config-btn config-trigger-btn">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M6.5 1L7.5 0H8.5L9.5 1L10.5 1.5L11.5 1L12.5 1.5L13 2.5L14 3.5L14.5 4.5L15 5.5V6.5L14 7.5V8.5L15 9.5V10.5L14.5 11.5L14 12.5L13 13.5L12.5 14.5L11.5 15L10.5 14.5L9.5 15H8.5L7.5 16H6.5L5.5 15L4.5 14.5L3.5 15L2.5 14.5L2 13.5L1 12.5L0.5 11.5L0 10.5V9.5L1 8.5V7.5L0 6.5V5.5L0.5 4.5L1 3.5L2 2.5L2.5 1.5L3.5 1L4.5 1.5L5.5 1H6.5Z" fill="currentColor"/>
                             <circle cx="8" cy="8" r="2" fill="var(--bg-color)"/>
                         </svg>
                         设置
                     </button>
-                </div>
+
             </div>
             <!-- Config panel -->
             <div class="config-panel">
@@ -1943,29 +1847,6 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
             </div>
         `;
 
-        // 添加面板样式
-        GM_addStyle(`
-
-            /* 清除按钮样式 */
-            .clear-all-btn {
-                width: 100%;
-                padding: 10px;
-                background: var(--input-bg);
-                color: var(--text-color);
-                border: 1px solid var(--border-color);
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 14px;
-                transition: all 0.2s ease;
-                
-            }
-
-            .clear-all-btn:hover {
-                background: var(--button-hover-bg);
-                
-                border: 1px solid var(--border-color)
-            }
-        `);
 
         document.body.appendChild(panel);
 
