@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 // 在文件顶部定义版本常量
-const SCRIPT_VERSION = '0.2.0'; // 当前版本号
+const SCRIPT_VERSION = '0.2.1'; // 当前版本号
 
 (function() {
     'use strict';
@@ -1366,18 +1366,16 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
 
     // 面板切换函数
     function togglePanel() {
-        const panel = document.querySelector('.wf-panel');
+        if (!panel) return;
+        
         const toggleBtn = document.querySelector('.wf-toggle');
+        panel.classList.toggle('visible');
+        toggleBtn?.classList.toggle('active');
+
+        // 更新内容区域padding
         const content = document.getElementById('content');
-
-        if (panel && toggleBtn) {
-            panel.classList.toggle('visible');
-            toggleBtn.classList.toggle('active');
-
-            // 更新内容区域padding
-            if (content) {
-                content.style.paddingRight = panel.classList.contains('visible') ? '319px' : '0';
-            }
+        if (content) {
+            content.style.paddingRight = panel.classList.contains('visible') ? '319px' : '0';
         }
     }
 
@@ -1400,6 +1398,7 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
         document.documentElement.setAttribute('data-theme', savedTheme);
     }
 
+    // 添加快捷键处理函数
     function handleKeyPress(e) {
         // Ctrl + /
         if (e.ctrlKey && e.key === '/') {
@@ -1804,14 +1803,7 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
                                     <input type="checkbox" id="auto-complete-collector">
                                     <span class="checkbox-label">复制内容后自动标记完成</span>
                                 </div>
-                                <div class="config-item">
-                                    <label>复制格式</label>
-                                    <select id="copy-format-collector" class="config-select">
-                                        <option value="plain">纯文本</option>
-                                        <option value="markdown">Markdown</option>
-                                        <option value="opml">OPML</option>
-                                    </select>
-                                </div>
+                                
                             </div>
                         </div>
                     </div>
@@ -1911,7 +1903,9 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
 
         // 添加切换按钮事件监听
         toggleBtn.onclick = togglePanel;
-        document.addEventListener('keydown', handleKeyPress, false);
+
+        // 添加快捷键监听
+        document.addEventListener('keydown', handleKeyPress);
 
         // 初始化主题
         initTheme();
@@ -2745,7 +2739,7 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
                         // 恢复复选框状态
                         e.target.checked = !e.target.checked;
                         taskItem.classList.toggle('completed');
-                        showFeedback(taskItem, '更新失败', true);
+                        showFeedback(taskItem, '更新失���', true);
                     }
                 });
             });
@@ -3703,4 +3697,12 @@ const SCRIPT_VERSION = '0.2.0'; // 当前版本号
             console.error('同步状态检查失败:', error);
         }
     }
+
+    // 在销毁时清理事件监听
+    function cleanup() {
+        document.removeEventListener('keydown', handleKeyPress);
+    }
+
+    // 在页面卸载时清理
+    window.addEventListener('unload', cleanup);
 })();

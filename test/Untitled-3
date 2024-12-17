@@ -1,0 +1,316 @@
+// ==UserScript==
+// @name         Color Blocks Creator for Figma
+// @namespace    http://tampermonkey.net/
+// @version      0.8
+// @description  Extract colors and create color blocks for Figma
+// @author       Your name
+// @match        https://*/*
+// @grant        GM_addStyle
+// @grant        GM_setClipboard
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @run-at       document-end
+// ==/UserScript==
+
+(function() {
+    'use strict';
+    
+    // 清理已存在的面板
+    const existingPanel = document.getElementById('simple-color-panel');
+    if (existingPanel) {
+        existingPanel.remove();
+    }
+    
+    // 基础样式
+    GM_addStyle(`
+        #simple-color-panel {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 999999;
+            width: 300px;
+            font-family: Arial, sans-serif;
+        }
+        
+        #simple-color-input {
+            width: 100%;
+            height: 150px;
+            margin: 10px 0;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            resize: vertical;
+            background: white;
+            color: black;
+        }
+        
+        .simple-btn {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        
+        /* 添加Figma相关样式 */
+        .figma-format {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        
+        .figma-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .figma-block {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    `);
+    
+    // 创建面板
+    const panel = document.createElement('div');
+    panel.id = 'simple-color-panel';
+    panel.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>颜色提取工具</div>
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="border: none; background: none; cursor: pointer; padding: 5px;">✕</button>
+        </div>
+        <textarea id="simple-color-input" 
+                  placeholder="在这里粘贴CSS变量代码..."
+                  spellcheck="false"
+                  autocomplete="off"
+                  autocorrect="off"
+                  autocapitalize="off"></textarea>
+        <div>
+            <button class="simple-btn" id="simple-paste">粘贴</button>
+            <button class="simple-btn" id="simple-extract">提取颜色</button>
+        </div>
+        <div id="simple-preview"></div>
+        <div class="figma-format">
+            <div style="margin-bottom: 10px;">Figma色块生成</div>
+            <div>
+                <button class="simple-btn" id="create-figma-blocks">生成Figma色块</button>
+                <select id="block-size" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="32">32x32</option>
+                    <option value="48">48x48</option>
+                    <option value="64" selected>64x64</option>
+                    <option value="96">96x96</option>
+                </select>
+            </div>
+            <div id="figma-preview" class="figma-preview"></div>
+        </div>
+    `;
+    
+    document.body.appendChild(panel);
+    
+    // 处理粘贴
+    async function handlePaste() {
+        try {
+            const text = await navigator.clipboard.readText();
+            const textarea = document.getElementById('simple-color-input');
+            textarea.value = text;
+            extractColors();
+        } catch (err) {
+            showToast('无法访问剪贴板，请使用 Ctrl+V 粘贴');
+        }
+    }
+    
+    // 提取颜色
+    function extractColors() {
+        const input = document.getElementById('simple-color-input').value;
+        const colors = [];
+        
+        input.split('\n').forEach(line => {
+            line = line.trim();
+            if(!line) return;
+            
+            const [name, value] = line.split(':').map(s => s.trim());
+            if(!name || !value) return;
+            
+            const colorValue = value.replace(';', '');
+            if(colorValue.startsWith('#')) {
+                colors.push({name: name.replace('--', ''), value: colorValue});
+            }
+        });
+        
+        displayColors(colors);
+    }
+    
+    // 显示颜色
+    function displayColors(colors) {
+        const preview = document.getElementById('simple-preview');
+        if(!colors.length) {
+            preview.innerHTML = '<div style="color: #666; padding: 10px;">没有找到颜色值</div>';
+            return;
+        }
+        
+        let html = '';
+        colors.forEach(color => {
+            html += `
+                <div class="color-item" data-color="${color.value}" style="display: flex; align-items: center; padding: 5px; cursor: pointer;">
+                    <div style="width: 20px; height: 20px; background: ${color.value}; 
+                              border: 1px solid #ccc; margin-right: 10px;"></div>
+                    <div>
+                        <div>${color.name}</div>
+                        <div style="font-size: 12px; color: #666;">${color.value}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        preview.innerHTML = html;
+    }
+    
+    // 显示提示
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            z-index: 1000000;
+        `;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2000);
+    }
+    
+    // 生成Figma色块数据
+    function createFigmaBlocks() {
+        const input = document.getElementById('simple-color-input').value;
+        const blockSize = document.getElementById('block-size').value;
+        const colors = [];
+        
+        // 解析颜色
+        input.split('\n').forEach(line => {
+            line = line.trim();
+            if(!line) return;
+            
+            const [name, value] = line.split(':').map(s => s.trim());
+            if(!name || !value) return;
+            
+            const colorValue = value.replace(';', '');
+            if(colorValue.startsWith('#')) {
+                colors.push({
+                    name: name.replace('--', ''),
+                    value: colorValue
+                });
+            }
+        });
+        
+        if(!colors.length) {
+            showToast('没有找到有效的颜色值');
+            return;
+        }
+        
+        // 生成新的层级结构
+        const figmaData = {
+            name: "Color Blocks",
+            type: "FRAME",
+            width: Math.min(colors.length, 5) * (parseInt(blockSize) + 16),
+            height: Math.ceil(colors.length / 5) * (parseInt(blockSize) + 16),
+            fills: [],
+            children: colors.map((color, index) => ({
+                name: color.name,
+                type: "RECTANGLE",
+                x: (index % 5) * (parseInt(blockSize) + 16),
+                y: Math.floor(index / 5) * (parseInt(blockSize) + 16),
+                width: parseInt(blockSize),
+                height: parseInt(blockSize),
+                fills: [{
+                    type: "SOLID",
+                    color: hexToRgb(color.value)
+                }]
+            }))
+        };
+        
+        // 更新预览
+        updateFigmaPreview(colors);
+        
+        // 复制到剪贴板
+        const jsonData = JSON.stringify(figmaData, null, 2);
+        navigator.clipboard.writeText(jsonData).then(() => {
+            showToast('Figma色块数据已复制，请在Figma中使用插件粘贴');
+        });
+    }
+    
+    // 更新Figma预览
+    function updateFigmaPreview(colors) {
+        const preview = document.getElementById('figma-preview');
+        const blockSize = document.getElementById('block-size').value;
+        
+        let html = '';
+        colors.forEach(color => {
+            html += `
+                <div class="figma-block" 
+                     style="background: ${color.value}; width: ${blockSize}px; height: ${blockSize}px;"
+                     title="${color.name}: ${color.value}">
+                </div>
+            `;
+        });
+        
+        preview.innerHTML = html;
+    }
+    
+    // 转换十六进制颜色到RGB
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16) / 255,
+            g: parseInt(result[2], 16) / 255,
+            b: parseInt(result[3], 16) / 255
+        } : null;
+    }
+    
+    // 添加事件监听
+    document.getElementById('simple-paste').onclick = handlePaste;
+    document.getElementById('simple-extract').onclick = extractColors;
+    document.getElementById('create-figma-blocks').onclick = createFigmaBlocks;
+    
+    // 添加键盘快捷键支持
+    document.getElementById('simple-color-input').addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'v') {
+            e.stopPropagation();
+        }
+    });
+    
+    // 添加右键菜单支持
+    document.getElementById('simple-color-input').addEventListener('contextmenu', function(e) {
+        e.stopPropagation();
+    });
+    
+    // 添加粘贴事件监听
+    document.getElementById('simple-color-input').addEventListener('paste', function(e) {
+        e.stopPropagation();
+    }, true);
+    
+    // 添加块大小变化监听
+    document.getElementById('block-size').addEventListener('change', () => {
+        const input = document.getElementById('simple-color-input').value;
+        if(input) {
+            createFigmaBlocks();
+        }
+    });
+})();
