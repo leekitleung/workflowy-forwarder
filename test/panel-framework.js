@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.2.3
+// @version      0.2.4
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -9,32 +9,32 @@
 // ==/UserScript==
 
 // 更新版本号
-const SCRIPT_VERSION = '0.2.3'; // 从0.2.1升级到0.2.2
+const SCRIPT_VERSION = GM_info.script.version;
 
 // 添加节点缓存机制
 const NodeCache = {
     cache: new Map(),
     maxAge: 5 * 60 * 1000, // 5分钟缓存
-    
+
     set(id, node) {
         this.cache.set(id, {
             node,
             timestamp: Date.now()
         });
     },
-    
+
     get(id) {
         const cached = this.cache.get(id);
         if (!cached) return null;
-        
+
         if (Date.now() - cached.timestamp > this.maxAge) {
             this.cache.delete(id);
             return null;
         }
-        
+
         return cached.node;
     },
-    
+
     clear() {
         this.cache.clear();
     }
@@ -52,12 +52,12 @@ function showToast(message, isError = false, duration = 2000) {
     const toast = document.querySelector('.toast') || createToast();
     toast.textContent = message;
     toast.className = `toast ${isError ? 'error' : 'success'}`;
-    
+
     // 使用RAF优化动画
     requestAnimationFrame(() => {
         toast.style.opacity = '1';
         toast.style.transform = 'translate(-50%, 20px)';
-        
+
         setTimeout(() => {
             toast.style.opacity = '0';
             toast.style.transform = 'translate(-50%, 0)';
@@ -76,7 +76,7 @@ const LoadingState = {
         `;
         container.appendChild(loading);
     },
-    
+
     hide(container) {
         const loading = container.querySelector('.loading-state');
         if (loading) {
@@ -98,16 +98,16 @@ function renderNodes(nodes, container) {
 // 添加拖拽排序支持
 function initDragAndDrop(container) {
     let draggedItem = null;
-    
+
     container.addEventListener('dragstart', e => {
         draggedItem = e.target;
         e.target.classList.add('dragging');
     });
-    
+
     container.addEventListener('dragend', e => {
         e.target.classList.remove('dragging');
     });
-    
+
     container.addEventListener('dragover', e => {
         e.preventDefault();
         const afterElement = getDragAfterElement(container, e.clientY);
@@ -123,7 +123,7 @@ function initDragAndDrop(container) {
 // 添加批量操作支持
 function initBatchOperations(container) {
     let selectedItems = new Set();
-    
+
     container.addEventListener('click', e => {
         if (e.ctrlKey && e.target.closest('.task-item')) {
             const item = e.target.closest('.task-item');
@@ -149,7 +149,7 @@ GM_addStyle(`
         justify-content: center;
         padding: 20px;
     }
-    
+
     .loading-spinner {
         width: 30px;
         height: 30px;
@@ -158,33 +158,33 @@ GM_addStyle(`
         border-radius: 50%;
         animation: spin 1s linear infinite;
     }
-    
+
     .loading-text {
         margin-top: 10px;
         color: var(--text-secondary);
     }
-    
+
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
-    
+
     /* 拖拽样式 */
     .task-item.dragging {
         opacity: 0.5;
         cursor: move;
     }
-    
+
     /* 选中样式 */
     .task-item.selected {
         background: var(--section-bg);
         border-color: var(--input-focus-border);
     }
-    
+
     /* 错误提示样式 */
     .toast.error {
         background: #d32f2f;
     }
-    
+
     .toast.success {
         background: #2e7d32;
     }
@@ -518,7 +518,7 @@ GM_addStyle(`
             --divider-color: #e4e6e8;
             --hover-bg: rgba(134, 140, 144, 0.08);
             --active-bg: rgba(134, 140, 144, 0.12);
-            
+
             /* 新增侧边栏相关样式 */
             --sidebar-bg: #ffffff;
             --sidebar-border: #e4e6e8;
@@ -765,6 +765,11 @@ GM_addStyle(`
             font-size: 13px;
         }
 
+        .config-item input {
+            width: 100%;
+
+        }
+
         .config-item input:not([type="checkbox"]) {
             flex: 1;
             padding: 8px 12px;
@@ -866,7 +871,7 @@ GM_addStyle(`
         .task-action-btn:hover {
             background: var(--section-bg);
             color: var(--text-color);
-            
+
         }
 
         /* Toast 提示样式 */
@@ -1362,18 +1367,26 @@ GM_addStyle(`
             border-bottom: none;
         }
 
+        .mode-contents #work-content .node-title:first-of-type,.mode-contents #personal-content .node-title:first-of-type,.mode-contents #temp-content .node-title:first-of-type {
+            margin: 0 0 6px;
+        }
+        
         .node-title {
             font-family: "Aclonica", sans-serif;
             font-weight: 400;
             font-style: italic;
             color: #9ea1a2;  // 修改为统一的颜色
             font-size: 14px;
-            margin-bottom: 12px;
+            margin: 18px 0 6px;
             padding: 4px;
         }
 
         .node-content {
             margin-left: 12px;
+        }
+
+        .node-content div:first-child {
+            margin: 0 0 6px;
         }
 
         /* ... 其他样式 ... */
@@ -1424,7 +1437,6 @@ GM_addStyle(`
             overflow-y: auto;
             margin-bottom: 120px;  // 改用margin-bottom
         }
-
 
 
 
@@ -1504,7 +1516,7 @@ GM_addStyle(`
             color: var(--input-focus-border);
             background: var(--wf-gray-500);
             outline: none;
-            
+
         }
 
         /* 按钮样式优化 */
@@ -1610,7 +1622,7 @@ GM_addStyle(`
     // 面板切换函数
     function togglePanel() {
         if (!panel) return;
-        
+
         const toggleBtn = document.querySelector('.wf-toggle');
         panel.classList.toggle('visible');
         toggleBtn?.classList.toggle('active');
@@ -1950,12 +1962,12 @@ GM_addStyle(`
                                 </div>
                                 <div class="config-item">
                                     <label>日历节点</label>
-                                    <div class="input-with-help">
-                                        <input type="text" id="calendar-node-daily"
+
+                                    <input type="text" id="calendar-node-daily"
                                                placeholder="输入日历节点ID"
-                                               title="于Today's Plan功能的日历根节点ID">
-                                        <span class="help-text">留空则不显示Today's Plan链接</span>
-                                    </div>
+                                               title="留空则不显示Today's Plan链接">
+
+
                                 </div>
                             </div>
                         </div>
@@ -2044,7 +2056,7 @@ GM_addStyle(`
                                 <div class="config-item">
                                     <label>自动完成</label>
                                     <input type="checkbox" id="auto-complete-collector">
-                                    <span class="checkbox-label">复制内容后自动标记完成</span>
+                                    <span class="checkbox-label">复制内容后标记完成</span>
                                 </div>
                                 <div class="config-item">
                                     <label>复制标签</label>
@@ -2281,8 +2293,15 @@ GM_addStyle(`
     function checkMirrorNodes(node) {
         try {
             if (!node) return false;
+            
+            // 获取节点的DOM元素
             const element = node.getElement();
-            return element?.closest('.project')?.classList.contains('hasMirrors') || false;
+            if (!element) return false;
+
+            // 检查父级项目是否有 hasMirrors 类
+            const projectElement = element.closest('.project');
+            return projectElement ? projectElement.classList.contains('hasMirrors') : false;
+
         } catch (error) {
             console.error('检查镜像节点失败:', error);
             return false;
@@ -2673,12 +2692,13 @@ GM_addStyle(`
 
             try {
                 const targetNodes = new Map();
-                const contentMap = new Map(); // Track nodes by normalized content
+                const contentMap = new Map();
                 const processedIds = new Set();
-
+                const tagGroups = new Map(); // 用于存储不同标签的节点
+        
                 // Process node function with duplicate handling
+                // 修改 renderTargetView 函数中的 processNode 函数
                 function processNode(node, config, currentDepth = 0, maxDepth = 10) {
-                    // 达到最大深度时返回
                     if (currentDepth >= maxDepth) return;
 
                     const id = node.getId();
@@ -2687,32 +2707,62 @@ GM_addStyle(`
 
                     const name = node.getNameInPlainText();
                     const note = node.getNoteInPlainText();
-                    const tag = config.tag ? config.tag.replace(/^#/, '') : '';
+                    
+                    // 处理多标签
+                    const configTags = config.tag
+                        .split(',')
+                        .map(tag => tag.trim())
+                        .filter(tag => tag)
+                        .map(tag => tag.startsWith('#') ? tag : `#${tag}`);
 
-                    if (!name.includes('#index') && !note.includes('#index')) {
-                        if (!tag || name.includes(`#${tag}`) || note.includes(`#${tag}`)) {
-                            const normalizedContent = name.trim().replace(/\s+/g, ' ');
-                            const hasMirrors = checkMirrorNodes(node);
+                    // 检查是否包含任意配置的标签
+                    const hasConfiguredTag = configTags.length === 0 || configTags.some(tag => 
+                        name.includes(tag) || note.includes(tag)
+                    );
 
-                            const nodeData = {
-                                id,
-                                name: name,
-                                displayName: name,
-                                time: node.getLastModifiedDate().getTime(),
-                                completed: node.isCompleted(),
-                                hasMirrors,
-                                url: node.getUrl()
-                            };
-
-                            const existingNode = contentMap.get(normalizedContent);
-                            if (!existingNode || (hasMirrors && !existingNode.hasMirrors)) {
-                                contentMap.set(normalizedContent, nodeData);
-                                targetNodes.set(id, nodeData);
-                            }
+                    if (!name.includes('#index') && !note.includes('#index') && hasConfiguredTag) {
+                        // 安全地检查镜像状态
+                        let hasMirrors = false;
+                        try {
+                            hasMirrors = checkMirrorNodes(node);
+                        } catch (error) {
+                            console.error('检查镜像状态失败:', error);
                         }
+
+                        const nodeData = {
+                            id,
+                            name: name,
+                            displayName: name,
+                            time: node.getLastModifiedDate().getTime(),
+                            completed: node.isCompleted(),
+                            hasMirrors,
+                            url: node.getUrl()
+                        };
+
+                        // 将节点按标签分组
+                        configTags.forEach(tag => {
+                            if (name.includes(tag) || note.includes(tag)) {
+                                if (!tagGroups.has(tag)) {
+                                    tagGroups.set(tag, []);
+                                }
+                                tagGroups.get(tag).push(nodeData);
+                            }
+                        });
+
+                        // 如果没有配置标签或节点不属于任何标签组,放入默认组
+                        if (configTags.length === 0 || 
+                            !configTags.some(tag => name.includes(tag) || note.includes(tag))) {
+                            if (!tagGroups.has('default')) {
+                                tagGroups.set('default', []);
+                            }
+                            tagGroups.get('default').push(nodeData);
+                        }
+
+                        // 存储节点数据
+                        targetNodes.set(id, nodeData);
                     }
 
-                    // 递归处理子节点时传递深度参数
+                    // 递归处理子节点
                     node.getChildren().forEach(child =>
                         processNode(child, config, currentDepth + 1, maxDepth)
                     );
@@ -2723,19 +2773,29 @@ GM_addStyle(`
                     const targetNode = WF.getItemById(config.target[mode].nodeId);
                     if (targetNode) processNode(targetNode, config.target[mode], 0, 10);
                 }
-
-                // Render nodes using Templates.taskItem
-                const content = Array.from(targetNodes.values())
-                    .sort((a, b) => b.time - a.time)
-                    .map(nodeData => {
-                        const node = WF.getItemById(nodeData.id);
-                        return node ? Templates.taskItem(node, true, mode) : '';
-                    })
-                    .join('');
-
+        
+                // 渲染分组内容
+                let content = '';
+                tagGroups.forEach((nodes, tag) => {
+                    if (nodes.length > 0) {
+                        // 添加标签组标题
+                        const tagTitle = tag === 'default' ? '未标记' : tag;
+                        content += `<div class="node-title">${tagTitle}</div>`;
+                        
+                        // 渲染该标签组的节点
+                        content += nodes
+                            .sort((a, b) => b.time - a.time)
+                            .map(nodeData => {
+                                const node = WF.getItemById(nodeData.id);
+                                return node ? Templates.taskItem(node, true, mode) : '';
+                            })
+                            .join('');
+                    }
+                });
+        
                 container.innerHTML = content || '<div class="empty-state">暂无目标内容</div>';
                 this.addTaskEventListeners(container);
-
+        
             } catch (error) {
                 console.error(`渲染${mode}视图失败:`, error);
                 container.innerHTML = '<div class="error-state">加载失败，请刷新重试</div>';
@@ -3354,14 +3414,14 @@ GM_addStyle(`
                     theme: currentConfig.theme,
                     refreshInterval: parseInt(getValue('refresh-interval', 60000)),
                     excludeTags: getValue('exclude-tags'),
-                    
+
                     dailyPlanner: {
                         enabled: getValue('enable-daily', false),
                         nodeId: getValue('node-daily'),
                         taskName: getValue('task-daily'),
                         calendarNodeId: getValue('calendar-node-daily')
                     },
-                    
+
                     target: {
                         work: {
                             enabled: getValue('enable-work', false),
@@ -3382,11 +3442,11 @@ GM_addStyle(`
                             tag: getValue('tag-temp')
                         }
                     },
-                    
+
                     collector: {
                         enabled: getValue('enable-collector', false),
                         nodeId: getValue('node-collector'),
-                        taskName: getValue('task-collector'), 
+                        taskName: getValue('task-collector'),
                         tags: getValue('tag-collector'),
                         autoComplete: getValue('auto-complete-collector', true),
                         copyTags: getValue('copy-tags-collector', false), // Add new option
@@ -3605,7 +3665,7 @@ GM_addStyle(`
         try {
             const config = ConfigManager.getConfig();
             const keepTags = config.collector.copyTags;
-            
+
             const name = node.getName();
             const plainName = node.getNameInPlainText();
             const children = node.getChildren();
@@ -3641,7 +3701,7 @@ GM_addStyle(`
 
             // 多节点处理
             let formattedContent = processText(plainName);
-            
+
             // 获取相关子节点
             const relevantChildren = children.filter(child => {
                 const childName = child.getNameInPlainText();
@@ -3726,53 +3786,88 @@ GM_addStyle(`
     function collectNodes(config) {
         const collectedNodes = new Map();
         const processedNodes = new Set();
-
+    
         // 检查节点是否为空
         function isEmptyNode(node) {
             const name = node.getNameInPlainText();
-            // 移除日期时间格式
             const nameWithoutDateTime = name.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/, '');
-            // 移除标签
             const nameWithoutTags = nameWithoutDateTime.replace(/#[^\s#]+/g, '');
-            // 检查是否还有其他内容
             return nameWithoutTags.trim() === '' && node.getChildren().length === 0;
         }
-
+    
+        // 处理标签的辅助函数
+        function processConfigTags(tags) {
+            return tags
+                .split(',')
+                .map(tag => tag.trim())
+                .filter(tag => tag)
+                .map(tag => tag.startsWith('#') ? tag : `#${tag}`);
+        }
+    
+        // 检查节点是否包含任意配置的标签
+        function hasAnyConfiguredTag(text, configTags) {
+            return configTags.some(tag => text.includes(tag));
+        }
+    
+        // 移除配置的标签
+        function removeConfigTags(text, configTags) {
+            let result = text;
+            configTags.forEach(tag => {
+                result = result.replace(new RegExp(tag, 'g'), '');
+            });
+            return result.trim();
+        }
+    
         // 递归搜索节点
         function searchNodes(node) {
             if (!node || processedNodes.has(node.getId())) return;
-
+    
             const nodeId = node.getId();
             const nodeName = node.getNameInPlainText();
-
+            const nodeNote = node.getNoteInPlainText();
+    
+            // 处理多标签
+            const configTags = processConfigTags(config.collector.tags);
+    
+            // 检查节点是否包含任意配置的标签
+            const hasConfiguredTag = hasAnyConfiguredTag(nodeName, configTags) || 
+                                   hasAnyConfiguredTag(nodeNote, configTags);
+    
             // 检查标签
-            if (nodeName.includes('#稍后处理') && !isEmptyNode(node)) {
+            if (hasConfiguredTag && !isEmptyNode(node)) {
                 // 标记节点及其子节点为已处理
                 processedNodes.add(nodeId);
                 node.getChildren().forEach(child => {
                     processedNodes.add(child.getId());
                 });
-
+    
                 // 收集子节点内容
                 let childrenContent = '';
                 const children = node.getChildren();
                 if (children.length > 0) {
                     children.forEach(child => {
-                        const childName = child.getNameInPlainText()
-                            .replace(/#稍后处理/g, '').trim();
+                        const childName = child.getNameInPlainText();
                         const childNote = child.getNoteInPlainText();
-
-                        childrenContent += `- ${childName}\n`;
-                        if (childNote) {
-                            childrenContent += `  ${childNote}\n`;
+    
+                        // 移除所有配置的标签
+                        const processedName = removeConfigTags(childName, configTags);
+    
+                        if (processedName) {
+                            childrenContent += `- ${processedName}\n`;
+                            if (childNote) {
+                                childrenContent += `  ${childNote}\n`;
+                            }
                         }
                     });
                 }
-
+    
+                // 处理节点名称 - 移除所有配置的标签
+                const processedName = removeConfigTags(nodeName, configTags);
+    
                 // 保存节点信息
                 collectedNodes.set(nodeId, {
                     id: nodeId,
-                    name: nodeName.replace(/#稍后处理/g, '').trim(),
+                    name: processedName,
                     childrenContent: childrenContent.trim(),
                     time: node.getLastModifiedDate().getTime(),
                     completed: node.isCompleted(),
@@ -3787,7 +3882,7 @@ GM_addStyle(`
                 });
             }
         }
-
+    
         // 开始收集
         try {
             const collectorNode = WF.getItemById(config.collector.nodeId);
@@ -3797,7 +3892,7 @@ GM_addStyle(`
         } catch (error) {
             console.error('收集节点失败:', error);
         }
-
+    
         return collectedNodes;
     }
 
@@ -3991,7 +4086,7 @@ GM_addStyle(`
         // 先从缓存获取
         const cached = NodeCache.get(id);
         if (cached) return cached;
-        
+
         // 缓存未命中则从WF获取
         const node = WF.getItemById(id);
         if (node) {
