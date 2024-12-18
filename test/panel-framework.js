@@ -1,15 +1,194 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.2.1
+// @version      0.2.2
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
 // @grant        GM_addStyle
 // ==/UserScript==
 
-// 在文件顶部定义版本常量
-const SCRIPT_VERSION = '0.2.1'; // 当前版本号
+// 更新版本号
+const SCRIPT_VERSION = '0.2.2'; // 从0.2.1升级到0.2.2
+
+// 添加节点缓存机制
+const NodeCache = {
+    cache: new Map(),
+    maxAge: 5 * 60 * 1000, // 5分钟缓存
+    
+    set(id, node) {
+        this.cache.set(id, {
+            node,
+            timestamp: Date.now()
+        });
+    },
+    
+    get(id) {
+        const cached = this.cache.get(id);
+        if (!cached) return null;
+        
+        if (Date.now() - cached.timestamp > this.maxAge) {
+            this.cache.delete(id);
+            return null;
+        }
+        
+        return cached.node;
+    },
+    
+    clear() {
+        this.cache.clear();
+    }
+};
+
+// 添加全局错误处理
+window.onerror = function(msg, url, line, col, error) {
+    console.error('Global error:', {msg, url, line, col, error});
+    showToast('发生错误,请刷新重试', true);
+    return false;
+};
+
+// 优化showToast函数
+function showToast(message, isError = false, duration = 2000) {
+    const toast = document.querySelector('.toast') || createToast();
+    toast.textContent = message;
+    toast.className = `toast ${isError ? 'error' : 'success'}`;
+    
+    // 使用RAF优化动画
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translate(-50%, 20px)';
+        
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translate(-50%, 0)';
+        }, duration);
+    });
+}
+
+// 添加加载状态组件
+const LoadingState = {
+    show(container) {
+        const loading = document.createElement('div');
+        loading.className = 'loading-state';
+        loading.innerHTML = `
+            <div class="loading-spinner"></div>
+            <div class="loading-text">加载中...</div>
+        `;
+        container.appendChild(loading);
+    },
+    
+    hide(container) {
+        const loading = container.querySelector('.loading-state');
+        if (loading) {
+            loading.remove();
+        }
+    }
+};
+
+// 优化视图渲染,使用DocumentFragment
+function renderNodes(nodes, container) {
+    const fragment = document.createDocumentFragment();
+    nodes.forEach(node => {
+        const element = createTaskItem(node);
+        fragment.appendChild(element);
+    });
+    container.appendChild(fragment);
+}
+
+// 添加拖拽排序支持
+function initDragAndDrop(container) {
+    let draggedItem = null;
+    
+    container.addEventListener('dragstart', e => {
+        draggedItem = e.target;
+        e.target.classList.add('dragging');
+    });
+    
+    container.addEventListener('dragend', e => {
+        e.target.classList.remove('dragging');
+    });
+    
+    container.addEventListener('dragover', e => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(container, e.clientY);
+        const draggable = document.querySelector('.dragging');
+        if (afterElement) {
+            container.insertBefore(draggable, afterElement);
+        } else {
+            container.appendChild(draggable);
+        }
+    });
+}
+
+// 添加批量操作支持
+function initBatchOperations(container) {
+    let selectedItems = new Set();
+    
+    container.addEventListener('click', e => {
+        if (e.ctrlKey && e.target.closest('.task-item')) {
+            const item = e.target.closest('.task-item');
+            if (selectedItems.has(item)) {
+                selectedItems.delete(item);
+                item.classList.remove('selected');
+            } else {
+                selectedItems.add(item);
+                item.classList.add('selected');
+            }
+            updateBatchActions();
+        }
+    });
+}
+
+// 添加新的样式
+GM_addStyle(`
+    /* 加载状态样式 */
+    .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+    
+    .loading-spinner {
+        width: 30px;
+        height: 30px;
+        border: 3px solid var(--border-color);
+        border-top-color: var(--text-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    .loading-text {
+        margin-top: 10px;
+        color: var(--text-secondary);
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* 拖拽样式 */
+    .task-item.dragging {
+        opacity: 0.5;
+        cursor: move;
+    }
+    
+    /* 选中样式 */
+    .task-item.selected {
+        background: var(--section-bg);
+        border-color: var(--input-focus-border);
+    }
+    
+    /* 错误提示样式 */
+    .toast.error {
+        background: #d32f2f;
+    }
+    
+    .toast.success {
+        background: #2e7d32;
+    }
+`);
 
 (function() {
     'use strict';
@@ -1881,7 +2060,7 @@ const SCRIPT_VERSION = '0.2.1'; // 当前版本号
         // 初始化配置面板
         initConfigPanel();
 
-        // 初始化模式处理
+        // 初始��模式处理
         initModeHandlers();
 
         // 恢复上次的模式
@@ -3084,54 +3263,65 @@ const SCRIPT_VERSION = '0.2.1'; // 当前版本号
         // 保存按钮事件处理
         saveBtn.addEventListener('click', () => {
             try {
-                // 获取当前配置用于保持未修改的值
+                // 获取当前配置用于保持未修改���值
                 const currentConfig = ConfigManager.getConfig();
 
+                // 安全获取DOM元素值的辅助函数
+                const getValue = (id, defaultValue = '') => {
+                    const element = document.getElementById(id);
+                    return element ? (
+                        element.type === 'checkbox' ? element.checked : element.value.trim()
+                    ) : defaultValue;
+                };
+
                 const formData = {
-                    ...currentConfig, // 保持其他配置不变
+                    version: `v${SCRIPT_VERSION}`,
+                    theme: currentConfig.theme,
+                    refreshInterval: parseInt(getValue('refresh-interval', 60000)),
+                    excludeTags: getValue('exclude-tags'),
+                    
                     dailyPlanner: {
-                        enabled: document.getElementById('enable-daily').checked,
-                        nodeId: document.getElementById('node-daily').value.trim(),
-                        taskName: document.getElementById('task-daily').value.trim(),
-                        calendarNodeId: document.getElementById('calendar-node-daily').value.trim() // 移除默认值
+                        enabled: getValue('enable-daily', false),
+                        nodeId: getValue('node-daily'),
+                        taskName: getValue('task-daily'),
+                        calendarNodeId: getValue('calendar-node-daily')
                     },
+                    
                     target: {
                         work: {
-                            enabled: document.getElementById('enable-work').checked,
-                            nodeId: document.getElementById('node-work').value.trim(),
-                            taskName: document.getElementById('task-work').value.trim(),
-                            tag: document.getElementById('tag-work').value.trim()
+                            enabled: getValue('enable-work', false),
+                            nodeId: getValue('node-work'),
+                            taskName: getValue('task-work'),
+                            tag: getValue('tag-work')
                         },
                         personal: {
-                            enabled: document.getElementById('enable-personal').checked,
-                            nodeId: document.getElementById('node-personal').value.trim(),
-                            taskName: document.getElementById('task-personal').value.trim(),
-                            tag: document.getElementById('tag-personal').value.trim()
+                            enabled: getValue('enable-personal', false),
+                            nodeId: getValue('node-personal'),
+                            taskName: getValue('task-personal'),
+                            tag: getValue('tag-personal')
                         },
                         temp: {
-                            enabled: document.getElementById('enable-temp').checked,
-                            nodeId: document.getElementById('node-temp').value.trim(),
-                            taskName: document.getElementById('task-temp').value.trim(),
-                            tag: document.getElementById('tag-temp').value.trim()
+                            enabled: getValue('enable-temp', false),
+                            nodeId: getValue('node-temp'),
+                            taskName: getValue('task-temp'),
+                            tag: getValue('tag-temp')
                         }
                     },
+                    
                     collector: {
-                        enabled: document.getElementById('enable-collector').checked,
-                        nodeId: document.getElementById('node-collector').value.trim(),
-                        taskName: document.getElementById('task-collector').value.trim(),
-                        tags: document.getElementById('tag-collector').value.trim(),
-                        autoComplete: document.getElementById('auto-complete-collector').checked,
-                        copyFormat: document.getElementById('copy-format-collector').value
-                    },
-                    refreshInterval: parseInt(document.getElementById('refresh-interval').value) || 60000,
-                    excludeTags: document.getElementById('exclude-tags').value.trim(),
-                    theme: config.theme // 保持主题设置不变
+                        enabled: getValue('enable-collector', false),
+                        nodeId: getValue('node-collector'),
+                        taskName: getValue('task-collector'),
+                        tags: getValue('tag-collector'),
+                        autoComplete: getValue('auto-complete-collector', true),
+                        copyFormat: getValue('copy-format-collector', 'plain')
+                    }
                 };
 
                 // 验证配置
                 const errors = ConfigManager.validateConfig(formData);
                 if (errors.length > 0) {
-                    showToast('配置错误: ' + errors[0], true); // 添加 isError 参数
+                    showToast('配置错误: ' + errors[0], true);
                     return;
                 }
 
@@ -3144,12 +3334,14 @@ const SCRIPT_VERSION = '0.2.1'; // 当前版本号
                     const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
                     switchMode(currentMode);
                     updateLinks(currentMode);
+                    // 关闭配置面板
+                    panel.querySelector('.config-panel').classList.remove('visible');
                 } else {
-                    showToast('保存失败，重试', true); // 添加 isError 参数
+                    showToast('保存失败，请重试', true);
                 }
             } catch (error) {
                 console.error('保存配置失败:', error);
-                showToast('保存失败: ' + error.message, true); // 添加 isError 参数
+                showToast('保存失败: ' + error.message, true);
             }
         });
 
@@ -3430,13 +3622,27 @@ const SCRIPT_VERSION = '0.2.1'; // 当前版本号
 
     // 创建OPML格式内容
     function createOPML(title, url) {
+        // 转义特殊字符
+        const escapeXml = (str) => {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&apos;');
+        };
+
+        // 转义标题和URL
+        const safeTitle = escapeXml(title);
+        const safeUrl = escapeXml(url);
+
         return `<?xml version="1.0"?>
 <opml version="2.0">
     <head>
-        <title>${title}</title>
+        <title>${safeTitle}</title>
     </head>
     <body>
-        <outline text="${title}" _note="&lt;a href=&quot;${url}&quot;&gt;${url}&lt;/a&gt;"/>
+        <outline text="${safeTitle}" _note="&lt;a href=&quot;${safeUrl}&quot;&gt;${safeUrl}&lt;/a&gt;"/>
     </body>
 </opml>`;
     }
@@ -3705,4 +3911,23 @@ const SCRIPT_VERSION = '0.2.1'; // 当前版本号
 
     // 在页面卸载时清理
     window.addEventListener('unload', cleanup);
+
+    // 优化节点获取
+    function getNodeById(id) {
+        // 先从缓存获取
+        const cached = NodeCache.get(id);
+        if (cached) return cached;
+        
+        // 缓存未命中则从WF获取
+        const node = WF.getItemById(id);
+        if (node) {
+            NodeCache.set(id, node);
+        }
+        return node;
+    }
+
+    // 优化批量节点获取
+    function getNodesByIds(ids) {
+        return ids.map(id => getNodeById(id)).filter(Boolean);
+    }
 })();
