@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.2.2
+// @version      0.2.3
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 // 更新版本号
-const SCRIPT_VERSION = '0.2.2'; // 从0.2.1升级到0.2.2
+const SCRIPT_VERSION = '0.2.3'; // 从0.2.1升级到0.2.2
 
 // 添加节点缓存机制
 const NodeCache = {
@@ -621,6 +621,7 @@ GM_addStyle(`
             flex: 1;
             overflow-y: auto;
             padding: 16px;
+            margin-bottom:110px;
         }
 
         /* 配置组样式优化 */
@@ -1543,6 +1544,69 @@ GM_addStyle(`
         }
     `);
 
+    // 添加收集模式的卡片样式
+    GM_addStyle(`
+        /* 收集模式卡片样式优化 */
+        .task-item.collect-mode {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .task-item.collect-mode .task-header {
+            padding: 4px 8px;
+            border-bottom: none;
+        }
+
+        .task-item.collect-mode .task-title {
+            font-size: 12px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: calc(100% - 80px);
+        }
+
+        .task-item.collect-mode .task-content {
+            position: relative;
+            padding: 4px 8px;
+            padding-left: 32px; /* 为复选框留出空间 */
+        }
+
+        .task-item.collect-mode .checkbox-wrapper {
+            position: absolute;
+            left: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .task-item.collect-mode .task-text {
+            flex: 1;
+            min-height: 20px;
+        }
+
+        .task-item.collect-mode .single-content {
+            white-space: pre-wrap;
+            line-height: 1.4;
+            color: var(--text-color);
+        }
+
+        .task-item.collect-mode .children-content {
+            white-space: pre-wrap;
+            line-height: 1.4;
+            color: var(--text-color);
+        }
+
+        .task-item.collect-mode .task-actions {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 4px;
+        }
+    `);
+
     // 面板切换函数
     function togglePanel() {
         if (!panel) return;
@@ -1737,7 +1801,7 @@ GM_addStyle(`
             'tag-collector': config.collector.tags,
             'auto-complete-collector': config.collector.autoComplete,
             'copy-format-collector': config.collector.copyFormat,
-
+            'copy-tags-collector': config.collector.copyTags,
             'refresh-interval': config.refreshInterval,
             'exclude-tags': config.excludeTags
         }).forEach(([id, value]) => {
@@ -1982,7 +2046,11 @@ GM_addStyle(`
                                     <input type="checkbox" id="auto-complete-collector">
                                     <span class="checkbox-label">复制内容后自动标记完成</span>
                                 </div>
-                                
+                                <div class="config-item">
+                                    <label>复制标签</label>
+                                    <input type="checkbox" id="copy-tags-collector">
+                                    <span class="checkbox-label">复制内容时包含标签</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2460,6 +2528,11 @@ GM_addStyle(`
         return blocks;
     }
 
+    function truncateText(text, maxLength) {
+        if (!text) return '';
+        return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+    }
+
     // 更新时间节点处理函数
     function getNodeTime(node) {
         const name = node.getNameInPlainText();
@@ -2738,12 +2811,14 @@ GM_addStyle(`
                                     </label>
                                     <div class="task-text">
                                         <div class="content-wrapper">
-                                            <div class="name-content">${node.name}</div>
                                             ${node.childrenContent ? `
+                                                <div class="name-content">${truncateText(node.name, 35)}</div>
                                                 <div class="children-content">${node.childrenContent}</div>
-                                            ` : ''}
+                                            ` : `
+                                                <div class="name-content">${truncateText(node.name, 35)}</div>
+                                                <div class="children-content">${node.name}</div>
+                                            `}
                                         </div>
-
                                     </div>
                                 </div>
                                 <div class="task-actions">
@@ -2780,7 +2855,7 @@ GM_addStyle(`
             // Content click handler for copying
             container.querySelectorAll('.task-content .task-text').forEach(content => {
                 content.addEventListener('click', async (e) => {
-                    // Ignore if clicking checkbox area
+                    // 忽略复选框区域的点击
                     if (e.target.closest('.checkbox-wrapper')) return;
 
                     const taskItem = e.target.closest('.task-item');
@@ -2791,13 +2866,13 @@ GM_addStyle(`
                         const node = WF.getItemById(taskId);
                         if (!node) throw new Error('Task node not found');
 
-                        // Process and copy content
+                        // 无论任务是否完成都执行复制操作
                         const content = processCollectorContent(node);
                         await navigator.clipboard.writeText(content);
                         showToast('已复制');
 
-                        // Auto complete if enabled
-                        if (config.collector.autoComplete) {
+                        // 仅在任务未完成且启用了自动完成时才标记完成
+                        if (!node.isCompleted() && config.collector.autoComplete) {
                             await WF.completeItem(node);
                             taskItem.classList.add('completed');
                             taskItem.querySelector('input[type="checkbox"]').checked = true;
@@ -2812,7 +2887,7 @@ GM_addStyle(`
             // Checkbox click handler
             container.querySelectorAll('.checkbox-wrapper input[type="checkbox"]').forEach(checkbox => {
                 checkbox.addEventListener('change', async (e) => {
-                    e.stopPropagation(); // Prevent event from bubbling
+                    e.stopPropagation(); // 防止事件冒泡
 
                     const taskItem = e.target.closest('.task-item');
                     const taskId = taskItem?.dataset.id;
@@ -2824,18 +2899,18 @@ GM_addStyle(`
 
                         const isCompleted = e.target.checked;
 
-                        // Update UI
+                        // 更新UI
                         taskItem.classList.toggle('completed', isCompleted);
 
-                        // Sync with WorkFlowy
+                        // 同步到WorkFlowy
                         await syncWorkflowyState(taskId, isCompleted);
 
-                        // Show feedback
+                        // 显示反馈
                         showFeedback(taskItem, isCompleted ? '已完成' : '已取消完成');
 
                     } catch (error) {
                         console.error('更新状态失败:', error);
-                        // Restore checkbox state
+                        // 恢复复选框状态
                         e.target.checked = !e.target.checked;
                         taskItem.classList.toggle('completed');
                         showFeedback(taskItem, '更新失败', true);
@@ -2918,7 +2993,7 @@ GM_addStyle(`
                         // 恢复复选框状态
                         e.target.checked = !e.target.checked;
                         taskItem.classList.toggle('completed');
-                        showFeedback(taskItem, '更新失���', true);
+                        showFeedback(taskItem, '更新失', true);
                     }
                 });
             });
@@ -3311,9 +3386,10 @@ GM_addStyle(`
                     collector: {
                         enabled: getValue('enable-collector', false),
                         nodeId: getValue('node-collector'),
-                        taskName: getValue('task-collector'),
+                        taskName: getValue('task-collector'), 
                         tags: getValue('tag-collector'),
                         autoComplete: getValue('auto-complete-collector', true),
+                        copyTags: getValue('copy-tags-collector', false), // Add new option
                         copyFormat: getValue('copy-format-collector', 'plain')
                     }
                 };
@@ -3527,76 +3603,70 @@ GM_addStyle(`
     // 添加内容处理函数
     function processCollectorContent(node) {
         try {
+            const config = ConfigManager.getConfig();
+            const keepTags = config.collector.copyTags;
+            
             const name = node.getName();
             const plainName = node.getNameInPlainText();
             const children = node.getChildren();
 
+            // 处理标签的辅助函数
+            function processText(text) {
+                if (!keepTags) {
+                    // 移除所有标签，但保留#稍后处理
+                    return text.replace(/#[^\s#]+/g, '').trim();
+                }
+                // 保留标签
+                return text.trim();
+            }
+
             // 单节点处理
             if (children.length === 0) {
-                // 检查日期时间格式
-                const dateTimeMatch = plainName.match(/^\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}\s+\|\s+(.+)$/);
+                // 检查是否包含日期时间格式
+                const dateTimeMatch = plainName.match(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/);
                 if (dateTimeMatch) {
-                    const content = dateTimeMatch[1].trim();
-                    // 检查是否是纯URL
-                    if (/^https?:\/\/[^\s#]+$/.test(content)) {
-                        return content;
-                    }
-                    return content;
+                    return processText(plainName.replace(dateTimeMatch[0], ''));
                 }
 
-                // 检查HTML链接
-                if (name.includes('<a href=')) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = name;
-                    const anchor = tempDiv.querySelector('a');
-                    if (anchor) {
-                        const title = anchor.textContent;
-                        const url = anchor.href;
-                        return createOPML(title, url);
-                    }
+                // 检查是否包含URL
+                const urlMatch = plainName.match(/(https?:\/\/[^\s]+)/);
+                if (urlMatch) {
+                    const url = urlMatch[1];
+                    const title = processText(plainName.replace(url, '')).trim();
+                    return title ? `${title}\n${url}` : url;
                 }
 
-                // 检查纯URL
-                if (/^https?:\/\/[^\s#]+$/.test(plainName)) {
-                    return plainName;
-                }
-
-                return plainName;
+                return processText(plainName);
             }
 
             // 多节点处理
-            const firstChild = children[0];
-            const isFirstChildSameAsParent = firstChild.getNameInPlainText() === plainName;
-            const relevantChildren = isFirstChildSameAsParent ? children.slice(1) : children;
-
-            // 检查标题和链接格式
-            const titleNode = relevantChildren.find(child =>
-                child.getNameInPlainText().startsWith('标题：'));
-            const linkNode = relevantChildren.find(child =>
-                child.getNameInPlainText().startsWith('链接：'));
-
-            if (titleNode && linkNode) {
-                const title = titleNode.getNameInPlainText().replace(/^标题[：:]\s*/, '').trim();
-                const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
-                return createOPML(title, url);
-            }
-
-            // 处理带缩进的内容
-            let formattedContent = plainName.replace(/#稍后处理/g, '').trim();
+            let formattedContent = processText(plainName);
+            
+            // 获取相关子节点
+            const relevantChildren = children.filter(child => {
+                const childName = child.getNameInPlainText();
+                return childName && !childName.includes('#已处理') && !childName.includes('#忽略');
+            });
 
             // 处理子节点内容
             const processChildren = (nodes, level = 1) => {
                 return nodes.map(child => {
-                    const content = child.getNameInPlainText()
-                        .replace(/#稍后处理/g, '')
-                        .trim();
-
+                    const content = processText(child.getNameInPlainText());
                     if (!content) return '';
 
                     const indent = '  '.repeat(level);
                     const childContent = `${indent}- ${content}`;
 
-                    // 递归处理子节点
+                    // 处理子节点的注释
+                    const note = child.getNoteInPlainText();
+                    if (note) {
+                        const processedNote = processText(note);
+                        if (processedNote) {
+                            childContent += `\n${indent}  ${processedNote}`;
+                        }
+                    }
+
+                    // 递归处理孙节点
                     const grandChildren = child.getChildren();
                     if (grandChildren.length > 0) {
                         const nestedContent = processChildren(grandChildren, level + 1);
@@ -3607,12 +3677,17 @@ GM_addStyle(`
                 }).filter(line => line.trim()).join('\n');
             };
 
+            // 添加子节点内容
             const childrenContent = processChildren(relevantChildren);
             if (childrenContent) {
                 formattedContent += '\n' + childrenContent;
             }
 
-            return formattedContent;
+            // 移除多余的空行并规范化空格
+            return formattedContent
+                .replace(/\n{3,}/g, '\n\n')  // 将3个以上的换行符替换为2个
+                .replace(/[ \t]+/g, ' ')      // 规范化空格
+                .trim();                      // 移除首尾空白
 
         } catch (error) {
             console.error('处理收集器内容失败:', error);
@@ -3734,6 +3809,8 @@ GM_addStyle(`
             const isCompleted = node.isCompleted();
             const hasMirrors = checkMirrorNodes(node);
             const colors = getNodeColor(node);
+            const name = node.getNameInPlainText().replace(/#稍后处理/g, '').trim();
+            const children = node.getChildren();
 
             // 构建颜色样式
             const colorStyle = colors ? `
@@ -3749,10 +3826,7 @@ GM_addStyle(`
 
             // 收集模式特殊处理
             if (mode === 'collector') {
-                const name = node.getNameInPlainText().replace(/#稍后处理/g, '').trim();
-                const children = node.getChildren();
                 let childrenContent = '';
-
                 if (children.length > 0) {
                     childrenContent = children.map(child => {
                         const childName = child.getNameInPlainText()
@@ -3768,31 +3842,31 @@ GM_addStyle(`
                 }
 
                 return `
-                <div class="task-item collect-mode ${isCompleted ? 'completed' : ''}
-                    ${hasMirrors ? 'has-mirrors' : ''} ${colors ? 'colored' : ''}"
-                    data-id="${node.getId()}"
-                    ${colorStyle}>
-                    ${name ? `<div class="parent-title">${name}</div>` : ''}
-                    <div class="task-content">
-                        <label class="checkbox-wrapper">
-                            <input type="checkbox" ${isCompleted ? 'checked' : ''}>
-                            <span class="checkbox-custom"></span>
-                        </label>
-                        <div class="task-text">
-                            ${childrenContent ?
-                                `<div class="children-content">${childrenContent}</div>` :
-                                `<div class="single-content">${name}</div>`
-                            }
+                    <div class="task-item collect-mode ${isCompleted ? 'completed' : ''}
+                        ${hasMirrors ? 'has-mirrors' : ''} ${colors ? 'colored' : ''}"
+                        data-id="${node.getId()}"
+                        ${colorStyle}>
+                        <div class="task-header">
+                            <div class="task-title" title="${name}">${name}</div>
+                        </div>
+                        <div class="task-content">
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" ${isCompleted ? 'checked' : ''}>
+                                <span class="checkbox-custom"></span>
+                            </label>
+                            <div class="task-text">
+                                ${childrenContent ?
+                                    `<div class="children-content">${childrenContent}</div>` :
+                                    `<div class="single-content">${name}</div>`
+                                }
+                            </div>
+                        </div>
+                        <div class="task-actions">
+                            <button class="task-action-btn link" title="跳转到节点"></button>
+                            <button class="task-action-btn remove" title="移除"></button>
                         </div>
                     </div>
-                    <div class="task-actions">
-                        <button class="task-action-btn link" title="跳转到节点">
-                        </button>
-                        <button class="task-action-btn remove" title="移除">
-                        </button>
-                    </div>
-                </div>
-            `;
+                `;
             }
 
             // 其他模式的处理保持不变...
