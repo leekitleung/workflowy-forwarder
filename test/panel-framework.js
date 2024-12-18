@@ -1370,7 +1370,7 @@ GM_addStyle(`
         .mode-contents #work-content .node-title:first-of-type,.mode-contents #personal-content .node-title:first-of-type,.mode-contents #temp-content .node-title:first-of-type {
             margin: 0 0 6px;
         }
-        
+
         .node-title {
             font-family: "Aclonica", sans-serif;
             font-weight: 400;
@@ -1992,7 +1992,7 @@ GM_addStyle(`
                                 <div class="config-item">
                                     <label>标签</label>
                                     <input type="text" id="tag-work"
-                                        placeholder="输入标签，如: #重要 (支持数字、中文、英文，多个用号分隔)">
+                                        placeholder="输入标签���如: #重要 (支持数字、中文、英文，多个用号分隔)">
                                 </div>
                             </div>
                         </div>
@@ -2178,7 +2178,7 @@ GM_addStyle(`
 
 
 
-    // 将 switchMode 函数移到模块作用域
+    // 将 switchMode 函��移到模块作用域
     function switchMode(mode) {
         console.log('Switching to mode:', mode);
 
@@ -2293,7 +2293,7 @@ GM_addStyle(`
     function checkMirrorNodes(node) {
         try {
             if (!node) return false;
-            
+
             // 获取节点的DOM元素
             const element = node.getElement();
             if (!element) return false;
@@ -2692,10 +2692,10 @@ GM_addStyle(`
 
             try {
                 const targetNodes = new Map();
-                const contentMap = new Map();
+                const contentMap = new Map(); // 用于追踪相同内容的节点
                 const processedIds = new Set();
                 const tagGroups = new Map(); // 用于存储不同标签的节点
-        
+
                 // Process node function with duplicate handling
                 // 修改 renderTargetView 函数中的 processNode 函数
                 function processNode(node, config, currentDepth = 0, maxDepth = 10) {
@@ -2707,7 +2707,7 @@ GM_addStyle(`
 
                     const name = node.getNameInPlainText();
                     const note = node.getNoteInPlainText();
-                    
+
                     // 处理多标签
                     const configTags = config.tag
                         .split(',')
@@ -2716,7 +2716,7 @@ GM_addStyle(`
                         .map(tag => tag.startsWith('#') ? tag : `#${tag}`);
 
                     // 检查是否包含任意配置的标签
-                    const hasConfiguredTag = configTags.length === 0 || configTags.some(tag => 
+                    const hasConfiguredTag = configTags.length === 0 || configTags.some(tag =>
                         name.includes(tag) || note.includes(tag)
                     );
 
@@ -2739,27 +2739,45 @@ GM_addStyle(`
                             url: node.getUrl()
                         };
 
-                        // 将节点按标签分组
-                        configTags.forEach(tag => {
-                            if (name.includes(tag) || note.includes(tag)) {
-                                if (!tagGroups.has(tag)) {
-                                    tagGroups.set(tag, []);
+                        // 处理相同内容的节点
+                        const normalizedContent = name.trim().replace(/\s+/g, ' ');
+                        const existingNode = contentMap.get(normalizedContent);
+
+                        if (!existingNode || (hasMirrors && !existingNode.hasMirrors)) {
+                            // 如果是镜像节点或没有现有节点，更新内容映射
+                            contentMap.set(normalizedContent, nodeData);
+
+                            // 将节点按标签分组
+                            configTags.forEach(tag => {
+                                if (name.includes(tag) || note.includes(tag)) {
+                                    if (!tagGroups.has(tag)) {
+                                        tagGroups.set(tag, new Map());
+                                    }
+                                    // 使用 Map 存储每个标签组的节点，以便处理重复内容
+                                    const groupNodes = tagGroups.get(tag);
+                                    const existingGroupNode = groupNodes.get(normalizedContent);
+                                    if (!existingGroupNode || (hasMirrors && !existingGroupNode.hasMirrors)) {
+                                        groupNodes.set(normalizedContent, nodeData);
+                                    }
                                 }
-                                tagGroups.get(tag).push(nodeData);
-                            }
-                        });
+                            });
 
-                        // 如果没有配置标签或节点不属于任何标签组,放入默认组
-                        if (configTags.length === 0 || 
-                            !configTags.some(tag => name.includes(tag) || note.includes(tag))) {
-                            if (!tagGroups.has('default')) {
-                                tagGroups.set('default', []);
+                            // 处理默认组
+                            if (configTags.length === 0 ||
+                                !configTags.some(tag => name.includes(tag) || note.includes(tag))) {
+                                if (!tagGroups.has('default')) {
+                                    tagGroups.set('default', new Map());
+                                }
+                                const defaultNodes = tagGroups.get('default');
+                                const existingDefaultNode = defaultNodes.get(normalizedContent);
+                                if (!existingDefaultNode || (hasMirrors && !existingDefaultNode.hasMirrors)) {
+                                    defaultNodes.set(normalizedContent, nodeData);
+                                }
                             }
-                            tagGroups.get('default').push(nodeData);
+
+                            // 更新目标节点集合
+                            targetNodes.set(id, nodeData);
                         }
-
-                        // 存储节点数据
-                        targetNodes.set(id, nodeData);
                     }
 
                     // 递归处理子节点
@@ -2773,17 +2791,19 @@ GM_addStyle(`
                     const targetNode = WF.getItemById(config.target[mode].nodeId);
                     if (targetNode) processNode(targetNode, config.target[mode], 0, 10);
                 }
-        
+
                 // 渲染分组内容
                 let content = '';
                 tagGroups.forEach((nodes, tag) => {
-                    if (nodes.length > 0) {
+                    // 从 Map 转换为数组
+                    const nodeArray = Array.from(nodes.values());
+                    if (nodeArray.length > 0) {
                         // 添加标签组标题
                         const tagTitle = tag === 'default' ? '未标记' : tag;
                         content += `<div class="node-title">${tagTitle}</div>`;
-                        
+
                         // 渲染该标签组的节点
-                        content += nodes
+                        content += nodeArray
                             .sort((a, b) => b.time - a.time)
                             .map(nodeData => {
                                 const node = WF.getItemById(nodeData.id);
@@ -2792,10 +2812,10 @@ GM_addStyle(`
                             .join('');
                     }
                 });
-        
+
                 container.innerHTML = content || '<div class="empty-state">暂无目标内容</div>';
                 this.addTaskEventListeners(container);
-        
+
             } catch (error) {
                 console.error(`渲染${mode}视图失败:`, error);
                 container.innerHTML = '<div class="error-state">加载失败，请刷新重试</div>';
@@ -3476,7 +3496,7 @@ GM_addStyle(`
                     showToast('保存失败，请重试', true);
                 }
             } catch (error) {
-                console.error('保存配置失败:', error);
+                console.error('保存配��失败:', error);
                 showToast('保存失败: ' + error.message, true);
             }
         });
@@ -3665,6 +3685,7 @@ GM_addStyle(`
         try {
             const config = ConfigManager.getConfig();
             const keepTags = config.collector.copyTags;
+            const copyFormat = config.collector.copyFormat;
 
             const name = node.getName();
             const plainName = node.getNameInPlainText();
@@ -3673,40 +3694,71 @@ GM_addStyle(`
             // 处理标签的辅助函数
             function processText(text) {
                 if (!keepTags) {
-                    // 移除所有标签，但保留#稍后处理
+                    // 移除所有标签
                     return text.replace(/#[^\s#]+/g, '').trim();
                 }
-                // 保留标签
+                // 保留所有标签
                 return text.trim();
             }
 
             // 单节点处理
             if (children.length === 0) {
-                // 检查是否包含日期时间格式
-                const dateTimeMatch = plainName.match(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/);
-                if (dateTimeMatch) {
-                    return processText(plainName.replace(dateTimeMatch[0], ''));
+                // 检查HTML链接
+                if (name.includes('<a href=')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = name;
+                    const anchor = tempDiv.querySelector('a');
+                    if (anchor) {
+                        const title = processText(anchor.textContent);
+                        const url = anchor.href;
+                        if (copyFormat === 'opml') {
+                            return createOPML(title, url);
+                        }
+                        return `${title}\n${url}`;
+                    }
                 }
 
-                // 检查是否包含URL
-                const urlMatch = plainName.match(/(https?:\/\/[^\s]+)/);
-                if (urlMatch) {
-                    const url = urlMatch[1];
-                    const title = processText(plainName.replace(url, '')).trim();
-                    return title ? `${title}\n${url}` : url;
+                // 检查日期时间格式
+                const dateTimeMatch = plainName.match(/^\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}\s+\|\s+(.+)$/);
+                if (dateTimeMatch) {
+                    const content = processText(dateTimeMatch[1]);
+                    // 检查是否是纯URL
+                    if (/^https?:\/\/[^\s#]+$/.test(content)) {
+                        return content;
+                    }
+                    return content;
+                }
+
+                // 检查纯URL
+                if (/^https?:\/\/[^\s#]+$/.test(plainName)) {
+                    return plainName;
                 }
 
                 return processText(plainName);
             }
 
             // 多节点处理
-            let formattedContent = processText(plainName);
+            const firstChild = children[0];
+            const isFirstChildSameAsParent = firstChild.getNameInPlainText() === plainName;
+            const relevantChildren = isFirstChildSameAsParent ? children.slice(1) : children;
 
-            // 获取相关子节点
-            const relevantChildren = children.filter(child => {
-                const childName = child.getNameInPlainText();
-                return childName && !childName.includes('#已处理') && !childName.includes('#忽略');
-            });
+            // 检查标题和链接格式
+            const titleNode = relevantChildren.find(child =>
+                child.getNameInPlainText().startsWith('标题：'));
+            const linkNode = relevantChildren.find(child =>
+                child.getNameInPlainText().startsWith('链接：'));
+
+            if (titleNode && linkNode) {
+                const title = processText(titleNode.getNameInPlainText().replace(/^标题[：:]\s*/, ''));
+                const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
+                if (copyFormat === 'opml') {
+                    return createOPML(title, url);
+                }
+                return `${title}\n${url}`;
+            }
+
+            // 处理带缩进的内容
+            let formattedContent = processText(plainName);
 
             // 处理子节点内容
             const processChildren = (nodes, level = 1) => {
@@ -3786,7 +3838,7 @@ GM_addStyle(`
     function collectNodes(config) {
         const collectedNodes = new Map();
         const processedNodes = new Set();
-    
+
         // 检查节点是否为空
         function isEmptyNode(node) {
             const name = node.getNameInPlainText();
@@ -3794,7 +3846,7 @@ GM_addStyle(`
             const nameWithoutTags = nameWithoutDateTime.replace(/#[^\s#]+/g, '');
             return nameWithoutTags.trim() === '' && node.getChildren().length === 0;
         }
-    
+
         // 处理标签的辅助函数
         function processConfigTags(tags) {
             return tags
@@ -3803,12 +3855,12 @@ GM_addStyle(`
                 .filter(tag => tag)
                 .map(tag => tag.startsWith('#') ? tag : `#${tag}`);
         }
-    
+
         // 检查节点是否包含任意配置的标签
         function hasAnyConfiguredTag(text, configTags) {
             return configTags.some(tag => text.includes(tag));
         }
-    
+
         // 移除配置的标签
         function removeConfigTags(text, configTags) {
             let result = text;
@@ -3817,22 +3869,22 @@ GM_addStyle(`
             });
             return result.trim();
         }
-    
+
         // 递归搜索节点
         function searchNodes(node) {
             if (!node || processedNodes.has(node.getId())) return;
-    
+
             const nodeId = node.getId();
             const nodeName = node.getNameInPlainText();
             const nodeNote = node.getNoteInPlainText();
-    
+
             // 处理多标签
             const configTags = processConfigTags(config.collector.tags);
-    
+
             // 检查节点是否包含任意配置的标签
-            const hasConfiguredTag = hasAnyConfiguredTag(nodeName, configTags) || 
+            const hasConfiguredTag = hasAnyConfiguredTag(nodeName, configTags) ||
                                    hasAnyConfiguredTag(nodeNote, configTags);
-    
+
             // 检查标签
             if (hasConfiguredTag && !isEmptyNode(node)) {
                 // 标记节点及其子节点为已处理
@@ -3840,7 +3892,7 @@ GM_addStyle(`
                 node.getChildren().forEach(child => {
                     processedNodes.add(child.getId());
                 });
-    
+
                 // 收集子节点内容
                 let childrenContent = '';
                 const children = node.getChildren();
@@ -3848,10 +3900,10 @@ GM_addStyle(`
                     children.forEach(child => {
                         const childName = child.getNameInPlainText();
                         const childNote = child.getNoteInPlainText();
-    
+
                         // 移除所有配置的标签
                         const processedName = removeConfigTags(childName, configTags);
-    
+
                         if (processedName) {
                             childrenContent += `- ${processedName}\n`;
                             if (childNote) {
@@ -3860,10 +3912,10 @@ GM_addStyle(`
                         }
                     });
                 }
-    
+
                 // 处理节点名称 - 移除所有配置的标签
                 const processedName = removeConfigTags(nodeName, configTags);
-    
+
                 // 保存节点信息
                 collectedNodes.set(nodeId, {
                     id: nodeId,
@@ -3882,7 +3934,7 @@ GM_addStyle(`
                 });
             }
         }
-    
+
         // 开始收集
         try {
             const collectorNode = WF.getItemById(config.collector.nodeId);
@@ -3892,7 +3944,7 @@ GM_addStyle(`
         } catch (error) {
             console.error('收集节点失败:', error);
         }
-    
+
         return collectedNodes;
     }
 
