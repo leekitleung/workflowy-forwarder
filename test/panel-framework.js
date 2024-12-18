@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.2.4
+// @version      0.2.5
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -234,6 +234,8 @@ GM_addStyle(`
             nodeId: '',
             tags: '',
             autoComplete: true,
+            copyTags: false,
+            copyTime: false, // 添加复制时间选项
             copyFormat: 'plain'
         }
     };
@@ -1662,7 +1664,7 @@ GM_addStyle(`
         }
     }
 
-    // 添加模式选择限制的相关函数
+    // 添加模式选���限制的相关函数
     function handleModeSelection(checkbox) {
         const enabledModes = [
             'enable-daily',
@@ -1815,7 +1817,8 @@ GM_addStyle(`
             'copy-format-collector': config.collector.copyFormat,
             'copy-tags-collector': config.collector.copyTags,
             'refresh-interval': config.refreshInterval,
-            'exclude-tags': config.excludeTags
+            'exclude-tags': config.excludeTags,
+            'copy-time-collector': config.collector.copyTime
         }).forEach(([id, value]) => {
             const element = document.getElementById(id);
             if (element) {
@@ -2063,6 +2066,11 @@ GM_addStyle(`
                                     <input type="checkbox" id="copy-tags-collector">
                                     <span class="checkbox-label">复制内容时包含标签</span>
                                 </div>
+                                <div class="config-item">
+                                    <label>复制时间</label>
+                                    <input type="checkbox" id="copy-time-collector">
+                                    <span class="checkbox-label">复制内容时包含时间</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2097,6 +2105,7 @@ GM_addStyle(`
                 </div>
             </div>
         `;
+
 
 
         document.body.appendChild(panel);
@@ -2140,7 +2149,7 @@ GM_addStyle(`
         // 初始化配置面板
         initConfigPanel();
 
-        // 初始��模式处理
+        // 初始模式处理
         initModeHandlers();
 
         // 恢复上次的模式
@@ -2178,7 +2187,7 @@ GM_addStyle(`
 
 
 
-    // 将 switchMode 函��移到模块作用域
+    // 将 switchMode 函移到模块作用域
     function switchMode(mode) {
         console.log('Switching to mode:', mode);
 
@@ -2382,7 +2391,7 @@ GM_addStyle(`
         }
     }
 
-    // 更新卡片样式
+    // �����卡片样式
     GM_addStyle(`
 
 
@@ -3175,7 +3184,7 @@ GM_addStyle(`
                         }
                     } catch (error) {
                         console.error('跳转失败:', error);
-                        showFeedback(taskItem, '跳转失败');
+                        showFeedback(taskItem, '跳转���败');
                     }
                 });
             });
@@ -3225,7 +3234,7 @@ GM_addStyle(`
             }
         },
 
-        // 过滤排除的标签
+        // ��滤排除的标签
         filterExcludedTags(nodes, excludeTags) {
             if (!excludeTags || !nodes) return nodes;
 
@@ -3418,7 +3427,7 @@ GM_addStyle(`
         // 保存按钮事件处理
         saveBtn.addEventListener('click', () => {
             try {
-                // 获取当前配置用于保持未修改���值
+                // 获取当前配置用于保持未修改值
                 const currentConfig = ConfigManager.getConfig();
 
                 // 安全获取DOM元素值的辅助函数
@@ -3469,7 +3478,8 @@ GM_addStyle(`
                         taskName: getValue('task-collector'),
                         tags: getValue('tag-collector'),
                         autoComplete: getValue('auto-complete-collector', true),
-                        copyTags: getValue('copy-tags-collector', false), // Add new option
+                        copyTags: getValue('copy-tags-collector', false),
+                        copyTime: getValue('copy-time-collector', false),
                         copyFormat: getValue('copy-format-collector', 'plain')
                     }
                 };
@@ -3496,7 +3506,7 @@ GM_addStyle(`
                     showToast('保存失败，请重试', true);
                 }
             } catch (error) {
-                console.error('保存配��失败:', error);
+                console.error('保存配失败:', error);
                 showToast('保存失败: ' + error.message, true);
             }
         });
@@ -3685,118 +3695,101 @@ GM_addStyle(`
         try {
             const config = ConfigManager.getConfig();
             const keepTags = config.collector.copyTags;
+            const keepTime = config.collector.copyTime;
             const copyFormat = config.collector.copyFormat;
 
             const name = node.getName();
             const plainName = node.getNameInPlainText();
             const children = node.getChildren();
+            const note = node.getNoteInPlainText(); // 获取节点的注释
 
-            // 处理标签的辅助函数
+            // 处理标签和时间的辅助函数
             function processText(text) {
+                let result = text;
+
+                // 如果不保留时间，移除时间格式
+                if (!keepTime) {
+                    // 移除时间格式 (YYYY-MM-DD HH:mm)
+                    result = result.replace(/^\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}\s*/, '');
+                }
+
+                // 如果不保留标签，移除所有标���
                 if (!keepTags) {
-                    // 移除所有标签
-                    return text.replace(/#[^\s#]+/g, '').trim();
+                    result = result.replace(/#[^\s#]+/g, '');
                 }
-                // 保留所有标签
-                return text.trim();
+
+                return result.trim();
             }
 
-            // 单节点处理
-            if (children.length === 0) {
-                // 检查HTML链接
-                if (name.includes('<a href=')) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = name;
-                    const anchor = tempDiv.querySelector('a');
-                    if (anchor) {
-                        const title = processText(anchor.textContent);
-                        const url = anchor.href;
-                        if (copyFormat === 'opml') {
-                            return createOPML(title, url);
-                        }
-                        return `${title}\n${url}`;
-                    }
-                }
-
-                // 检查日期时间格式
-                const dateTimeMatch = plainName.match(/^\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}\s+\|\s+(.+)$/);
-                if (dateTimeMatch) {
-                    const content = processText(dateTimeMatch[1]);
-                    // 检查是否是纯URL
-                    if (/^https?:\/\/[^\s#]+$/.test(content)) {
-                        return content;
-                    }
-                    return content;
-                }
-
-                // 检查纯URL
-                if (/^https?:\/\/[^\s#]+$/.test(plainName)) {
-                    return plainName;
-                }
-
-                return processText(plainName);
+            // 获取节点的修改时间格式
+            function getNodeDateTime(node) {
+                const date = node.getLastModifiedDate();
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hour = String(date.getHours()).padStart(2, '0');
+                const minute = String(date.getMinutes()).padStart(2, '0');
+                return `${year}-${month}-${day} ${hour}:${minute}`;
             }
 
-            // 多节点处理
-            const firstChild = children[0];
-            const isFirstChildSameAsParent = firstChild.getNameInPlainText() === plainName;
-            const relevantChildren = isFirstChildSameAsParent ? children.slice(1) : children;
+            // 收集所有内容
+            let allContents = [];
 
-            // 检查标题和链接格式
-            const titleNode = relevantChildren.find(child =>
-                child.getNameInPlainText().startsWith('标题：'));
-            const linkNode = relevantChildren.find(child =>
-                child.getNameInPlainText().startsWith('链接：'));
+            // 处理标题和链接格式
+            if (children.length > 0) {
+                const titleNode = children.find(child =>
+                    child.getNameInPlainText().startsWith('标题：'));
+                const linkNode = children.find(child =>
+                    child.getNameInPlainText().startsWith('链接：'));
 
-            if (titleNode && linkNode) {
-                const title = processText(titleNode.getNameInPlainText().replace(/^标题[：:]\s*/, ''));
-                const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
-                if (copyFormat === 'opml') {
-                    return createOPML(title, url);
-                }
-                return `${title}\n${url}`;
-            }
+                if (titleNode && linkNode) {
+                    // Extract title and link
+                    const title = processText(titleNode.getNameInPlainText().replace(/^标题[：:]\s*/, ''));
+                    const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
 
-            // 处理带缩进的内容
-            let formattedContent = processText(plainName);
-
-            // 处理子节点内容
-            const processChildren = (nodes, level = 1) => {
-                return nodes.map(child => {
-                    const content = processText(child.getNameInPlainText());
-                    if (!content) return '';
-
-                    const indent = '  '.repeat(level);
-                    const childContent = `${indent}- ${content}`;
-
-                    // 处理子节点的注释
-                    const note = child.getNoteInPlainText();
-                    if (note) {
-                        const processedNote = processText(note);
-                        if (processedNote) {
-                            childContent += `\n${indent}  ${processedNote}`;
+                    // Generate OPML if both title and URL exist
+                    if (title && url) {
+                        const opmlContent = createOPML(title, url);
+                        allContents.push(opmlContent);
+                    } else {
+                        // Fallback to regular content handling
+                        allContents.push(title);
+                        if (url) {
+                            allContents.push(url);
                         }
                     }
+                } else {
+                    // 处理其他内容
+                    children.forEach(child => {
+                        const childContent = processText(child.getNameInPlainText());
+                        if (childContent) {
+                            allContents.push(childContent);
+                        }
+                    });
+                }
+            } else {
+                // 处理单节点内容
+                const content = processText(plainName);
+                if (content) {
+                    allContents.push(content);
+                }
+            }
 
-                    // 递归处理孙节点
-                    const grandChildren = child.getChildren();
-                    if (grandChildren.length > 0) {
-                        const nestedContent = processChildren(grandChildren, level + 1);
-                        return nestedContent ? `${childContent}\n${nestedContent}` : childContent;
-                    }
+            // 如果有注释，添加到内容中
+            if (note) {
+                allContents.push(note);
+            }
 
-                    return childContent;
-                }).filter(line => line.trim()).join('\n');
-            };
+            // 组合所有内容
+            let finalContent = allContents.join('\n');
 
-            // 添加子节点内容
-            const childrenContent = processChildren(relevantChildren);
-            if (childrenContent) {
-                formattedContent += '\n' + childrenContent;
+            // 根据配置添加时间作为父节点
+            if (keepTime) {
+                finalContent = `${getNodeDateTime(node)}\n${finalContent}`;
             }
 
             // 移除多余的空行并规范化空格
-            return formattedContent
+            return finalContent
                 .replace(/\n{3,}/g, '\n\n')  // 将3个以上的换行符替换为2个
                 .replace(/[ \t]+/g, ' ')      // 规范化空格
                 .trim();                      // 移除首尾空白
@@ -3913,18 +3906,33 @@ GM_addStyle(`
                     });
                 }
 
-                // 处理节点名称 - 移除所有配置的标签
-                const processedName = removeConfigTags(nodeName, configTags);
-
-                // 保存节点信息
-                collectedNodes.set(nodeId, {
-                    id: nodeId,
-                    name: processedName,
-                    childrenContent: childrenContent.trim(),
-                    time: node.getLastModifiedDate().getTime(),
-                    completed: node.isCompleted(),
-                    url: node.getUrl()
-                });
+                // 处理节点名称 - 只移除配置的标签，保留其他标签
+                if (config.collector.copyTags) {
+                    // 当启用copyTags时，只移除配置的标签
+                    const processedName = removeConfigTags(nodeName, configTags);
+                    
+                    // 保存节点信息，保留其他标签
+                    collectedNodes.set(nodeId, {
+                        id: nodeId,
+                        name: processedName,
+                        childrenContent: childrenContent.trim(),
+                        time: node.getLastModifiedDate().getTime(),
+                        completed: node.isCompleted(),
+                        url: node.getUrl()
+                    });
+                } else {
+                    // 当未启用copyTags时，移除所有标签
+                    const processedName = nodeName.replace(/#[^\s#]+/g, '').trim();
+                    
+                    collectedNodes.set(nodeId, {
+                        id: nodeId,
+                        name: processedName,
+                        childrenContent: childrenContent.trim(),
+                        time: node.getLastModifiedDate().getTime(),
+                        completed: node.isCompleted(),
+                        url: node.getUrl()
+                    });
+                }
             } else {
                 // 继续搜索子节点
                 node.getChildren().forEach(child => {
