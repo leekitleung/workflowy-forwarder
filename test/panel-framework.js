@@ -2236,56 +2236,79 @@ GM_addStyle(`
 
     function updateLinks(mode) {
         const config = ConfigManager.getConfig();
-        const links = {
-            daily: [
-                {
-                    selector: '.today-link',
-                    display: config.dailyPlanner.enabled && !!config.dailyPlanner.calendarNodeId,
-                    href: '#',
-                    text: "Today's Plan"
-                },
-                {
-                    selector: '.scan-link',
-                    display: config.dailyPlanner.enabled,
-                    href: WF.getItemById(config.dailyPlanner.nodeId)?.getUrl() || '#',
-                    text: config.dailyPlanner.taskName || 'Daily'
-                }
-            ],
-            target: [
-                {
-                    selector: '.follow-link:nth-child(1)',
-                    display: config.target.work.enabled,
-                    href: WF.getItemById(config.target.work.nodeId)?.getUrl() || '#',
-                    text: config.target.work.taskName || 'Target'
-                },
-                {
-                    selector: '.follow-link:nth-child(2)',
-                    display: config.target.personal.enabled,
-                    href: WF.getItemById(config.target.personal.nodeId)?.getUrl() || '#',
-                    text: config.target.personal.taskName || 'Target'
-                }
-            ],
-            collector: [
-                {
-                    selector: '.collect-link',
-                    display: config.collector.enabled,
-                    href: WF.getItemById(config.collector.nodeId)?.getUrl() || '#',
-                    text: config.collector.taskName || 'Collector'
-                }
-            ]
-        };
+        
+        // Get link containers
+        const workLinks = document.querySelector('.work-links');
+        const personalLinks = document.querySelector('.personal-links'); 
+        const tempLinks = document.querySelector('.temp-links');
+        const collectorLinks = document.querySelector('.collector-links');
 
-        // Only update links for current mode
-        const currentModeLinks = links[mode];
-        if (currentModeLinks) {
-            currentModeLinks.forEach(link => {
-                const element = document.querySelector(link.selector);
-                if (element) {
-                    element.style.display = link.display ? 'flex' : 'none';
-                    element.href = link.href;
-                    element.textContent = link.text;
+        // Hide all link containers first
+        [workLinks, personalLinks, tempLinks, collectorLinks].forEach(container => {
+            if (container) container.style.display = 'none';
+        });
+
+        // Show and update links based on current mode
+        switch(mode) {
+            case 'work':
+                if (workLinks && config.target.work.enabled) {
+                    workLinks.style.display = 'block';
+                    const workLink = workLinks.querySelector('.work-link');
+                    if (workLink) {
+                        const node = WF.getItemById(config.target.work.nodeId);
+                        // Preserve mirror node check
+                        const hasMirrors = node ? checkMirrorNodes(node) : false;
+                        workLink.href = node ? node.getUrl() : '#';
+                        workLink.textContent = config.target.work.taskName || 'Work';
+                        workLink.classList.toggle('has-mirrors', hasMirrors);
+                    }
                 }
-            });
+                break;
+
+            case 'personal': 
+                if (personalLinks && config.target.personal.enabled) {
+                    personalLinks.style.display = 'block';
+                    const personalLink = personalLinks.querySelector('.personal-link');
+                    if (personalLink) {
+                        const node = WF.getItemById(config.target.personal.nodeId);
+                        // Preserve mirror node check
+                        const hasMirrors = node ? checkMirrorNodes(node) : false;
+                        personalLink.href = node ? node.getUrl() : '#';
+                        personalLink.textContent = config.target.personal.taskName || 'Personal';
+                        personalLink.classList.toggle('has-mirrors', hasMirrors);
+                    }
+                }
+                break;
+
+            case 'temp':
+                if (tempLinks && config.target.temp.enabled) {
+                    tempLinks.style.display = 'block';
+                    const tempLink = tempLinks.querySelector('.temp-link');
+                    if (tempLink) {
+                        const node = WF.getItemById(config.target.temp.nodeId);
+                        // Preserve mirror node check
+                        const hasMirrors = node ? checkMirrorNodes(node) : false;
+                        tempLink.href = node ? node.getUrl() : '#';
+                        tempLink.textContent = config.target.temp.taskName || 'Temp';
+                        tempLink.classList.toggle('has-mirrors', hasMirrors);
+                    }
+                }
+                break;
+
+            case 'collector':
+                if (collectorLinks && config.collector.enabled) {
+                    collectorLinks.style.display = 'block';
+                    const collectLink = collectorLinks.querySelector('.collect-link');
+                    if (collectLink) {
+                        const node = WF.getItemById(config.collector.nodeId);
+                        // Preserve mirror node check
+                        const hasMirrors = node ? checkMirrorNodes(node) : false;
+                        collectLink.href = node ? node.getUrl() : '#';
+                        collectLink.textContent = config.collector.taskName || 'Collector';
+                        collectLink.classList.toggle('has-mirrors', hasMirrors);
+                    }
+                }
+                break;
         }
     }
 
@@ -2873,10 +2896,10 @@ GM_addStyle(`
                                     <div class="task-text">
                                         <div class="content-wrapper">
                                             ${node.childrenContent ? `
-                                                <div class="name-content">${truncateText(node.name, 35)}</div>
+                                                <div class="name-content">${truncateText(node.name, 30)}</div>
                                                 <div class="children-content">${node.childrenContent}</div>
                                             ` : `
-                                                <div class="name-content">${truncateText(node.name, 35)}</div>
+                                                <div class="name-content">${truncateText(node.name, 30)}</div>
                                                 <div class="children-content">${node.name}</div>
                                             `}
                                         </div>
@@ -3691,7 +3714,8 @@ GM_addStyle(`
                 if (urlMatch) {
                     const url = urlMatch[1];
                     const title = processText(plainName.replace(url, '')).trim();
-                    return title ? `${title}\n${url}` : url;
+                    // 如果只有链接没有标题，将链接作为标题
+                    return title ? createOPML(title, url) : createOPML(url, url);
                 }
 
                 return processText(plainName);
