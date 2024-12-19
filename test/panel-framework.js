@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.2.6
+// @version      0.2.7
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -478,7 +478,8 @@ GM_addStyle(`
             --bg-color: rgba(39, 45, 50, 1);
             --panel-bg: #2B3135;
             --border-color: #5c6062;
-            --text-color: #9ea1a2;
+            --text-color: #9ea1a2; 
+            --text-hover-color: #4a9eff;
             --text-secondary: #9ea1a2;
             --button-active-bg: rgba(56, 70, 81, 1);
             --button-hover-bg: rgba(53, 125, 166, 1);
@@ -501,6 +502,7 @@ GM_addStyle(`
             --panel-bg: #ffffff;
             --border-color: #e4e6e8;
             --text-color: #333333;  // 更深的文字颜色
+            --text-hover-color: #4a9eff;
             --text-secondary: #666666;  // 更深的次要文字颜色
             --button-active-bg: #f0f2f4;
             --button-hover-bg: #49baf2;
@@ -916,7 +918,7 @@ GM_addStyle(`
             margin: 0px 4px;
         }
 
-        .planner-links{
+        .planner-link{
             display: flex;
             justify-content: flex-end;
             color: var(--text-secondary);
@@ -932,9 +934,9 @@ GM_addStyle(`
             background-size: 12px;
         }
 
-        .planner-links:hover{
+        .planner-link:hover{
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23357DA6'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23357DA6'/%3E%3C/svg%3E");
-            color: var(--text-color);
+            color: var(--text-hover-color);
             text-decoration: none;
         }
 
@@ -1992,7 +1994,7 @@ GM_addStyle(`
                                 <div class="config-item">
                                     <label>标签</label>
                                     <input type="text" id="tag-work"
-                                        placeholder="输入标签，如: #�������������要 (支持数字、中文、英文，多个用号分隔)">
+                                        placeholder="输入标签，如: #tag1， #tag2 (支持数字、中文、英文，多个用号分隔)">
                                 </div>
                             </div>
                         </div>
@@ -2010,7 +2012,7 @@ GM_addStyle(`
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-personal" placeholder="输入标签，如: #重要 (支持数字、中文、英文)">
+                                    <input type="text" id="tag-personal" placeholder="输入标签，如: #tag (支持数字、中文、英文)">
                                 </div>
                             </div>
                         </div>
@@ -2028,7 +2030,7 @@ GM_addStyle(`
                                 </div>
                                 <div class="config-item">
                                     <label>标签</label>
-                                    <input type="text" id="tag-temp" placeholder="输入标签，如: #重要 (支持数字、中文、英文)">
+                                    <input type="text" id="tag-temp" placeholder="输入标签，如: #tag (支持数字、中文、英文)">
                                 </div>
                             </div>
                         </div>
@@ -2715,19 +2717,11 @@ GM_addStyle(`
             }
 
             try {
-                const targetNodes = new Map();
-                const contentMap = new Map();
-                const processedIds = new Set();
-                const tagGroups = new Map(); // 用于存储不同标签的节点
+                const tagGroups = new Map(); // 每个标签对应的节点数组
 
-                // Process node function with duplicate handling
-                // 修改 renderTargetView 函数中的 processNode 函数
+                // Process node function
                 function processNode(node, config, currentDepth = 0, maxDepth = 10) {
                     if (currentDepth >= maxDepth) return;
-
-                    const id = node.getId();
-                    if (processedIds.has(id)) return;
-                    processedIds.add(id);
 
                     const name = node.getNameInPlainText();
                     const note = node.getNoteInPlainText();
@@ -2754,36 +2748,29 @@ GM_addStyle(`
                         }
 
                         const nodeData = {
-                            id,
+                            id: node.getId(),
                             name: name,
                             displayName: name,
                             time: node.getLastModifiedDate().getTime(),
                             completed: node.isCompleted(),
                             hasMirrors,
-                            url: node.getUrl()
+                            url: node.getUrl(),
+                            node: node // 存储节点引用以便后续使用
                         };
 
-                        // 将节点按标签分组
+                        // 检查节点属于哪个标签组
                         configTags.forEach(tag => {
                             if (name.includes(tag) || note.includes(tag)) {
                                 if (!tagGroups.has(tag)) {
                                     tagGroups.set(tag, []);
                                 }
-                                tagGroups.get(tag).push(nodeData);
+                                // 检查是否已存在相同内容的节点
+                                const existingNode = tagGroups.get(tag).find(n => n.name === name);
+                                if (!existingNode) {
+                                    tagGroups.get(tag).push(nodeData);
+                                }
                             }
                         });
-
-                        // 如果没有配置标签或节点不属于任何标签组,放入默认组
-                        if (configTags.length === 0 ||
-                            !configTags.some(tag => name.includes(tag) || note.includes(tag))) {
-                            if (!tagGroups.has('default')) {
-                                tagGroups.set('default', []);
-                            }
-                            tagGroups.get('default').push(nodeData);
-                        }
-
-                        // 存储节点数据
-                        targetNodes.set(id, nodeData);
                     }
 
                     // 递归处理子节点
@@ -2802,17 +2789,10 @@ GM_addStyle(`
                 let content = '';
                 tagGroups.forEach((nodes, tag) => {
                     if (nodes.length > 0) {
-                        // 添加标签组标题
-                        const tagTitle = tag === 'default' ? '未标记' : tag;
-                        content += `<div class="node-title">${tagTitle}</div>`;
-
-                        // 渲染该标签组的节点
+                        content += `<div class="node-title">${tag}</div>`;
                         content += nodes
                             .sort((a, b) => b.time - a.time)
-                            .map(nodeData => {
-                                const node = WF.getItemById(nodeData.id);
-                                return node ? Templates.taskItem(node, true, mode) : '';
-                            })
+                            .map(nodeData => Templates.taskItem(nodeData.node, true, mode))
                             .join('');
                     }
                 });
@@ -3161,7 +3141,7 @@ GM_addStyle(`
             // 添加卡片点击事件
             container.querySelectorAll('.task-item').forEach(taskItem => {
                 taskItem.addEventListener('click', (e) => {
-                    // 如果点击的是复选框、按钮或其他控件,不处理跳转
+                    // 如果点击的是复选框、按钮或其���控件,不处理跳转
                     if (e.target.closest('.checkbox-wrapper') ||
                         e.target.closest('.task-actions') ||
                         e.target.closest('button')) {
