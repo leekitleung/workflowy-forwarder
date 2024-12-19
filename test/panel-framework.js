@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.2.5
+// @version      0.2.6
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -234,8 +234,6 @@ GM_addStyle(`
             nodeId: '',
             tags: '',
             autoComplete: true,
-            copyTags: false,
-            copyTime: false, // 添加复制时间选项
             copyFormat: 'plain'
         }
     };
@@ -1664,7 +1662,7 @@ GM_addStyle(`
         }
     }
 
-    // 添加模式选���限制的相关函数
+    // 添加模式选择限制的相关函数
     function handleModeSelection(checkbox) {
         const enabledModes = [
             'enable-daily',
@@ -1817,8 +1815,7 @@ GM_addStyle(`
             'copy-format-collector': config.collector.copyFormat,
             'copy-tags-collector': config.collector.copyTags,
             'refresh-interval': config.refreshInterval,
-            'exclude-tags': config.excludeTags,
-            'copy-time-collector': config.collector.copyTime
+            'exclude-tags': config.excludeTags
         }).forEach(([id, value]) => {
             const element = document.getElementById(id);
             if (element) {
@@ -1995,7 +1992,7 @@ GM_addStyle(`
                                 <div class="config-item">
                                     <label>标签</label>
                                     <input type="text" id="tag-work"
-                                        placeholder="输入标签���如: #重要 (支持数字、中文、英文，多个用号分隔)">
+                                        placeholder="输入标签，如: #�������������要 (支持数字、中文、英文，多个用号分隔)">
                                 </div>
                             </div>
                         </div>
@@ -2065,11 +2062,6 @@ GM_addStyle(`
                                     <label>复制标签</label>
                                     <input type="checkbox" id="copy-tags-collector">
                                     <span class="checkbox-label">复制内容时包含标签</span>
-                                </div>
-                                <div class="config-item">
-                                    <label>复制时间</label>
-                                    <input type="checkbox" id="copy-time-collector">
-                                    <span class="checkbox-label">复制内容时包含时间</span>
                                 </div>
                             </div>
                         </div>
@@ -2149,7 +2141,7 @@ GM_addStyle(`
         // 初始化配置面板
         initConfigPanel();
 
-        // 初始模式处理
+        // 初始��模式处理
         initModeHandlers();
 
         // 恢复上次的模式
@@ -2187,7 +2179,7 @@ GM_addStyle(`
 
 
 
-    // 将 switchMode 函移到模块作用域
+    // 将 switchMode 函数移到模块作用域
     function switchMode(mode) {
         console.log('Switching to mode:', mode);
 
@@ -2391,7 +2383,7 @@ GM_addStyle(`
         }
     }
 
-    // �����卡片样式
+    // 更新卡片样式
     GM_addStyle(`
 
 
@@ -2426,7 +2418,7 @@ GM_addStyle(`
 
     `);
 
-    // 添加复制格式处理函数
+    // 添加复制格���处理函数
     function formatContent(node, format = 'plain') {
         try {
             switch (format) {
@@ -2701,7 +2693,7 @@ GM_addStyle(`
 
             try {
                 const targetNodes = new Map();
-                const contentMap = new Map(); // 用于追踪相同内容的节点
+                const contentMap = new Map();
                 const processedIds = new Set();
                 const tagGroups = new Map(); // 用于存储不同标签的节点
 
@@ -2748,45 +2740,27 @@ GM_addStyle(`
                             url: node.getUrl()
                         };
 
-                        // 处理相同内容的节点
-                        const normalizedContent = name.trim().replace(/\s+/g, ' ');
-                        const existingNode = contentMap.get(normalizedContent);
-
-                        if (!existingNode || (hasMirrors && !existingNode.hasMirrors)) {
-                            // 如果是镜像节点或没有现有节点，更新内容映射
-                            contentMap.set(normalizedContent, nodeData);
-
-                            // 将节点按标签分组
-                            configTags.forEach(tag => {
-                                if (name.includes(tag) || note.includes(tag)) {
-                                    if (!tagGroups.has(tag)) {
-                                        tagGroups.set(tag, new Map());
-                                    }
-                                    // 使用 Map 存储每个标签组的节点，以便处理重复内容
-                                    const groupNodes = tagGroups.get(tag);
-                                    const existingGroupNode = groupNodes.get(normalizedContent);
-                                    if (!existingGroupNode || (hasMirrors && !existingGroupNode.hasMirrors)) {
-                                        groupNodes.set(normalizedContent, nodeData);
-                                    }
+                        // 将节点按标签分组
+                        configTags.forEach(tag => {
+                            if (name.includes(tag) || note.includes(tag)) {
+                                if (!tagGroups.has(tag)) {
+                                    tagGroups.set(tag, []);
                                 }
-                            });
-
-                            // 处理默认组
-                            if (configTags.length === 0 ||
-                                !configTags.some(tag => name.includes(tag) || note.includes(tag))) {
-                                if (!tagGroups.has('default')) {
-                                    tagGroups.set('default', new Map());
-                                }
-                                const defaultNodes = tagGroups.get('default');
-                                const existingDefaultNode = defaultNodes.get(normalizedContent);
-                                if (!existingDefaultNode || (hasMirrors && !existingDefaultNode.hasMirrors)) {
-                                    defaultNodes.set(normalizedContent, nodeData);
-                                }
+                                tagGroups.get(tag).push(nodeData);
                             }
+                        });
 
-                            // 更新目标节点集合
-                            targetNodes.set(id, nodeData);
+                        // 如果没有配置标签或节点不属于任何标签组,放入默认组
+                        if (configTags.length === 0 ||
+                            !configTags.some(tag => name.includes(tag) || note.includes(tag))) {
+                            if (!tagGroups.has('default')) {
+                                tagGroups.set('default', []);
+                            }
+                            tagGroups.get('default').push(nodeData);
                         }
+
+                        // 存储节点数据
+                        targetNodes.set(id, nodeData);
                     }
 
                     // 递归处理子节点
@@ -2804,15 +2778,13 @@ GM_addStyle(`
                 // 渲染分组内容
                 let content = '';
                 tagGroups.forEach((nodes, tag) => {
-                    // 从 Map 转换为数组
-                    const nodeArray = Array.from(nodes.values());
-                    if (nodeArray.length > 0) {
+                    if (nodes.length > 0) {
                         // 添加标签组标题
                         const tagTitle = tag === 'default' ? '未标记' : tag;
                         content += `<div class="node-title">${tagTitle}</div>`;
 
                         // 渲染该标签组的节点
-                        content += nodeArray
+                        content += nodes
                             .sort((a, b) => b.time - a.time)
                             .map(nodeData => {
                                 const node = WF.getItemById(nodeData.id);
@@ -2976,7 +2948,7 @@ GM_addStyle(`
             // Checkbox click handler
             container.querySelectorAll('.checkbox-wrapper input[type="checkbox"]').forEach(checkbox => {
                 checkbox.addEventListener('change', async (e) => {
-                    e.stopPropagation(); // 防止事件冒泡
+                    e.stopPropagation(); // ���止事件冒泡
 
                     const taskItem = e.target.closest('.task-item');
                     const taskId = taskItem?.dataset.id;
@@ -3184,7 +3156,7 @@ GM_addStyle(`
                         }
                     } catch (error) {
                         console.error('跳转失败:', error);
-                        showFeedback(taskItem, '跳转���败');
+                        showFeedback(taskItem, '跳转失败');
                     }
                 });
             });
@@ -3234,7 +3206,7 @@ GM_addStyle(`
             }
         },
 
-        // ��滤排除的标签
+        // 过滤排除的标签
         filterExcludedTags(nodes, excludeTags) {
             if (!excludeTags || !nodes) return nodes;
 
@@ -3427,7 +3399,7 @@ GM_addStyle(`
         // 保存按钮事件处理
         saveBtn.addEventListener('click', () => {
             try {
-                // 获取当前配置用于保持未修改值
+                // 获取当前配置用于保持未修改���值
                 const currentConfig = ConfigManager.getConfig();
 
                 // 安全获取DOM元素值的辅助函数
@@ -3478,8 +3450,7 @@ GM_addStyle(`
                         taskName: getValue('task-collector'),
                         tags: getValue('tag-collector'),
                         autoComplete: getValue('auto-complete-collector', true),
-                        copyTags: getValue('copy-tags-collector', false),
-                        copyTime: getValue('copy-time-collector', false),
+                        copyTags: getValue('copy-tags-collector', false), // Add new option
                         copyFormat: getValue('copy-format-collector', 'plain')
                     }
                 };
@@ -3506,7 +3477,7 @@ GM_addStyle(`
                     showToast('保存失败，请重试', true);
                 }
             } catch (error) {
-                console.error('保存配失败:', error);
+                console.error('保存配置失败:', error);
                 showToast('保存失败: ' + error.message, true);
             }
         });
@@ -3695,101 +3666,109 @@ GM_addStyle(`
         try {
             const config = ConfigManager.getConfig();
             const keepTags = config.collector.copyTags;
-            const keepTime = config.collector.copyTime;
-            const copyFormat = config.collector.copyFormat;
+
+            // 处理标签的辅助函数
+            function processText(text) {
+                if (!text) return '';
+
+                // 移除时间戳
+                text = text.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/, '');
+
+                // 根据配置决定是否保留标签
+                if (!keepTags) {
+                    // 移除所有标签,但保留#稍后处理
+                    text = text.replace(/#[^\s#]+/g, match => {
+                        return match.includes('') ? match : '';
+                    });
+                }
+                // 如果 keepTags 为 true,保留所有标签
+
+                return text.trim();
+            }
 
             const name = node.getName();
             const plainName = node.getNameInPlainText();
             const children = node.getChildren();
-            const note = node.getNoteInPlainText(); // 获取节点的注释
 
-            // 处理标签和时间的辅助函数
-            function processText(text) {
-                let result = text;
-
-                // 如果不保留时间，移除时间格式
-                if (!keepTime) {
-                    // 移除时间格式 (YYYY-MM-DD HH:mm)
-                    result = result.replace(/^\d{4}-\d{1,2}-\d{1,2}\s+\d{1,2}:\d{2}\s*/, '');
+            // 单节点处理
+            if (children.length === 0) {
+                // 检查是否包含URL
+                const urlMatch = plainName.match(/(https?:\/\/[^\s]+)/);
+                if (urlMatch) {
+                    const url = urlMatch[1];
+                    const title = processText(plainName.replace(url, '')).trim();
+                    return title ? `${title}\n${url}` : url;
                 }
 
-                // 如果不保留标签，移除所有标���
-                if (!keepTags) {
-                    result = result.replace(/#[^\s#]+/g, '');
-                }
-
-                return result.trim();
+                return processText(plainName);
             }
 
-            // 获取节点的修改时间格式
-            function getNodeDateTime(node) {
-                const date = node.getLastModifiedDate();
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                const hour = String(date.getHours()).padStart(2, '0');
-                const minute = String(date.getMinutes()).padStart(2, '0');
-                return `${year}-${month}-${day} ${hour}:${minute}`;
+            // 多节点处理
+            let formattedContent = '';
+
+            // 查找标题和链接节点
+            const titleNode = children.find(child =>
+                child.getNameInPlainText().startsWith('标题:') ||
+                child.getNameInPlainText().startsWith('标题：')
+            );
+
+            const linkNode = children.find(child =>
+                child.getNameInPlainText().startsWith('链接:') ||
+                child.getNameInPlainText().startsWith('链接：')
+            );
+
+            // 如果找到标题和链接节点,创建OPML格式
+            if (titleNode && linkNode) {
+                const title = processText(titleNode.getNameInPlainText().replace(/^标题[：:]\s*/, ''));
+                const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
+                return createOPML(title, url);
             }
 
-            // 收集所有内容
-            let allContents = [];
+            // 获取相关子节点
+            const relevantChildren = children.filter(child => {
+                const childName = child.getNameInPlainText();
+                return childName &&
+                       !childName.includes('#已处理') &&
+                       !childName.includes('#忽略');
+            });
 
-            // 处理标题和链接格式
-            if (children.length > 0) {
-                const titleNode = children.find(child =>
-                    child.getNameInPlainText().startsWith('标题：'));
-                const linkNode = children.find(child =>
-                    child.getNameInPlainText().startsWith('链接：'));
+            // 处理子节点内容
+            const processChildren = (nodes, level = 1) => {
+                return nodes.map(child => {
+                    const content = processText(child.getNameInPlainText());
+                    if (!content) return '';
 
-                if (titleNode && linkNode) {
-                    // Extract title and link
-                    const title = processText(titleNode.getNameInPlainText().replace(/^标题[：:]\s*/, ''));
-                    const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
+                    const indent = '  '.repeat(level);
+                    const childContent = `${indent}- ${content}`;
 
-                    // Generate OPML if both title and URL exist
-                    if (title && url) {
-                        const opmlContent = createOPML(title, url);
-                        allContents.push(opmlContent);
-                    } else {
-                        // Fallback to regular content handling
-                        allContents.push(title);
-                        if (url) {
-                            allContents.push(url);
+                    // 处理子节点的注释
+                    const note = child.getNoteInPlainText();
+                    if (note) {
+                        const processedNote = processText(note);
+                        if (processedNote) {
+                            childContent += `\n${indent}  ${processedNote}`;
                         }
                     }
-                } else {
-                    // 处理其他内容
-                    children.forEach(child => {
-                        const childContent = processText(child.getNameInPlainText());
-                        if (childContent) {
-                            allContents.push(childContent);
-                        }
-                    });
-                }
-            } else {
-                // 处理单节点内容
-                const content = processText(plainName);
-                if (content) {
-                    allContents.push(content);
-                }
-            }
 
-            // 如果有注释，添加到内容中
-            if (note) {
-                allContents.push(note);
-            }
+                    // 递归处理孙节点
+                    const grandChildren = child.getChildren();
+                    if (grandChildren.length > 0) {
+                        const nestedContent = processChildren(grandChildren, level + 1);
+                        return nestedContent ? `${childContent}\n${nestedContent}` : childContent;
+                    }
 
-            // 组合所有内容
-            let finalContent = allContents.join('\n');
+                    return childContent;
+                }).filter(line => line.trim()).join('\n');
+            };
 
-            // 根据配置添加时间作为父节点
-            if (keepTime) {
-                finalContent = `${getNodeDateTime(node)}\n${finalContent}`;
+            // 添加子节点内容
+            const childrenContent = processChildren(relevantChildren);
+            if (childrenContent) {
+                formattedContent += childrenContent;
             }
 
             // 移除多余的空行并规范化空格
-            return finalContent
+            return formattedContent
                 .replace(/\n{3,}/g, '\n\n')  // 将3个以上的换行符替换为2个
                 .replace(/[ \t]+/g, ' ')      // 规范化空格
                 .trim();                      // 移除首尾空白
@@ -3816,6 +3795,7 @@ GM_addStyle(`
         const safeTitle = escapeXml(title);
         const safeUrl = escapeXml(url);
 
+        // 创建OPML格式,将URL作为节点的note属性
         return `<?xml version="1.0"?>
 <opml version="2.0">
     <head>
@@ -3906,33 +3886,18 @@ GM_addStyle(`
                     });
                 }
 
-                // 处理节点名称 - 只移除配置的标签，保留其他标签
-                if (config.collector.copyTags) {
-                    // 当启用copyTags时，只移除配置的标签
-                    const processedName = removeConfigTags(nodeName, configTags);
-                    
-                    // 保存节点信息，保留其他标签
-                    collectedNodes.set(nodeId, {
-                        id: nodeId,
-                        name: processedName,
-                        childrenContent: childrenContent.trim(),
-                        time: node.getLastModifiedDate().getTime(),
-                        completed: node.isCompleted(),
-                        url: node.getUrl()
-                    });
-                } else {
-                    // 当未启用copyTags时，移除所有标签
-                    const processedName = nodeName.replace(/#[^\s#]+/g, '').trim();
-                    
-                    collectedNodes.set(nodeId, {
-                        id: nodeId,
-                        name: processedName,
-                        childrenContent: childrenContent.trim(),
-                        time: node.getLastModifiedDate().getTime(),
-                        completed: node.isCompleted(),
-                        url: node.getUrl()
-                    });
-                }
+                // 处理节点名称 - 移除所有配置的标签
+                const processedName = removeConfigTags(nodeName, configTags);
+
+                // 保存节点信息
+                collectedNodes.set(nodeId, {
+                    id: nodeId,
+                    name: processedName,
+                    childrenContent: childrenContent.trim(),
+                    time: node.getLastModifiedDate().getTime(),
+                    completed: node.isCompleted(),
+                    url: node.getUrl()
+                });
             } else {
                 // 继续搜索子节点
                 node.getChildren().forEach(child => {
