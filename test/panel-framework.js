@@ -2058,11 +2058,11 @@ GM_addStyle(`
                                     <input type="checkbox" id="auto-complete-collector">
                                     <span class="checkbox-label">复制内容后标记完成</span>
                                 </div>
-                                <div class="config-item">
-                                    <label>复制标签</label>
-                                    <input type="checkbox" id="copy-tags-collector">
-                                    <span class="checkbox-label">复制内容时包含标签</span>
-                                </div>
+                                <!-- <div class="config-item">
+                                     <label>复制标签</label>
+                                     <input type="checkbox" id="copy-tags-collector">
+                                     <span class="checkbox-label">复制内容时包含标签</span>
+                                 </div>-->
                             </div>
                         </div>
                     </div>
@@ -3666,25 +3666,19 @@ GM_addStyle(`
         try {
             const config = ConfigManager.getConfig();
             const keepTags = config.collector.copyTags;
-
+    
             // 处理标签的辅助函数
             function processText(text) {
                 if (!text) return '';
-
+                
                 // 移除时间戳
                 text = text.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/, '');
-
-                // 根据配置决定是否保留标签
-                if (!keepTags) {
-                    // 移除所有标签,但保留#稍后处理
-                    text = text.replace(/#[^\s#]+/g, match => {
-                        return match.includes('') ? match : '';
-                    });
-                }
-                // 如果 keepTags 为 true,保留所有标签
-
+                
+                // 移除所有标签
+                text = text.replace(/#[^\s#]+/g, '');
+                
                 return text.trim();
-            }
+            }    
 
             const name = node.getName();
             const plainName = node.getNameInPlainText();
