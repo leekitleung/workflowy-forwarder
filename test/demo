@@ -1,304 +1,220 @@
-// ==UserScript==
-// @name         WorkFlowy Node Collector
-// @namespace    http://tampermonkey.net/
-// @version      0.2
-// @description  Collect and copy WorkFlowy nodes with smart comparison and improved performance and error handling
-// @author       You
-// @match        https://workflowy.com/*
-// @match        https://beta.workflowy.com/*
-// @grant        GM_addStyle
-// ==/UserScript==
 
-(function() {
-    'use strict';
+<!DOCTYPE html>
 
-    const API_KEY = 'fbe40bfde42d3fd3dbdd518871f3576a9cc9a48e';
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover">
+    <meta name="description" content="WorkFlowy is an organizational tool that makes life easier. It&#x27;s a surprisingly powerful way to take notes, make lists, collaborate, brainstorm, plan and generally organize your brain.">
+    <link rel="shortcut icon" type="image/x-icon" href="/media/i/favicon.ico">
 
-    // 添加样式
-    GM_addStyle(`
-        .node-collector {
-            position: fixed;
-            right: -320px; /* 初始隐藏 */
-            top: 60px;
-            width: 300px;
-            max-height: 80vh;
-            overflow-y: auto;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            z-index: 1000;
-            transition: right 0.3s ease;
-        }
+    
 
-        .node-collector.active {
-            right: 20px;
-        }
+    <script type="text/javascript">
+      
 
-        .node-card {
-            margin: 10px 0;
-            padding: 10px;
-            border: 1px solid #eee;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
+// Track the client version and send it to the server so that if there
+// are future server changes that invalidate something on the client
+// side, we can let the user know. We only need to change this version
+// number if/when such changes happen.
+var CLIENT_VERSION = 21;
 
-        .node-card:hover {
-            background: #f5f5f5;
-        }
+var FULL_OFFLINE_ENABLED = false;
+var GUIDE_ID = undefined;
+var IS_GUIDE_MODE = false;
+var STRIPE_PUBLIC_KEY = "pk_live_JUzmGXmnu2VwqZRZiK0GsOBh001fLChqbw";
+var LOG_DEBUG_MESSAGES = false;
+var DEMO_MODE = false;
 
-        .node-card.completed {
-            background: #e8f5e9;
-            opacity: 0.7;
-        }
+// So we can make changes on a guide without impacting anything, let's make guide mode into demo mode.
+if (IS_GUIDE_MODE) {
+    DEMO_MODE = true;
+}
+var EMBED = false;
 
-        .node-content {
-            margin-bottom: 5px;
-        }
 
-        .node-children {
-            margin-left: 15px;
-            font-size: 0.9em;
-            color: #666;
-        }
+var FIRST_LOAD_FLAGS = {
+    showFriendRecommendation: false,
+    showUpgradeDialog: false,
+};
 
-        #collector-toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #333;
-            color: white;
-            padding: 10px;
-            border-radius: 4px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 1001;
-        }
+var READ_ONLY_MAIN_TREE = false;
+var PAYMENT_PLANS = {"individual": [{"type": "individual", "plan_id": "pro_monthly_9", "dollars": 8.99, "description": "$8.99 / month (paid monthly)"}, {"type": "individual", "plan_id": "pro_yearly_84", "dollars": 83.88, "description": "$6.99 / month (83.88 paid annually)", "default": true}], "team": [{"type": "team", "plan_id": "teams_yearly_84", "dollars": 83.88, "price": "$6.99", "description": "<b>$6.99</b> per team member per month (billed anually)", "default": true}, {"type": "team", "plan_id": "teams_monthly_9", "dollars": 8.99, "price": "$8.99", "description": "<b>$8.99</b> per team member per month"}]};
 
-        #collector-toast.show {
-            opacity: 1;
-        }
+    </script>
 
-        #collector-toast.error {
-            background: #e74c3c;
-        }
+    <link rel="stylesheet" type="text/css" href="/media/css/reset.css?v=3" >
+    <link rel="stylesheet" type="text/css" media="print" href="/media/css/print.css?v=3" />
 
-        #collector-toast.success {
-            background: #2ecc71;
-        }
-    `));
+    <link rel="preconnect" href="https://sentry.workflowy.com/api/3/envelope/" />
+    <link rel="dns-prefetch" href="https://sentry.workflowy.com/api/3/envelope/" />
 
-    class NodeCollector {
-        constructor() {
-            this.panel = null;
-            this.nodes = new Map();
-            this.isActive = false;
-            this.createPanel();
-            this.setupShortcut();
-            this.initPanelState();
-        }
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <link rel="apple-touch-icon" href="/media/i/icon-57x57.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/media/i/icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="114x114" href="/media/i/icon-114x114.png" />
+    
+    <link rel="apple-touch-startup-image" href="/media/i/workflowy-startup-image.png">
+    
 
-        createPanel() {
-            this.panel = document.createElement('div');
-            this.panel.className = 'node-collector';
-            this.panel.innerHTML = '<h3>Node Collector</h3>';
-            document.body.appendChild(this.panel);
-        }
+    
+    <meta name="robots" content="noindex">
+    
 
-        togglePanel(force) {
-            this.isActive = force !== undefined ? force : !this.isActive;
-            this.panel.classList.toggle('active', this.isActive);
-            localStorage.setItem('nodeCollectorState', this.isActive ? 'active' : 'inactive');
-            this.showToast(`面板已${this.isActive ? '打开' : '关闭'}`, 'success');
-        }
+    
+    <meta name="referrer" content="never">
 
-        setupShortcut() {
-            document.addEventListener('keydown', (e) => {
-                if (e.ctrlKey && e.key === '/') {
-                    this.togglePanel();
-                }
-            });
-        }
+    
+    <meta name="msapplication-TileImage" content="/media/i/logo.png"/>
+    <meta name="msapplication-TileColor" content="#333333"/>
+    
+    <meta name="SKYPE_TOOLBAR" content="SKYPE_TOOLBAR_PARSER_COMPATIBLE" />
 
-        initPanelState() {
-            const savedState = localStorage.getItem('nodeCollectorState');
-            if (savedState === 'active') {
-                this.togglePanel(true);
-            }
-        }
+    
+    <title>WorkFlowy - Organize your brain.</title>
+    
 
-        showToast(message, type) {
-            let toast = document.getElementById('collector-toast');
-            if (!toast) {
-                toast = document.createElement('div');
-                toast.id = 'collector-toast';
-                document.body.appendChild(toast);
-            }
-            toast.textContent = message;
-            toast.className = `show ${type}`;
-            setTimeout(() => toast.classList.remove('show'), 2000);
-        }
+    
 
-        async collectNode(nodeId) {
-            try {
-                if (this.nodes.has(nodeId)) {
-                    return;
-                }
+    <link rel="stylesheet" href="/media/themes/design.css?v=3">
+    <link rel="stylesheet" href="/media/themes/default.css?v=3" />
+    <link rel="stylesheet" href="/media/themes/dark.css?v=3" />
+    <link rel="stylesheet" href="/media/themes/hacker.css?v=3" />
+    <link rel="stylesheet" href="/media/themes/space.css?v=3" />
+    <link rel="stylesheet" href="/media/themes/steel.css?v=3" />
+    <link rel="stylesheet" href="/media/themes/vintage.css?v=3" />
+    <link rel="stylesheet" href="/media/themes/wood.css?v=3" />
+  </head>
 
-                if (this.nodes.size > 50) {
-                    const oldestNode = this.nodes.keys().next().value;
-                    this.removeNode(oldestNode);
-                }
+  <body class=" _theme-dark">
+    <style>
+  #loadingScreen {
+    position: fixed;
+    width: 64px;
+    height: 64px;
+    top: 50%;
+    left: 50%;
+    margin-left: -32px;
+    margin-top: -32px;
+    color: #ddd;
+  }
+  #loadingScreen>.b {
+    position: absolute;
+    left: 3px;
+    transform-origin: 58px 50%;
+  }
+  #loadingScreen>.b>.c {
+    border: 3px solid currentColor;
+    width: 12px;
+    height: 12px;
+    border-radius: 9px;
+  }
+  #loadingScreen>.b>.l {
+    width: 36px;
+    height: 3px;
+    background: currentColor;
+    position: absolute;
+    left: 22px;
+    top: 8px;
+  }
 
-                const response = await fetch(`https://beta.workflowy.com/api/nodes/${nodeId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${API_KEY}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`API request failed: ${response.status}`);
-                }
-
-                const data = await response.json();
-                this.processNode(data);
-            } catch (error) {
-                console.error('Error collecting node:', error);
-                this.showToast('节点收集失败', 'error');
-            }
-        }
-
-        processNode(nodeData) {
-            const parent = nodeData;
-            const children = nodeData.children || [];
-            const firstChild = children[0];
-
-            let contentToCopy = '';
-            let isCompleted = parent.name.includes('[DONE]');
-
-            if (firstChild && parent.name === firstChild.name) {
-                contentToCopy = `${parent.name}\n`;
-                children.slice(1).forEach(child => {
-                    contentToCopy += `- ${child.name}\n`;
-                    if (child.url) contentToCopy += `  ${child.url}\n`;
-                });
-            } else {
-                contentToCopy = `${parent.name}\n`;
-                children.forEach(child => {
-                    contentToCopy += `- ${child.name}\n`;
-                    if (child.url) contentToCopy += `  ${child.url}\n`;
-                });
-            }
-
-            this.createNodeCard(nodeData.id, contentToCopy, isCompleted);
-        }
-
-        createNodeCard(nodeId, content, isCompleted) {
-            const card = document.createElement('div');
-            card.className = `node-card ${isCompleted ? 'completed' : ''}`;
-            card.innerHTML = `
-                <div class="node-content">${content.split('\n').join('<br>')}</div>
-            `;
-
-            card.addEventListener('click', async () => {
-                await navigator.clipboard.writeText(content);
-                card.classList.add('completed');
-                this.markNodeAsCompleted(nodeId);
-                this.showToast('内容已复制', 'success');
-            });
-
-            this.panel.appendChild(card);
-            this.nodes.set(nodeId, card);
-        }
-
-        async markNodeAsCompleted(nodeId) {
-            try {
-                const response = await fetch(`https://beta.workflowy.com/api/nodes/${nodeId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${API_KEY}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        name: `[DONE] ${WF.getItemById(nodeId).getNameInPlainText()}`
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to update node status');
-                }
-            } catch (error) {
-                console.error('Error marking node as completed:', error);
-                this.showToast('更新节点状态失败', 'error');
-            }
-        }
-
-        removeNode(nodeId) {
-            const card = this.nodes.get(nodeId);
-            if (card) {
-                card.remove();
-                this.nodes.delete(nodeId);
-            }
-        }
+  #b1 {animation: b1 1.5s infinite 0s;}
+  #b2 {animation: b2 1.5s infinite 0s;}
+  #b3 {animation: b3 1.5s infinite 0s;}
+  #b4 {animation: b4 1.5s infinite 0s;}
+  #b5 {animation: b5 1.5s infinite 0s;}
+  #b6 {animation: b6 1.5s infinite 0s;}
+  @keyframes b1 {
+    0%{transform: translate(0px, 0px) scale(1)}
+    100%{transform: translate(0, -24px) scale(1.4); opacity: 0}
+  }
+  @keyframes b2 {
+    0%{transform: translate(0, 16px) scale(0.6)}
+    100%{transform: translate(0, 0) scale(1)}
+  }
+  @keyframes b3 {
+    0%{transform: translate(0, 21px) scale(0.2); opacity: 0}
+    100%{transform: translate(0, 16px) scale(0.6); opacity: 1}
+  }
+  @keyframes b4 {
+    0%{transform: translate(0, 27px) scale(0.2); opacity: 0}
+    100%{transform: translate(0, 30px) scale(0.6); opacity: 1}
+  }
+  @keyframes b5 {
+    0%{transform: translate(0, 30px) scale(0.6)}
+    100%{transform: translate(0, 46px) scale(1)}
+  }
+  @keyframes b6 {
+    0%{transform: translate(0, 46px) scale(1)}
+    100%{transform: translate(0, 70px) scale(1.4); opacity: 0}
+  }
+</style>
+<div id="loadingScreen">
+  <div id="b1" class="b">
+  <div class="c"></div>
+  <div class="l"></div>
+  </div>
+  <div id="b2" class="b">
+  <div class="c"></div>
+  <div class="l"></div>
+  </div>
+  <div id="b3" class="b">
+  <div class="c"></div>
+  <div class="l"></div>
+  </div>
+  <div id="b4" class="b">
+  <div class="c"></div>
+  <div class="l"></div>
+  </div>
+  <div id="b5" class="b">
+  <div class="c"></div>
+  <div class="l"></div>
+  </div>
+  <div id="b6" class="b">
+  <div class="c"></div>
+  <div class="l"></div>
+  </div>
+</div>
+<script>
+  try {
+    if (window.localStorage) {
+      const bg = window.localStorage.getItem('loadingBackground');
+      const fg = window.localStorage.getItem('loadingForeground');
+      const screen = document.getElementById('loadingScreen');
+      if (bg && fg) {
+        document.body.style.background = bg;
+        screen && (screen.style.color = fg);
+      }
     }
+  } catch (e) {
+    console.warn(e);
+  }
+</script>
 
-    async function init() {
-        try {
-            await waitForWF();
-            console.log('WorkFlowy API 加载完成');
-            const collector = new NodeCollector();
-            initObserver(collector);
-        } catch (error) {
-            console.error('初始化失败:', error);
-            setTimeout(init, 1000);
-        }
-    }
 
-    function waitForWF() {
-        return new Promise((resolve) => {
-            const check = () => {
-                if (typeof WF !== 'undefined' && WF.currentItem()) {
-                    setTimeout(resolve, 1000);
-                } else {
-                    setTimeout(check, 100);
-                }
-            };
-            check();
-        });
-    }
 
-    function initObserver(collector) {
-        let timeout;
-        const observer = new MutationObserver(() => {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                try {
-                    const match = location.href.match(/workflowy\.com\/#\/.*?\/([^\/]+)/);
-                    if (match) {
-                        const nodeId = match[1];
-                        collector.collectNode(nodeId);
-                    }
-                } catch (error) {
-                    console.error('URL 处理错误:', error);
-                }
-            }, 300);
-        });
+    <div id="cutAndCopyDetectionContainer" contenteditable tabIndex="-1"></div>
+    <script>
+      navigator.serviceWorker && navigator.serviceWorker.register("/media/serviceworker.js", { scope: '/' })
+      window.uses = []
+      window.VERSION = "4.0.2412201032"
+      window.VERSION += location.host.match(/beta/) ? "-beta [web]" : " [web]"
+      document.body.dataset.url = location.href
+    </script>
+    <script src="/media/js/wire.js?v=3"></script>
+    <script src="/media/js/wf-web.js?v=3"></script>
+    <script src="/media/js/polyfills.js?v=3"></script>
+    <link href="/media/css/tailwind.css?v=3" type="text/css" rel="stylesheet">
+    <link href="/media/js/wf-base.css?v=3" type="text/css" rel="stylesheet">
+    <script src="/media/js/wf-base-conf.js?v=3"></script>
+    <script src="/media/js/wf-base.js?v=3"></script>
 
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+    
 
-        window.addEventListener('unload', () => {
-            observer.disconnect();
-        });
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-})();
+    <script>
+      
+    </script>
+  </body>
+</html>
