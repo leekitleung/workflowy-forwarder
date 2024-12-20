@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.2.7
+// @version      0.2.8
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -439,7 +439,7 @@ GM_addStyle(`
             position: fixed;
             right: 20px;
             top: 60px;
-            background: var(--bg-color);
+            background: var(--panel-bg);
             border: none;
             padding: 8px;
             cursor: pointer;
@@ -475,19 +475,19 @@ GM_addStyle(`
 
         /* 主题变量 */
         :root[data-theme="dark"] {
-            --bg-color: rgba(39, 45, 50, 1);
-            --panel-bg: #2B3135;
+            --bg-color: #272d32;
+            --panel-bg: #2b3135;
             --border-color: #5c6062;
-            --text-color: #9ea1a2; 
+            --text-color: #9ea1a2;
             --text-hover-color: #4a9eff;
             --text-secondary: #9ea1a2;
-            --button-active-bg: rgba(56, 70, 81, 1);
-            --button-hover-bg: rgba(53, 125, 166, 1);
-            --button-hover-text: rgba(185, 207, 221, 1);
-            --card-bg: rgba(53, 60, 63, 1);
-            --card-border-color: rgba(58, 67, 71, 1);
-            --card-hover-bg: rgba(56, 70, 81, 1);
-            --card-hover-border-color: rgba(68, 80, 88, 1);
+            --button-active-bg: #384651;
+            --button-hover-bg: #357da6;
+            --button-hover-text: #b9cfdd;
+            --card-bg: #353c3f;
+            --card-border-color: #3a4347;
+            --card-hover-bg: #384651;
+            --card-hover-border-color: #445058;
             --input-bg: #383f44;
             --input-border: #5c6062;
             --input-focus-border: #4a9eff;
@@ -495,18 +495,23 @@ GM_addStyle(`
             --section-bg: rgba(255, 255, 255, 0.03);
             --group-bg: rgba(255, 255, 255, 0.02);
             --divider-color: #3a4347;
-        }
+            --wf-color-background-info: #384651;
+            --text-color-special: #B9CFDD;
+            --wf-color-background-info-hover: #357da6;
+            --text-color-special-hover: #fff;
+            --border-default: #5c6062;
+        }   
 
         :root[data-theme="light"] {
-            --bg-color: #eee;
+            --bg-color: #ebf2f5;
             --panel-bg: #ffffff;
             --border-color: #e4e6e8;
-            --text-color: #333333;  // 更深的文字颜色
+            --text-color: #154d69;
             --text-hover-color: #4a9eff;
-            --text-secondary: #666666;  // 更深的次要文字颜色
+            --text-secondary: #666666;
             --button-active-bg: #f0f2f4;
             --button-hover-bg: #49baf2;
-            --button-hover-text: #eee;
+            --button-hover-text: #eeeeee;
             --card-bg: #ffffff;
             --card-border-color: #e4e6e8;
             --card-hover-bg: #f8f9fa;
@@ -558,7 +563,11 @@ GM_addStyle(`
             align-items: center;
             gap: 6px;
         }
-
+        
+        .theme-toggle:hover{
+            background: var(--wf-input-background-hover);
+        }
+        
         .version-tag {
             font-size: 8px;
             color: var(--text-secondary);
@@ -579,7 +588,7 @@ GM_addStyle(`
             left: 0;
             right: 0;
             bottom: 0;
-            background: var(--bg-color);
+            
             z-index: 200;
             opacity: 0;
             visibility: hidden;
@@ -594,6 +603,7 @@ GM_addStyle(`
         }
         .config-panel h3{
             margin:0 0 12px;
+            color:var(--text-color)
         }
 
         .config-panel-header {
@@ -601,7 +611,8 @@ GM_addStyle(`
             border-bottom: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
+
         }
 
         .config-panel-title {
@@ -611,12 +622,18 @@ GM_addStyle(`
         }
 
         .config-panel-close {
-            background: none;
+            background: var(--card-bg);
             border: none;
             color: var(--text-secondary);
             cursor: pointer;
-            font-size: 20px;
+            font-size: 14px;
             padding: 4px;
+            margin: -14px 0 0 10px;
+        }
+
+        .config-panel-close:hover{
+            background: var(--button-hover-bg);
+            color:#fff;
         }
 
         .config-panel-content {
@@ -819,7 +836,6 @@ GM_addStyle(`
             transition: all 0.2s ease;
             display: flex;
             align-items: flex-start;
-            background: var(--card-bg);
             cursor: pointer;
         }
 
@@ -837,21 +853,25 @@ GM_addStyle(`
 
         .task-actions {
             position: absolute;
-            right: 6px;
-            top: 19px;
-            transform: translateY(-50%);
+            right: 0;           /* 从卡片右侧开始 */
+            top: 0;            /* 从卡片顶部开始 */
+            bottom: 0;         /* 延伸到卡片底部 */
             display: flex;
+            align-items: flex-start;  /* 改为顶部对齐 */
             gap: 2px;
+            padding: 12px 10px 0 100px;  /* 上右下左内边距，上边距设为16px */
             opacity: 0;
             visibility: hidden;
             transition: all 0.2s ease;
+            background: linear-gradient(90deg, transparent, var(--card-bg) 80%);
         }
 
+        /* 移除特定模式的top覆盖，因为现在统一用padding控制 */
         .collector-tasks .task-actions {
-
-            top: 16px;
-
+            /* 如果collector模式需要不同的位置，可以单独设置padding-top */
+            /* padding-top: 20px; */
         }
+
 
 
         /* 操作按钮样式 */
@@ -921,7 +941,7 @@ GM_addStyle(`
         .planner-link{
             display: flex;
             justify-content: flex-end;
-            color: var(--text-secondary);
+            color: var(--wf-text-helper);
             font-size: 12px;
             text-decoration: none;
             padding: 8px 16px 8px;
@@ -936,11 +956,27 @@ GM_addStyle(`
 
         .planner-link:hover{
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23357DA6'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23357DA6'/%3E%3C/svg%3E");
-            color: var(--text-hover-color);
+            color: var(--button-hover-bg);
             text-decoration: none;
         }
 
-        .today-link::before{
+        /* 修改 planner-links-row 的定位方式 */
+        .planner-links-row {
+            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* 修改 today-link 的位置，从绝对定位改为相对定位 */
+        .planner-links-row .today-link {
+            position: relative; /* 改为相对定位 */
+            left: 0;           /* 移除绝对定位的right属性 */
+            margin-right: auto; /* 让元素靠左对齐 */
+        }
+
+        /* 保持原有的 today-link 图标样式 */
+        .today-link::before {
             content: '';
             display: inline-block;
             width: 12px;
@@ -952,24 +988,14 @@ GM_addStyle(`
             vertical-align: middle;
         }
 
-        .planner-links-row{
-            position:relative;
-        }
-
-        .planner-links-row .today-link{
-            position:absolute;
-            right:0;
-            top:0;
-        }
-
         .mode-btn.active {
-            background: var(--button-active-bg);
-            color: var(--text-color);
+            background: var(--wf-color-background-info-hover);
+            color: var(--text-color-special);
         }
 
         .mode-btn:hover {
-            background: var(--button-hover-bg);
-            color: var(--button-hover-text);
+            background: var(--wf-color-background-info-hover);
+            color: var(--text-color-special-hover);
         }
 
 
@@ -983,7 +1009,7 @@ GM_addStyle(`
 
         .collector-tasks .children-content{
             white-space: pre-wrap;
-            color: var(--text-color);
+            color: var(--wf-text-helper);
             font-size: 14px;
             line-height: 1.2;
             margin-left: 22px;
@@ -991,7 +1017,7 @@ GM_addStyle(`
 
         .children-content{
             white-space: pre-wrap;
-            color: var(--text-color);
+            color: var(--wf-text-helper);
             font-size: 14px;
             line-height: 1.2;
         }
@@ -1060,7 +1086,7 @@ GM_addStyle(`
         }
 
         .task-action-btn.link {
-             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234C5861'/%3E%3Cpath d='M4 3.01014L5.00844 2L10 7L5.00844 12L4 10.9899L7.98312 7L4 3.01014Z' fill='%239EA1A2'/%3E%3C/svg%3E");
+             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect opacity='0.2' width='14' height='14' rx='2' fill='%239EA1A2'/%3E%3Cpath d='M4 3.01014L5.00844 2L10 7L5.00844 12L4 10.9899L7.98312 7L4 3.01014Z' fill='%239EA1A2'/%3E%3C/svg%3E");
         }
 
         .task-action-btn.link:hover {
@@ -1076,9 +1102,8 @@ GM_addStyle(`
         }
 
         .task-action-btn.copy {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234C5861'/%3E%3Cpath d='M5.34119 10.6494L7.33176 8.65881L7.99529 9.32233L6.00472 11.3129C5.08858 12.229 3.60323 12.229 2.6871 11.3129C1.77097 10.3968 1.77097 8.91142 2.6871 7.99528L4.67767 6.00472L5.34119 6.66824L3.35062 8.65881C2.80094 9.20849 2.80094 10.0997 3.35062 10.6494C3.9003 11.1991 4.79151 11.1991 5.34119 10.6494Z' fill='%239EA1A2'/%3E%3Cpath d='M9.32233 7.99528L8.65881 7.33176L10.6494 5.34119C11.1991 4.79151 11.1991 3.9003 10.6494 3.35062C10.0997 2.80094 9.20849 2.80094 8.65881 3.35062L6.66824 5.34119L6.00472 4.67767L7.99528 2.6871C8.91142 1.77097 10.3968 1.77097 11.3129 2.6871C12.229 3.60323 12.229 5.08858 11.3129 6.00472L9.32233 7.99528Z' fill='%239EA1A2'/%3E%3Cpath d='M7.99543 5.34121L8.65895 6.00473L6.00486 8.65883L5.34133 7.9953L7.99543 5.34121Z' fill='%239EA1A2'/%3E%3C/svg%3E");
-        }
-
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect opacity='0.2' width='14' height='14' rx='2' fill='%239EA1A2'/%3E%3Cpath d='M5.34119 10.6494L7.33176 8.65881L7.99529 9.32233L6.00472 11.3129C5.08858 12.229 3.60323 12.229 2.6871 11.3129C1.77097 10.3968 1.77097 8.91142 2.6871 7.99528L4.67767 6.00472L5.34119 6.66824L3.35062 8.65881C2.80094 9.20849 2.80094 10.0997 3.35062 10.6494C3.9003 11.1991 4.79151 11.1991 5.34119 10.6494Z' fill='%239EA1A2'/%3E%3Cpath d='M9.32233 7.99528L8.65881 7.33176L10.6494 5.34119C11.1991 4.79151 11.1991 3.9003 10.6494 3.35062C10.0997 2.80094 9.20849 2.80094 8.65881 3.35062L6.66824 5.34119L6.00472 4.67767L7.99528 2.6871C8.91142 1.77097 10.3968 1.77097 11.3129 2.6871C12.229 3.60323 12.229 5.08858 11.3129 6.00472L9.32233 7.99528Z' fill='%239EA1A2'/%3E%3Cpath d='M7.99543 5.34121L8.65895 6.00473L6.00486 8.65883L5.34133 7.9953L7.99543 5.34121Z' fill='%239EA1A2'/%3E%3C/svg%3E");        
+        }   
         .task-action-btn.copy:hover {
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 14 14' fill='none'%3E%3Crect width='14' height='14' rx='2' fill='%234988B1'/%3E%3Cpath d='M5.34119 10.6494L7.33176 8.65881L7.99529 9.32233L6.00472 11.3129C5.08858 12.229 3.60323 12.229 2.6871 11.3129C1.77097 10.3968 1.77097 8.91142 2.6871 7.99528L4.67767 6.00472L5.34119 6.66824L3.35062 8.65881C2.80094 9.20849 2.80094 10.0997 3.35062 10.6494C3.9003 11.1991 4.79151 11.1991 5.34119 10.6494Z' fill='white'/%3E%3Cpath d='M9.32233 7.99528L8.65881 7.33176L10.6494 5.34119C11.1991 4.79151 11.1991 3.9003 10.6494 3.35062C10.0997 2.80094 9.20849 2.80094 8.65881 3.35062L6.66824 5.34119L6.00472 4.67767L7.99528 2.6871C8.91142 1.77097 10.3968 1.77097 11.3129 2.6871C12.229 3.60323 12.229 5.08858 11.3129 6.00472L9.32233 7.99528Z' fill='white'/%3E%3Cpath d='M7.99543 5.34121L8.65895 6.00473L6.00486 8.65883L5.34133 7.9953L7.99543 5.34121Z' fill='white'/%3E%3C/svg%3E");
         }
@@ -1095,25 +1120,25 @@ GM_addStyle(`
             left: 0;
             width: 12px;
             height: 12px;
-            border: 1px solid var(--text-color);
+            border: 1px solid var(--wf-border-default);
             border-radius: 2px;
             transition: all 0.2s ease;
         }
 
         .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
+            background-color: var(--wf-background-accent);
+            border-color: var(--wf-border-default);
         }
 
         .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom::after {
             content: '';
             position: absolute;
             top: 2px;
-            left: 5px;
-            width: 4px;
-            height: 8px;
+            left: 4px;
+            width: 3px;
+            height: 6px;
             border: solid white;
-            border-width: 0 2px 2px 0;
+            border-width: 0 1px 1px 0;
             transform: rotate(45deg);
         }
 
@@ -1136,7 +1161,7 @@ GM_addStyle(`
         .task-name {
             font-size: 14px;
             line-height: 1.4;
-            color: #9ea1a2;  // 修改为统一的颜色
+            color: var(--text-color);  // 修改为统一的颜色
         }
 
         .task-note {
@@ -1297,7 +1322,7 @@ GM_addStyle(`
         .config-btn {
             width: 100%;
             padding: 10px;
-            background: var(--bg-color);
+            background: var(--panel-color);
             border: 1px solid var(--border-color);
             color: var(--text-color);
             border-radius: 4px;
@@ -1345,7 +1370,7 @@ GM_addStyle(`
             font-family: "Aclonica", sans-serif;
             font-weight: 400;
             font-style: italic;
-            color: #9ea1a2;  // 修改为统一的颜色
+            color: var(--text-color);  // 修改为统一的颜色
             font-size: 14px;
             margin-bottom: 4px;
             padding: 4px;
@@ -1377,7 +1402,7 @@ GM_addStyle(`
             font-family: "Aclonica", sans-serif;
             font-weight: 400;
             font-style: italic;
-            color: #9ea1a2;  // 修改为统一的颜色
+            color: var(--text-color);  // 修改为统一的颜色
             font-size: 14px;
             margin: 18px 0 6px;
             padding: 4px;
@@ -1457,7 +1482,7 @@ GM_addStyle(`
             bottom: 0;
             left: 0;
             right: 0;
-            background: var(--bg-color);
+            background: var(--panel-bg);
             padding: 12px;
             display: flex;
             flex-direction: column;
@@ -1496,7 +1521,7 @@ GM_addStyle(`
         .config-group input:not([type="checkbox"]),
         .config-group select,
         .config-group textarea {
-            color: var(--text-color);
+            color: var(--text-secondary);
             // background: var(--input-bg);
             // border: 1px solid var(--input-border);
             border-radius: 4px;
@@ -1515,8 +1540,8 @@ GM_addStyle(`
         .config-group input:not([type="checkbox"]):focus,
         .config-group select:focus,
         .config-group textarea:focus {
-            color: var(--input-focus-border);
-            background: var(--wf-gray-500);
+            color: var(--text-secondary);
+            background: var(--wf-input-background-hover);
             outline: none;
 
         }
@@ -1535,7 +1560,7 @@ GM_addStyle(`
 
         button:hover {
             background: var(--hover-bg);
-            border-color: var(--input-focus-border);
+            
         }
 
         button:active {
@@ -1871,7 +1896,7 @@ GM_addStyle(`
                             <a href="#" class="planner-link today-link" id="goto-today">
                                 Today's Plan
                             </a>
-                            <a href="#" class="planner-link scan-link">
+                            <a href="#" class="planner-link scan-link" id="goto-planner">
                                 DailyPlanner
                             </a>
                         </div>
@@ -1944,7 +1969,7 @@ GM_addStyle(`
             <div class="config-panel">
                 <div class="config-panel-header">
                     <h3 class="config-panel-title">设置</h3>
-                    <button class="config-panel-close">×</button>
+                    <button class="config-panel-close">关闭</button>
                 </div>
                 <div class="config-panel-content">
                     <!-- DailyPlanner 设置 -->
@@ -2311,6 +2336,19 @@ GM_addStyle(`
                     }
                 }
                 break;
+        }
+
+        if (mode === 'daily') {
+            const scanLink = document.querySelector('.scan-link');
+            if (scanLink && config.dailyPlanner.enabled) {
+                const node = WF.getItemById(config.dailyPlanner.nodeId);
+                if (node) {
+                    scanLink.href = node.getUrl();
+                    // Check for mirror nodes
+                    const hasMirrors = checkMirrorNodes(node);
+                    scanLink.classList.toggle('has-mirrors', hasMirrors);
+                }
+            }
         }
     }
 
