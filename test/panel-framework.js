@@ -369,7 +369,7 @@ GM_addStyle(`
             padding: 6px 10px;
             border: none;
             background: none;
-            color: var(--text-secondary);
+            color: var(--wfp-text-main);
             cursor: pointer;
             border-radius: 4px;
             transition: all 0.3s;
@@ -456,7 +456,7 @@ GM_addStyle(`
         }
 
         .wf-toggle:hover {
-            background: var(--button-hover-bg);
+            background: var(--wf-ghost-button-background-hover);
         }
 
         .wf-toggle.active .toggle-arrow {
@@ -466,7 +466,7 @@ GM_addStyle(`
         .toggle-arrow {
             width: 20px;
             height: 20px;
-            color: var(--text-color);
+            color: var(--wfp-text-main);
             transition: transform 0.3s ease;
             opacity: 0.8;
         }
@@ -477,6 +477,36 @@ GM_addStyle(`
 
         /* 主题变量 */
         :root[data-theme="dark"] {
+            --wfp-bg:var(--wf-background);
+            --wfp-logo: var(--wf-dark-gray-200);
+            --wfp-switch-mode: var(--wf-black-opaque-5);
+            --wfp-text-main: var(--wf-gray-300);
+            --wfp-text-secondary: var(--wf-gray-400);
+            --wfp-button-text-active: var(--wf-blue-200);
+            /* --wfp-button-active: var(--wf-blue-700); */
+            --wfp-button-active:  var(--wf-dark-blue-500);
+            
+            /* --wfp-button-hover: var(--wf-blue-600); */
+            --wfp-button-hover: var(--wf-dark-blue-400);
+            --wfp-button-text-hover: var(--wf-gray-0);
+            --wfp-button-hover-background:var(--wf-gray-700);
+            --wfp-text-secondary-hover: var(--wf-dark-gray-400);
+            --wfp-text-secondary: var(--wf-dark-gray-500);
+            --wfp-border:var(--wf-gray-700);
+            --wfp-link:var(--wf-dark-gray-400); 
+            --wfp-link-hover:var(--wf-blue-500); 
+            /* --wfp-card-hover-background:var(--wf-blue-700); */
+            --wfp-card-hover-background:var(--wf-dark-blue-500);
+            --wfp-card-border:var(--wf-gray-700);
+            --wfp-card-hover-text:var(--wf-blue-200);
+            --wfp-toggle-background:var(--wf-gray-0);
+            --wfp-toggle-text:var(--wf-gray-800);
+            --wfp-input-background:var(--wf-gray-800);
+            --wfp-input-background-hover:var(--wf-dark-gray-700); 
+            --wfp-button-secondary-text:var(--wf-dark-gray-200);
+            --wfp-button-secondary-bg:var(--wf-dark-gray-600);
+            --wfp-button-secondary-hover-bg:var(--wf-dark-blue-500);
+            --wfp-button-secondary-hover-text:var(--wfp-text-main);
             --bg-color: #272d32;
             --panel-bg: #2b3135;
             --border-color: #5c6062;
@@ -505,6 +535,34 @@ GM_addStyle(`
         }
 
         :root[data-theme="light"] {
+            --wfp-bg:var(--wf-background);
+            --wfp-logo: var(--wf-gray-700);
+            --wfp-switch-mode: var(--wf-black-opaque-5);
+            --wfp-text-main: var(--wf-dark-gray-400);
+            --wfp-text-secondary: var(--wf-gray-400);
+            --wfp-text-secondary-hover: var(--wf-gray-500);
+            --wfp-button-text-active: var(--wf-blue-200);
+            /* --wfp-button-active: var(--wf-blue-700); */
+            --wfp-button-active:  var(--wf-blue-500);
+            /* --wfp-button-hover: var(--wf-blue-600); */
+            --wfp-button-hover: var(--wf-blue-400);
+            --wfp-button-text-hover: var(--wf-gray-0);
+            --wfp-button-hover-background:var(--wf-gray-400);
+            --wfp-border:var(--wf-gray-400);
+            --wfp-link:var(--wf-gray-400); 
+            --wfp-link-hover:var(--wf-blue-500); 
+            /* --wfp-card-hover-background:var(--wf-blue-100); */
+            --wfp-card-hover-background:var(--wf-blue-200);
+            --wfp-card-border:var(--wf-gray-200);
+            --wfp-card-hover-text:var(--wf-dark-blue-300);
+            --wfp-toggle-background:var(--wf-gray-800);
+            --wfp-toggle-text:var(--wf-gray-200);
+            --wfp-input-background:var(--wf-gray-0);
+            --wfp-input-background-hover:var(--wf-gray-100); 
+            --wfp-button-secondary-text:var(--wf-gray-500);
+            --wfp-button-secondary-bg:var(--wf-gray-100);  
+            --wfp-button-secondary-hover-bg:var(--wf-blue-400);
+            --wfp-button-secondary-hover-text:var(--wf-gray-0);
             --bg-color: #ebf2f5;
             --panel-bg: #ffffff;
             --border-color: #e4e6e8;
@@ -545,7 +603,7 @@ GM_addStyle(`
         .config-header h2 {
             margin: 0;
             font-size: 18px;
-            color: var(--text-color);
+            color: var(--wfp-logo);
             font-weight: 500;
         }
 
@@ -575,7 +633,7 @@ GM_addStyle(`
             color: var(--text-secondary);
             margin-left: 8px;
             padding: 0px 2px;
-            background: var(--bg-color);
+            background: var(--wfp-switch-mode);
             border-radius: 4px;
             border: 1px solid var(--border-color);
         }
@@ -605,7 +663,8 @@ GM_addStyle(`
         }
         .config-panel h3{
             margin:0 0 12px;
-            color:var(--text-color)
+            color:var(--wfp-text-main);
+            font-weight: normal;
         }
 
         .config-panel-header {
@@ -624,17 +683,18 @@ GM_addStyle(`
         }
 
         .config-panel-close {
-            background: var(--card-bg);
-            border: none;
-            color: var(--text-secondary);
+            background: var(--wfp-bg);
+            border: 1px solid var(--wfp-border);
+            color: var(--wfp-text-main);
             cursor: pointer;
-            font-size: 14px;
-            padding: 4px;
+            font-size: 12px;
+            padding: 4px 12px;
             margin: -14px 0 0 10px;
         }
 
         .config-panel-close:hover{
-            background: var(--button-hover-bg);
+            background: var(--wf-button-background-primary);
+            border: 1px solid var(--wf-button-background-primary);
             color:#fff;
         }
 
@@ -649,9 +709,8 @@ GM_addStyle(`
         .config-group {
             margin-bottom: 16px;
             padding: 16px;
-            background: var(--section-bg);
             border-radius: 6px;
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--wfp-border);
         }
 
         .group-header {
@@ -667,7 +726,7 @@ GM_addStyle(`
             // background: var(--input-bg);
             // border: 1px solid var(--input-border);
             border-radius: 4px;
-            color: var(--text-color);
+            color: var(--wfp-text-main);
             font-size: 14px;
         }
 
@@ -685,7 +744,7 @@ GM_addStyle(`
         .config-item input {
             flex: 1;
             padding: 8px 12px;
-            background: var(--input-bg);
+            background: var(--wfp-input-background);
             border: 1px solid var(--input-border);
             border-radius: 4px;
             color: var(--text-color);
@@ -734,7 +793,7 @@ GM_addStyle(`
         }
 
         .config-select option {
-            background: var(--bg-color);
+            background: var(--wfp-switch-mode);
             color: var(--text-color);
         }
 
@@ -742,7 +801,7 @@ GM_addStyle(`
         .task-name-input {
             background: none;
             border: 1px solid transparent;
-            color: var(--text-color);
+            color: var(--wfp-text-main);
             font-size: 14px;
             padding: 6px 10px;
             border-radius: 4px;
@@ -832,8 +891,8 @@ GM_addStyle(`
             padding: 10px;
             border-radius: 4px;
             margin-bottom: 8px;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border-color);
+            background: var(--wfp-card-bg);
+            border: 1px solid var(--wfp-card-border);
             position: relative;
             transition: all 0.2s ease;
             display: flex;
@@ -865,7 +924,7 @@ GM_addStyle(`
             opacity: 0;
             visibility: hidden;
             transition: all 0.2s ease;
-            background: linear-gradient(90deg, transparent, var(--card-bg) 80%);
+            background: linear-gradient(90deg, transparent, var(--wfp-card-bg) 80%);
         }
 
         /* 移除特定模式的top覆盖，因为现在统一用padding控制 */
@@ -933,7 +992,7 @@ GM_addStyle(`
         /* Mode switching styles */
         .mode-switch {
             display: flex;
-            background: var(--bg-color);
+            background: var(--wfp-switch-mode);
             border-radius: 6px;
             padding: 6px;
             gap: 6px;
@@ -943,7 +1002,7 @@ GM_addStyle(`
         .planner-link{
             display: flex;
             justify-content: flex-end;
-            color: var(--wf-text-helper);
+            color: var(--wfp-link);
             font-size: 12px;
             text-decoration: none;
             padding: 8px 16px 8px;
@@ -958,7 +1017,7 @@ GM_addStyle(`
 
         .planner-link:hover{
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M4.4632 3.60609L5.0693 3L8.06933 6.00003L5.0693 9.00006L4.4632 8.39397L6.85714 6.00003L4.4632 3.60609Z' fill='%23357DA6'/%3E%3Cpath d='M6 12C2.68629 12 -4.07115e-07 9.31371 -2.62268e-07 6C-1.17422e-07 2.68629 2.68629 -4.07115e-07 6 -2.62268e-07C9.31371 -1.17422e-07 12 2.68629 12 6C12 9.31371 9.31371 12 6 12ZM6 11.1429C8.84032 11.1429 11.1429 8.84032 11.1429 6C11.1429 3.15968 8.84032 0.857143 6 0.857143C3.15968 0.857142 0.857142 3.15968 0.857142 6C0.857142 8.84032 3.15968 11.1429 6 11.1429Z' fill='%23357DA6'/%3E%3C/svg%3E");
-            color: var(--button-hover-bg);
+            color: var(--wfp-link-hover);
             text-decoration: none;
         }
 
@@ -975,6 +1034,7 @@ GM_addStyle(`
             position: relative; /* 改为相对定位 */
             left: 0;           /* 移除绝对定位的right属性 */
             margin-right: auto; /* 让元素靠左对齐 */
+            background: none;
         }
 
         /* 保持原有的 today-link 图标样式 */
@@ -991,13 +1051,13 @@ GM_addStyle(`
         }
 
         .mode-btn.active {
-            background: var(--wf-color-background-info-hover);
-            color: var(--text-color-special);
+            background: var(--wfp-button-active);
+            color: var(--wfp-button-text-active);
         }
 
         .mode-btn:hover {
-            background: var(--wf-color-background-info-hover);
-            color: var(--text-color-special-hover);
+            background: var(--wfp-button-hover);
+            color: var(--wfp-button-text-hover);
         }
 
 
@@ -1122,14 +1182,14 @@ GM_addStyle(`
             left: 0;
             width: 12px;
             height: 12px;
-            border: 1px solid var(--wf-border-default);
+            border: 1px solid var(--wfp-border);
             border-radius: 2px;
             transition: all 0.2s ease;
         }
 
         .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom {
             background-color: var(--wf-background-accent);
-            border-color: var(--wf-border-default);
+            border-color: var(--wfp-border);
         }
 
         .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-custom::after {
@@ -1163,7 +1223,7 @@ GM_addStyle(`
         .task-name {
             font-size: 14px;
             line-height: 1.4;
-            color: var(--text-color);  // 修改为统一的颜色
+            color: var(--wfp-text-main);  // 修改为统一的颜色
         }
 
         .task-note {
@@ -1194,7 +1254,7 @@ GM_addStyle(`
             align-items: center;
             justify-content: space-between;
             padding: 12px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--wfp-border);
         }
 
         .task-header h3 {
@@ -1281,8 +1341,8 @@ GM_addStyle(`
 
 
         .task-item:hover {
-            background: var(--card-hover-bg);
-            border-color: var(--card-hover-border-color);
+            background: var(--wfp-card-hover-background);
+            color: var(--wfp-card-hover-text);
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
@@ -1324,9 +1384,8 @@ GM_addStyle(`
         .config-btn {
             width: 100%;
             padding: 10px;
-            background: var(--panel-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
+            background: var(--wfp-button-secondary-bg);
+            color: var(--wfp-button-secondary-text);
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
@@ -1334,11 +1393,12 @@ GM_addStyle(`
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
+            border:none;
         }
 
         .config-btn:hover{
-            background: var(--card-hover-bg);
-            border-color: var(--card-hover-border-color);
+            background: var(--wfp-button-secondary-hover-bg);
+            color: var(--wfp-button-secondary-hover-text);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
@@ -1360,7 +1420,7 @@ GM_addStyle(`
 
         .task-item.colored .task-name,
         .task-item.colored .task-note {
-            color: var(--text-color);
+            color: var(--wfp-text-main);
         }
 
         /* 时间块样式 */
@@ -1372,7 +1432,7 @@ GM_addStyle(`
             font-family: "Aclonica", sans-serif;
             font-weight: 400;
             font-style: italic;
-            color: var(--text-color);  // 修改为统一的颜色
+            color: var(--wfp-text-main);  // 修改为统一的颜色
             font-size: 14px;
             margin-bottom: 4px;
             padding: 4px;
@@ -1404,7 +1464,7 @@ GM_addStyle(`
             font-family: "Aclonica", sans-serif;
             font-weight: 400;
             font-style: italic;
-            color: var(--text-color);  // 修改为统一的颜色
+            color: var(--wfp-text-main);  // 修改为统一的颜色
             font-size: 14px;
             margin: 18px 0 6px;
             padding: 4px;
@@ -1427,7 +1487,7 @@ GM_addStyle(`
 
         .help-text {
             font-size: 12px;
-            color: var(--text-secondary);
+            color: var(--wfp-text-main);
             font-style: italic;
         }
 
@@ -1442,7 +1502,7 @@ GM_addStyle(`
         .task-item.completed .children-content,
         .task-item.completed .single-content {
             text-decoration: line-through;
-            color: var(--text-secondary);
+            color: var(--wfp-text-main);
         }
 
         /* 确保所有模式下的样式一致性 */
@@ -1454,7 +1514,7 @@ GM_addStyle(`
         .task-item.completed.colored .task-name,
         .task-item.completed.highlighted .task-name {
             text-decoration: line-through;
-            color: var(--text-color);
+            color: var(--wfp-text-main);
             opacity: 0.8;
         }
 
@@ -1489,7 +1549,7 @@ GM_addStyle(`
             display: flex;
             flex-direction: column;
             gap: 12px;
-            border-top: 1px solid var(--border-color);
+            border-top: 1px solid var(--wfp-border);
             z-index: 101; /* 确保在内容之上 */
         }
 
@@ -1504,8 +1564,8 @@ GM_addStyle(`
 
         /* 状态样式 */
         .error-state {
-            color: var(--text-color);
-            background: var(--section-bg);
+            color: var(--wfp-text-main);
+            background: var(--wfp-bg);
             padding: 16px;
             border-radius: 4px;
             text-align: center;
@@ -1523,7 +1583,7 @@ GM_addStyle(`
         .config-group input:not([type="checkbox"]),
         .config-group select,
         .config-group textarea {
-            color: var(--text-secondary);
+            color: var(--wfp-text-main);
             // background: var(--input-bg);
             // border: 1px solid var(--input-border);
             border-radius: 4px;
@@ -1535,24 +1595,25 @@ GM_addStyle(`
         .config-group input:not([type="checkbox"]):hover,
         .config-group select:hover,
         .config-group textarea:hover {
-            // border-color: var(--input-focus-border);
-            // background: var(--input-focus-bg);
+            border-color: var(--wf-input-active);
+            // background: var(--wfp-input-background-hover);
         }
 
         .config-group input:not([type="checkbox"]):focus,
         .config-group select:focus,
         .config-group textarea:focus {
-            color: var(--text-secondary);
-            background: var(--wf-input-background-hover);
+            color: var(--wfp-text-main);
+            border-color: var(--wf-input-active);
+            // background: var(--wfp-input-background-hover);
             outline: none;
 
         }
 
         /* 按钮样式优化 */
         button {
-            color: var(--text-color);
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
+            color: var(--wfp-text-main);
+            background: var(--wfp-input-background);
+            border: 1px solid var(--wfp-border);
             border-radius: 4px;
             padding: 8px 16px;
             font-size: 14px;
@@ -1561,32 +1622,30 @@ GM_addStyle(`
         }
 
         button:hover {
-            background: var(--hover-bg);
-
+            background: var(--wfp-button-secondary-hover-bg);
+            color: var(--wfp-button-secondary-hover-text);
         }
 
         button:active {
-            background: var(--active-bg);
+            background: var(--wfp-button-active);
+            color: var(--wfp-button-active-text);
         }
 
         /* 链接样式优化 */
         a {
-            color: var(--text-color);
+            color: var(--wfp-text-main);
             text-decoration: none;
             transition: color 0.2s ease;
         }
 
         a:hover {
-            color: var(--input-focus-border);
+            color: var(--wfp-text-main);
         }
 
         .collector-content{
 
         }
-    `);
 
-    // 添加收集模式的卡片样式
-    GM_addStyle(`
         /* 收集模式卡片样式优化 */
         .task-item.collect-mode {
             display: flex;
@@ -1601,7 +1660,7 @@ GM_addStyle(`
 
         .task-item.collect-mode .task-title {
             font-size: 12px;
-            color: var(--text-secondary);
+            color: var(--wfp-text-main);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1629,13 +1688,13 @@ GM_addStyle(`
         .task-item.collect-mode .single-content {
             white-space: pre-wrap;
             line-height: 1.4;
-            color: var(--text-color);
+            color: var(--wfp-text-main);
         }
 
         .task-item.collect-mode .children-content {
             white-space: pre-wrap;
             line-height: 1.4;
-            color: var(--text-color);
+            color: var(--wfp-text-main);
         }
 
         .task-item.collect-mode .task-actions {
@@ -1651,22 +1710,22 @@ GM_addStyle(`
         .config-item .weekly-report-btn {
             width: 100%;
             padding: 10px;
-            background: var(--panel-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
+            background: var(--wfp-bg);
+            border: 1px solid var(--wfp-border);
+            color: var(--wfp-text-main);
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s ease;
         }
 
         .config-item .weekly-report-btn:hover {
-            background: var(--card-hover-bg);
-            border-color: var(--card-hover-border-color);
+            background: var(--wfp-button-secondary-hover-bg);
+            color: var(--wfp-button-secondary-hover-text);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--wf-button-background-primary);
         }
     `);
 
