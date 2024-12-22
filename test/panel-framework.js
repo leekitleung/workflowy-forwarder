@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.2.9
+// @version      0.2.10
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -1702,23 +1702,7 @@ function initThemeObserver() {
     }
 
     // 主题切换函数
-    function toggleTheme() {
-        const html = document.documentElement;
-        const themeIcon = document.querySelector('.theme-icon');
-        const currentTheme = html.getAttribute('data-theme') || 'dark';
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-        html.setAttribute('data-theme', newTheme);
-        themeIcon.textContent = newTheme === 'dark' ? '🌙' : '☀️';
-
-        localStorage.setItem('wf_theme', newTheme);
-    }
-
-    // 初始化主题
-    function initTheme() {
-        const savedTheme = localStorage.getItem('wf_theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', savedTheme);
-    }
+    
 
     // 添加快捷键处理函数
     function handleKeyPress(e) {
@@ -2022,13 +2006,7 @@ function initThemeObserver() {
                             </div>
                             <div class="config-group">
                                 
-                                <div class="config-item">
-                                    <label>主题</label>
-                                    <button class="theme-toggle">
-                                        <i class="theme-icon">🌙</i>
-                                        <span class="theme-text">切换主题</span>
-                                    </button>
-                                </div>
+                                
                                 <div class="config-item">
                                     <label>刷新间隔</label>
                                     <input type="number" id="refresh-interval" placeholder="毫秒">
@@ -2244,8 +2222,6 @@ function initThemeObserver() {
         // 添加快捷键监听
         document.addEventListener('keydown', handleKeyPress);
 
-        // 初始化主题
-        initTheme();
 
         // Initialize Today's Plan functionality
         initTodayPlan();
@@ -3426,8 +3402,7 @@ function initThemeObserver() {
                     }
                 }, ConfigManager.getConfig().refreshInterval || 60000);
 
-                // 初始化主题
-                initTheme();
+
 
                 // 恢复上次的模式
                 const savedMode = localStorage.getItem('wf_current_mode') || 'daily';
@@ -3475,7 +3450,6 @@ function initThemeObserver() {
         const configPanel = panel.querySelector('.config-panel');
         const configClose = panel.querySelector('.config-panel-close');
         const saveBtn = panel.querySelector('.config-save');
-        const themeToggle = panel.querySelector('.theme-toggle');
     
         // 为已存在的weekly report按钮添加事件监听
         const weeklyReportBtn = panel.querySelector('.weekly-report-btn');
@@ -3520,7 +3494,6 @@ function initThemeObserver() {
 
                 const formData = {
                     version: `v${SCRIPT_VERSION}`,
-                    theme: currentConfig.theme,
                     refreshInterval: parseInt(getValue('refresh-interval', 60000)),
                     excludeTags: getValue('exclude-tags'),
 
@@ -3590,10 +3563,6 @@ function initThemeObserver() {
             }
         });
 
-        
-
-        // 主题切换
-        themeToggle.addEventListener('click', toggleTheme);
 
         // 为所有模式的复选框添加事件监听
         ['enable-daily', 'enable-work', 'enable-personal', 'enable-temp', 'enable-collector']
