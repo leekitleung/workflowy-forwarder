@@ -264,16 +264,7 @@ GM_addStyle(`
             }
         },
 
-        // 重置配置
-        resetConfig() {
-            try {
-                localStorage.setItem('wf_config', JSON.stringify(DEFAULT_CONFIG));
-                return true;
-            } catch (error) {
-                console.error('重置配置失败:', error);
-                return false;
-            }
-        },
+
 
 
         validateConfig(config) {
@@ -350,8 +341,8 @@ GM_addStyle(`
             top: 46px;
             height: calc(100vh - 46px);
             width: 319px;
-            background: var(--panel-bg);
-            border-left: 1px solid var(--border-color);
+            background: var(--wf-background);
+            border-left: 1px solid var(--wfp-border);
             z-index: 100;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
@@ -407,7 +398,7 @@ GM_addStyle(`
             left: 0;
             right: 0;
             bottom: 0;
-            background: var(--panel-bg);
+            background: var(--wf-background);
             z-index: 102;
             opacity: 0;
             visibility: hidden;
@@ -507,31 +498,7 @@ GM_addStyle(`
             --wfp-button-secondary-bg:var(--wf-dark-gray-600);
             --wfp-button-secondary-hover-bg:var(--wf-dark-blue-500);
             --wfp-button-secondary-hover-text:var(--wfp-text-main);
-            --bg-color: #272d32;
-            --panel-bg: #2b3135;
-            --border-color: #5c6062;
-            --text-color: #9ea1a2;
-            --text-hover-color: #4a9eff;
-            --text-secondary: #9ea1a2;
-            --button-active-bg: #384651;
-            --button-hover-bg: #357da6;
-            --button-hover-text: #b9cfdd;
-            --card-bg: #353c3f;
-            --card-border-color: #3a4347;
-            --card-hover-bg: #384651;
-            --card-hover-border-color: #445058;
-            --input-bg: #383f44;
-            --input-border: #5c6062;
-            --input-focus-border: #4a9eff;
-            --input-focus-bg: #404850;
-            --section-bg: rgba(255, 255, 255, 0.03);
-            --group-bg: rgba(255, 255, 255, 0.02);
-            --divider-color: #3a4347;
-            --wf-color-background-info: #384651;
-            --text-color-special: #B9CFDD;
-            --wf-color-background-info-hover: #357da6;
-            --text-color-special-hover: #fff;
-            --border-default: #5c6062;
+            
         }
 
         :root[data-theme="light"] {
@@ -559,32 +526,11 @@ GM_addStyle(`
             --wfp-toggle-text:var(--wf-gray-200);
             --wfp-input-background:var(--wf-gray-0);
             --wfp-input-background-hover:var(--wf-gray-100); 
-            --wfp-button-secondary-text:var(--wf-gray-500);
+            --wfp-button-secondary-text:var(--wf-gray-700);
             --wfp-button-secondary-bg:var(--wf-gray-100);  
             --wfp-button-secondary-hover-bg:var(--wf-blue-400);
             --wfp-button-secondary-hover-text:var(--wf-gray-0);
-            --bg-color: #ebf2f5;
-            --panel-bg: #ffffff;
-            --border-color: #e4e6e8;
-            --text-color: #154d69;
-            --text-hover-color: #4a9eff;
-            --text-secondary: #666666;
-            --button-active-bg: #f0f2f4;
-            --button-hover-bg: #49baf2;
-            --button-hover-text: #eeeeee;
-            --card-bg: #ffffff;
-            --card-border-color: #e4e6e8;
-            --card-hover-bg: #f8f9fa;
-            --card-hover-border-color: #d1d5d9;
-            --input-bg: #ffffff;
-            --input-border: #e4e6e8;
-            --input-focus-border: #4a9eff;
-            --input-focus-bg: #f8f9fa;
-            --section-bg: rgba(134, 140, 144, 0.05);
-            --group-bg: rgba(134, 140, 144, 0.03);
-            --divider-color: #e4e6e8;
-            --hover-bg: rgba(134, 140, 144, 0.08);
-            --active-bg: rgba(134, 140, 144, 0.12);
+            
 
             /* 新增侧边栏相关样式 */
             --sidebar-bg: #ffffff;
@@ -682,21 +628,6 @@ GM_addStyle(`
             margin: 0;
         }
 
-        .config-panel-close {
-            background: var(--wfp-bg);
-            border: 1px solid var(--wfp-border);
-            color: var(--wfp-text-main);
-            cursor: pointer;
-            font-size: 12px;
-            padding: 4px 12px;
-            margin: -14px 0 0 10px;
-        }
-
-        .config-panel-close:hover{
-            background: var(--wf-button-background-primary);
-            border: 1px solid var(--wf-button-background-primary);
-            color:#fff;
-        }
 
         .config-panel-content {
             flex: 1;
@@ -1071,7 +1002,7 @@ GM_addStyle(`
 
         .collector-tasks .children-content{
             white-space: pre-wrap;
-            color: var(--wf-text-helper);
+            
             font-size: 14px;
             line-height: 1.2;
             margin-left: 22px;
@@ -1079,7 +1010,7 @@ GM_addStyle(`
 
         .children-content{
             white-space: pre-wrap;
-            color: var(--wf-text-helper);
+            
             font-size: 14px;
             line-height: 1.2;
         }
@@ -1707,12 +1638,11 @@ GM_addStyle(`
         }
 
         /* 周报告按钮样式 */
-        .config-item .weekly-report-btn {
+        .config-panel-content .weekly-report-btn {
             width: 100%;
             padding: 10px;
-            background: var(--wfp-bg);
-            border: 1px solid var(--wfp-border);
-            color: var(--wfp-text-main);
+            background: var(--wf-button-background-primary);
+            color: #fff;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
@@ -1721,11 +1651,11 @@ GM_addStyle(`
             justify-content: center;
         }
 
-        .config-item .weekly-report-btn:hover {
+        .config-panel-content .weekly-report-btn:hover {
             background: var(--wfp-button-secondary-hover-bg);
             color: var(--wfp-button-secondary-hover-text);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            border: 1px solid var(--wf-button-background-primary);
+            
         }
     `);
 
@@ -2052,18 +1982,19 @@ GM_addStyle(`
             <div class="config-panel">
                 <div class="config-panel-header">
                     <h3 class="config-panel-title">设置</h3>
-                    <button class="config-panel-close">关闭</button>
+                    
                 </div>
                 <div class="config-panel-content">
                     <!-- 基本设置 -->
                         <div class="config-section">
+                            <div class="config-group">
+                                <button class="config-btn weekly-report-btn">查看周报告</button>
+                            </div>
                             <div class="section-header">
                                 <h3>基本设置</h3>
                             </div>
                             <div class="config-group">
-                                <div class="config-item">
-                                    <button class="config-btn weekly-report-btn">查看周报告</button>
-                                </div>
+                                
                                 <div class="config-item">
                                     <label>主题</label>
                                     <button class="theme-toggle">
@@ -2212,7 +2143,7 @@ GM_addStyle(`
                 </div>
                 <div class="config-buttons">
                     <button class="config-btn config-save">保存设置</button>
-                    <button class="config-btn config-reset">重置设置</button>
+                    <button class="config-btn config-panel-close">退出设置</button>
                 </div>
             </div>
         `;
@@ -3517,7 +3448,6 @@ GM_addStyle(`
         const configPanel = panel.querySelector('.config-panel');
         const configClose = panel.querySelector('.config-panel-close');
         const saveBtn = panel.querySelector('.config-save');
-        const resetBtn = panel.querySelector('.config-reset');
         const themeToggle = panel.querySelector('.theme-toggle');
     
         // 为已存在的weekly report按钮添加事件监听
@@ -3633,21 +3563,7 @@ GM_addStyle(`
             }
         });
 
-        // 重置按钮事处理
-        resetBtn.addEventListener('click', () => {
-            if (confirm('确定要重置所有设置吗？')) {
-                if (ConfigManager.resetConfig()) {
-                    loadConfig();
-                    showToast('配置已重置');
-                    // 更新当前视图
-                    const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
-                    switchMode(currentMode);
-                    updateLinks(currentMode);
-                } else {
-                    showToast('重置失败');
-                }
-            }
-        });
+        
 
         // 主题切换
         themeToggle.addEventListener('click', toggleTheme);
