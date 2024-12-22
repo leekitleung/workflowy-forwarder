@@ -192,6 +192,38 @@ GM_addStyle(`
 
 `);
 
+// Theme detection and sync
+function detectWorkflowyTheme() {
+    return document.body.classList.contains('_theme-dark') ? 'dark' : 'light';
+}
+
+function syncWithWorkflowyTheme() {
+    const theme = detectWorkflowyTheme();
+    document.documentElement.setAttribute('data-theme', theme);
+}
+
+// Add theme observer
+function initThemeObserver() {
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                syncWithWorkflowyTheme();
+            }
+        });
+    });
+
+    observer.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+
+    // Initial sync
+    syncWithWorkflowyTheme();
+}
+
+// Modify waitForWF to initialize theme observer
+
+
 (function() {
     'use strict';
 
@@ -483,8 +515,8 @@ GM_addStyle(`
             --wfp-button-hover-background:var(--wf-gray-700);
             --wfp-text-secondary-hover: var(--wf-dark-gray-400);
             --wfp-text-secondary: var(--wf-dark-gray-500);
-            --wfp-border:var(--wf-gray-700);
-            --wfp-link:var(--wf-dark-gray-400); 
+            --wfp-border: var(--wf-gray-700);
+            --wfp-link: var(--wf-dark-gray-400); 
             --wfp-link-hover:var(--wf-blue-500); 
             /* --wfp-card-hover-background:var(--wf-blue-700); */
             --wfp-card-hover-background:var(--wf-dark-blue-500);
@@ -661,11 +693,6 @@ GM_addStyle(`
             font-size: 14px;
         }
 
-        .config-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 12px;
-        }
 
         .config-item label {
             min-width: 80px;
@@ -1475,7 +1502,7 @@ GM_addStyle(`
             bottom: 0;
             left: 0;
             right: 0;
-            background: var(--panel-bg);
+            background: var(--wfp-bg);
             padding: 12px;
             display: flex;
             flex-direction: column;
@@ -1515,8 +1542,8 @@ GM_addStyle(`
         .config-group select,
         .config-group textarea {
             color: var(--wfp-text-main);
-            // background: var(--input-bg);
-            // border: 1px solid var(--input-border);
+            background: var(--wfp-bg);
+            border: 1px solid var(--wfp-border);
             border-radius: 4px;
             padding: 8px 12px;
             font-size: 14px;
@@ -3373,7 +3400,7 @@ GM_addStyle(`
             try {
                 // 初始化面板
                 initPanel();
-
+                initThemeObserver();
                 // 启动定时刷新
                 setInterval(() => {
                     try {
@@ -3933,18 +3960,15 @@ GM_addStyle(`
                 const children = node.getChildren();
                 if (children.length > 0) {
                     children.forEach(child => {
-                        const childName = child.getNameInPlainText();
+                        const childName = child.getNameInPlainText()
+                            .replace(/#稍后处理/g, '')
+                            .trim();
                         const childNote = child.getNoteInPlainText();
-
-                        // 移除所有配置的标签
-                        const processedName = removeConfigTags(childName, configTags);
-
-                        if (processedName) {
-                            childrenContent += `- ${processedName}\n`;
-                            if (childNote) {
-                                childrenContent += `  ${childNote}\n`;
-                            }
+                        let content = `- ${childName}`;
+                        if (childNote) {
+                            content += `\n  ${childNote}`;
                         }
+                        childrenContent += `${content}\n`;
                     });
                 }
 
