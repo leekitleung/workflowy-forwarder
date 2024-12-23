@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      1.0.0
+// @version      1.0.1
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -10,7 +10,6 @@
 // @updateURL    https://raw.githubusercontent.com/leekitleung/workflowy-forwarder/main/dist/bundle.user.js
 // @downloadURL  https://raw.githubusercontent.com/leekitleung/workflowy-forwarder/main/dist/bundle.user.js
 // ==/UserScript==
-
 
 // 更新版本号
 const SCRIPT_VERSION = GM_info.script.version;
@@ -3485,7 +3484,7 @@ function initThemeObserver() {
         // 保存按钮事件处理
         saveBtn.addEventListener('click', () => {
             try {
-                // 获取当前配置用于保持未修改���值
+                // 获取当前配置用于比较
                 const currentConfig = ConfigManager.getConfig();
 
                 // 安全获取DOM元素值的辅助函数
@@ -3547,17 +3546,29 @@ function initThemeObserver() {
                     return;
                 }
 
+                // 检查日历节点ID是否改变
+                const calendarNodeChanged = currentConfig.dailyPlanner.calendarNodeId !== formData.dailyPlanner.calendarNodeId;
+
                 // 保存配置
                 if (ConfigManager.saveConfig(formData)) {
-                    showToast('配置已保存');
+                    // 如果日历节点改变，清理日期节点缓存
+                    if (calendarNodeChanged) {
+                        DateNodeCache.clear();
+                        console.log('日历节点已更改，清理日期节点缓存');
+                    }
+
                     // 更新界面
                     loadConfig();
+                    
                     // 刷新当前视图
                     const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
                     switchMode(currentMode);
                     updateLinks(currentMode);
+                    
                     // 关闭配置面板
                     panel.querySelector('.config-panel').classList.remove('visible');
+                    
+                    showToast('配置已保存');
                 } else {
                     showToast('保存失败，请重试', true);
                 }
@@ -3584,117 +3595,159 @@ function initThemeObserver() {
     }
 
     // 改进日期节点处理
-    function findDateNode(targetDate) {
-        try {
-            const config = ConfigManager.getConfig();
-            const calendarNodeId = config.dailyPlanner.calendarNodeId;
-
-            if (!calendarNodeId) {
-                console.log('Calendar node ID not configured');
-                return null;
-            }
-
-            const parser = new DOMParser();
-
-            // Get calendar root node
-            const calendarNode = WF.getItemById(calendarNodeId);
-            if (!calendarNode) {
-                console.log('Calendar node not found:', calendarNodeId);
-                return null;
-            }
-
-            // Optimized timestamp getter
-            function getMsFromItemName(item) {
-                const name = item.getName();
-                if (!name.includes('<time')) return null;
-
-                const time = parser.parseFromString(name, 'text/html').querySelector("time");
-                if (!time) return null;
-
-                const ta = time.attributes;
-                if (!ta || !ta.startyear || ta.starthour || ta.endyear) return null;
-
-                return Date.parse(`${ta.startyear.value}/${ta.startmonth.value}/${ta.startday.value}`);
-            }
-
-            // Optimized search with year pre-check
-            function findFirstMatchingItem(targetTimestamp, parent) {
-                const name = parent.getName();
-                const currentYear = new Date(targetTimestamp).getFullYear();
-                if (name.includes('Plan of') && !name.includes(currentYear.toString())) {
-                    return null;
-                }
-
-                const nodeTimestamp = getMsFromItemName(parent);
-                if (nodeTimestamp === targetTimestamp) return parent;
-
-                for (let child of parent.getChildren()) {
-                    const match = findFirstMatchingItem(targetTimestamp, child);
-                    if (match) return match;
-                }
-
-                return null;
-            }
-
-            // Cache handling
-            const todayKey = targetDate.toDateString();
-            const cachedNode = sessionStorage.getItem(todayKey);
-
-            if (cachedNode) {
-                try {
-                    const node = WF.getItemById(cachedNode);
-                    if (node) return node;
-                } catch (e) {
-                    sessionStorage.removeItem(todayKey);
-                }
-            }
-
-            const todayTimestamp = targetDate.setHours(0,0,0,0);
-            const found = findFirstMatchingItem(todayTimestamp, calendarNode);
-
-            if (found) {
-                sessionStorage.setItem(todayKey, found.getId());
-                return found;
-            }
-
-            console.log('Date node not found for:', targetDate);
-            return null;
-        } catch (error) {
-            console.error('Error in findDateNode:', error);
-            return null;
-        }
-    }
+    
 
     // Update Today's Plan initialization
     function initTodayPlan() {
         const todayLink = document.querySelector('.today-link');
         if (!todayLink) return;
-
+    
         todayLink.addEventListener('click', async (e) => {
             e.preventDefault();
-
+    
             try {
                 const config = ConfigManager.getConfig();
-                if (!config.dailyPlanner.enabled || !config.dailyPlanner.calendarNodeId) {
-                    showToast('请先配置日历节点ID', true);
+                // 检查日历节点配置
+                if (!config.dailyPlanner.calendarNodeId) {
+                    showToast('请先配置日历节点', true);
                     return;
                 }
-
-                showToast('正在查找今天的日期节点...');
+    
+                const calendarNode = WF.getItemById(config.dailyPlanner.calendarNodeId);
+                if (!calendarNode) {
+                    showToast('未找到日历节点', true);
+                    return;
+                }
+    
+                // 查找今天的日期节点
                 const today = new Date();
-                const node = findDateNode(today);
-
-                if (node) {
-                    WF.zoomTo(node);
-                    showToast('已找到今天的日期节点');
+                const dateNode = findDateNode(today);
+                
+                if (dateNode) {
+                    WF.zoomTo(dateNode);
+                    showToast('已跳转到今天的日期节点');
                 } else {
                     showToast('未找到今天的日期节点', true);
                 }
+    
             } catch (error) {
-                console.error('导航到今天失败:', error);
+                console.error('导航失败:', error);
                 showToast('导航失败: ' + error.message, true);
             }
         });
+    }
+
+    // 添加专门的缓存管理器
+const DateNodeCache = {
+    prefix: 'wf_date_node_',
+    maxAge: 12 * 60 * 60 * 1000, // 12小时过期
+    storage: localStorage, // 使用localStorage替代sessionStorage
+
+    makeKey(date) {
+        return `${this.prefix}${date.toISOString().split('T')[0]}`;
+    },
+
+    set(date, nodeData) {
+        const key = this.makeKey(date);
+        const data = {
+            nodeId: nodeData.getId(),
+            timestamp: Date.now(),
+            // 添加节点验证信息
+            validation: {
+                name: nodeData.getName(),
+                lastModified: nodeData.getLastModifiedDate().getTime()
+            }
+        };
+        this.storage.setItem(key, JSON.stringify(data));
+    },
+
+    get(date) {
+        const key = this.makeKey(date);
+        const cached = this.storage.getItem(key);
+        
+        if (!cached) return null;
+
+        try {
+            const data = JSON.parse(cached);
+            
+            // 检查缓存是否过期
+            if (Date.now() - data.timestamp > this.maxAge) {
+                this.remove(date);
+                return null;
+            }
+
+            // 获取节点
+            const node = WF.getItemById(data.nodeId);
+            if (!node) {
+                this.remove(date);
+                return null;
+            }
+
+            // 验证节点是否被修改
+            if (node.getName() !== data.validation.name ||
+                node.getLastModifiedDate().getTime() !== data.validation.lastModified) {
+                this.remove(date);
+                return null;
+            }
+
+            return node;
+
+        } catch (error) {
+            console.error('解析缓存数据失败:', error);
+            this.remove(date);
+            return null;
+        }
+    },
+
+    remove(date) {
+        const key = this.makeKey(date);
+        this.storage.removeItem(key);
+    },
+
+    clear() {
+        // 清除所有相关缓存
+        Object.keys(this.storage)
+            .filter(key => key.startsWith(this.prefix))
+            .forEach(key => this.storage.removeItem(key));
+    }
+};
+    
+    // 改进日期节点查找函数
+    function findDateNode(targetDate) {
+        try {
+            const config = ConfigManager.getConfig();
+            const calendarNodeId = config.dailyPlanner.calendarNodeId;
+            if (!calendarNodeId) return null;
+    
+            const calendarNode = WF.getItemById(calendarNodeId);
+            if (!calendarNode) return null;
+    
+            // 标准化目标日期
+            const today = new Date(targetDate);
+            today.setHours(0, 0, 0, 0);
+    
+            // 检查缓存
+            const cachedNode = DateNodeCache.get(today);
+            if (cachedNode) {
+                console.log('使用缓存的日期节点');
+                return cachedNode;
+            }
+    
+            // 未找到缓存,执行查找
+            const found = findNode(calendarNode, today);
+            
+            if (found) {
+                // 更新缓存
+                DateNodeCache.set(today, found);
+                return found;
+            }
+    
+            return null;
+    
+        } catch (error) {
+            console.error('查找日期节点失败:', error);
+            return null;
+        }
     }
 
     // 添加clearAllReminders函数
@@ -4182,5 +4235,85 @@ function initThemeObserver() {
     // 优化批量节点获取
     function getNodesByIds(ids) {
         return ids.map(id => getNodeById(id)).filter(Boolean);
+    }
+
+    // 在 findDateNode 函数前添加 findNode 函数的定义
+    function findNode(calendarNode, targetDate) {
+        const parser = new DOMParser();
+        
+        // 解析节点中的日期
+        function parseNodeDate(node) {
+            const name = node.getName();
+            
+            // 处理 <time> 标签格式
+            if (name.includes('<time')) {
+                try {
+                    const doc = parser.parseFromString(name, 'text/html');
+                    const timeElement = doc.querySelector('time');
+                    if (timeElement) {
+                        const attrs = timeElement.attributes;
+                        // 检查必要的日期属性
+                        if (attrs.startyear && attrs.startmonth && attrs.startday) {
+                            return new Date(
+                                parseInt(attrs.startyear.value),
+                                parseInt(attrs.startmonth.value) - 1,
+                                parseInt(attrs.startday.value)
+                            );
+                        }
+                    }
+                } catch (e) {
+                    console.error('解析time标签失败:', e);
+                }
+            }
+
+            // 处理 YYYY-MM-DD 格式
+            const dateMatch = name.match(/(\d{4})-(\d{2})-(\d{2})/);
+            if (dateMatch) {
+                return new Date(
+                    parseInt(dateMatch[1]),
+                    parseInt(dateMatch[2]) - 1,
+                    parseInt(dateMatch[3])
+                );
+            }
+
+            // 处理 YYYY/MM/DD 格式
+            const dateMatch2 = name.match(/(\d{4})\/(\d{2})\/(\d{2})/);
+            if (dateMatch2) {
+                return new Date(
+                    parseInt(dateMatch2[1]),
+                    parseInt(dateMatch2[2]) - 1,
+                    parseInt(dateMatch2[3])
+                );
+            }
+
+            return null;
+        }
+
+        // 比较日期是否相同(忽略时间)
+        function isSameDate(date1, date2) {
+            return date1.getFullYear() === date2.getFullYear() &&
+                   date1.getMonth() === date2.getMonth() &&
+                   date1.getDate() === date2.getDate();
+        }
+
+        // 递归查找日期节点
+        function searchNode(node) {
+            // 检查当前节点
+            const nodeDate = parseNodeDate(node);
+            if (nodeDate && isSameDate(nodeDate, targetDate)) {
+                return node;
+            }
+
+            // 检查子节点
+            const children = node.getChildren();
+            for (const child of children) {
+                const found = searchNode(child);
+                if (found) return found;
+            }
+
+            return null;
+        }
+
+        return searchNode(calendarNode);
     }
 })();
