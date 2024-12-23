@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WorkFlowy Forwarder Plus - Panel Framework
 // @namespace    http://tampermonkey.net/
-// @version      0.2.10
+// @version      0.3.0
 // @description  Basic panel framework for WorkFlowy Forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -374,7 +374,7 @@ function initThemeObserver() {
             height: calc(100vh - 46px);
             width: 319px;
             background: var(--wf-background);
-            border-left: 1px solid var(--wfp-border);
+            border-left: 1px solid var(--wf-border-default);
             z-index: 100;
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
@@ -856,6 +856,7 @@ function initThemeObserver() {
             display: flex;
             align-items: flex-start;
             cursor: pointer;
+            color: var(--wfp-text-main);
         }
 
         .task-header {
@@ -1507,7 +1508,7 @@ function initThemeObserver() {
             display: flex;
             flex-direction: column;
             gap: 12px;
-            border-top: 1px solid var(--wfp-border);
+            border-top: 1px solid var(--wf-border-default);
             z-index: 101; /* 确保在内容之上 */
         }
 
@@ -3401,7 +3402,6 @@ function initThemeObserver() {
                         showToast('刷新失败，请重试');
                     }
                 }, ConfigManager.getConfig().refreshInterval || 60000);
-
 
 
                 // 恢复上次的模式
