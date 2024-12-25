@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      1.0.2
+// @version      1.0.3
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -270,8 +270,8 @@ function initThemeObserver() {
             taskName: '',
             nodeId: '',
             tags: '',
-            autoComplete: true,
-            copyFormat: 'plain'
+            autoComplete: false,
+            copyTags: false // 修改为正确的属性名
         }
     };
 
@@ -862,6 +862,7 @@ function initThemeObserver() {
             color: var(--wfp-text-main);
         }
 
+
         .task-header {
             display: flex;
             align-items: center;
@@ -882,7 +883,7 @@ function initThemeObserver() {
             display: flex;
             align-items: flex-start;  /* 改为顶部对齐 */
             gap: 2px;
-            padding: 12px 10px 0 240px;  /* 上右下左内边距，上边距设为16px */
+            padding: 12px 10px 0 12px;  /* 上右下左内边距，上边距设为16px */
             opacity: 0;
             visibility: hidden;
             transition: all 0.2s ease;
@@ -1867,15 +1868,14 @@ function initThemeObserver() {
             'enable-collector': config.collector.enabled,
             'tag-collector': config.collector.tags,
             'auto-complete-collector': config.collector.autoComplete,
-            'copy-format-collector': config.collector.copyFormat,
-            'copy-tags-collector': config.collector.copyTags,
+            'copy-tags-collector': config.collector.copyTags, // 确保正确加载copyTags设置
             'refresh-interval': config.refreshInterval,
             'exclude-tags': config.excludeTags
         }).forEach(([id, value]) => {
             const element = document.getElementById(id);
             if (element) {
                 if (element.type === 'checkbox') {
-                    element.checked = value;
+                    element.checked = Boolean(value); // 确保布尔值转换
                 } else {
                     element.value = value || ''; // 使用空字符串代替 null/undefined
                 }
@@ -2138,11 +2138,11 @@ function initThemeObserver() {
                                     <input type="checkbox" id="auto-complete-collector">
                                     <span class="checkbox-label">复制内容后标记完成</span>
                                 </div>
-                                <!-- <div class="config-item">
+                                <div class="config-item">
                                      <label>复制标签</label>
                                      <input type="checkbox" id="copy-tags-collector">
                                      <span class="checkbox-label">复制内容时包含标签</span>
-                                 </div>-->
+                                 </div>
                             </div>
                         </div>
                     </div>
@@ -2680,7 +2680,7 @@ function initThemeObserver() {
             try {
                 const node = WF.getItemById(config.dailyPlanner.nodeId);
                 if (!node) {
-                    container.innerHTML = '<div class="error-state">节点不存在或无法访问</div>';
+                    container.innerHTML = '<div class="error-state">节���不存在或无法访问</div>';
                     return;
                 }
 
@@ -3533,9 +3533,8 @@ function initThemeObserver() {
                         nodeId: getValue('node-collector'),
                         taskName: getValue('task-collector'),
                         tags: getValue('tag-collector'),
-                        autoComplete: getValue('auto-complete-collector', true),
-                        copyTags: getValue('copy-tags-collector', false), // Add new option
-                        copyFormat: getValue('copy-format-collector', 'plain')
+                        autoComplete: getValue('auto-complete-collector', false),
+                        copyTags: getValue('copy-tags-collector', false) // 修正属性名和获取方式
                     }
                 };
 
@@ -3785,18 +3784,15 @@ const DateNodeCache = {
     function processCollectorContent(node) {
         try {
             const config = ConfigManager.getConfig();
-            const keepTags = config.collector.copyTags;
+            const shouldCopyTags = config.collector.copyTags; // 从配置中获取是否复制标签的设置
 
-            // 处理标签的辅助函数
             function processText(text) {
                 if (!text) return '';
-
-                // 移除时间戳
                 text = text.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/, '');
-
-                // 移除所有标签
-                text = text.replace(/#[^\s#]+/g, '');
-
+                // 只在需要时移除标签
+                if (!shouldCopyTags) {
+                    text = text.replace(/#[^\s#]+/g, '');
+                }
                 return text.trim();
             }
 
@@ -3835,8 +3831,9 @@ const DateNodeCache = {
             // 如果找到标题和链接节点,创建OPML格式
             if (titleNode && linkNode) {
                 const title = processText(titleNode.getNameInPlainText().replace(/^标题[：:]\s*/, ''));
+                const titleWithTag = title + (shouldCopyTags ? ' ' + config.collector.tags : ''); // 修改：添加标签
                 const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
-                return createOPML(title, url);
+                return createOPML(titleWithTag, url);
             }
 
             // 获取相关子节点
@@ -3888,6 +3885,7 @@ const DateNodeCache = {
                 .replace(/[ \t]+/g, ' ')      // 规范化空格
                 .trim();                      // 移除首尾空白
 
+               
         } catch (error) {
             console.error('处理收集器内容失败:', error);
             return node.getNameInPlainText();
@@ -4316,4 +4314,6 @@ const DateNodeCache = {
 
         return searchNode(calendarNode);
     }
+
+    
 })();
