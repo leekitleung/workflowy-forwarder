@@ -849,6 +849,7 @@ function initThemeObserver() {
             color: var(--wfp-text-main);
         }
 
+
         .task-header {
             display: flex;
             align-items: center;
@@ -869,7 +870,7 @@ function initThemeObserver() {
             display: flex;
             align-items: flex-start;  /* 改为顶部对齐 */
             gap: 2px;
-            padding: 12px 10px 0 100px;  /* 上右下左内边距，上边距设为16px */
+            padding: 12px 10px 0 12px;  /* 上右下左内边距，上边距设为16px */
             opacity: 0;
             visibility: hidden;
             transition: all 0.2s ease;
@@ -2498,7 +2499,7 @@ function initThemeObserver() {
 
     `);
 
-    // 添加复制格���处理函数
+    // 添加复制格式处理函数
     function formatContent(node, format = 'plain') {
         try {
             switch (format) {
