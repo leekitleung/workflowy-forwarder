@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      1.0.1
+// @version      1.0.0
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -862,6 +862,7 @@ function initThemeObserver() {
             color: var(--wfp-text-main);
         }
 
+
         .task-header {
             display: flex;
             align-items: center;
@@ -882,7 +883,7 @@ function initThemeObserver() {
             display: flex;
             align-items: flex-start;  /* 改为顶部对齐 */
             gap: 2px;
-            padding: 12px 10px 0 240px;  /* 上右下左内边距，上边距设为16px */
+            padding: 12px 10px 0 12px;  /* 上右下左内边距，上边距设为16px */
             opacity: 0;
             visibility: hidden;
             transition: all 0.2s ease;
