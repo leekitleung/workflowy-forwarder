@@ -498,7 +498,7 @@ function initThemeObserver() {
             --wfp-button-text-active: var(--wf-blue-200);
             /* --wfp-button-active: var(--wf-blue-700); */
             --wfp-button-active:  var(--wf-dark-blue-500);
-            
+
             /* --wfp-button-hover: var(--wf-blue-600); */
             --wfp-button-hover: var(--wf-dark-blue-400);
             --wfp-button-text-hover: var(--wf-gray-0);
@@ -506,8 +506,8 @@ function initThemeObserver() {
             --wfp-text-secondary-hover: var(--wf-dark-gray-400);
             --wfp-text-secondary: var(--wf-dark-gray-500);
             --wfp-border: var(--wf-gray-700);
-            --wfp-link: var(--wf-dark-gray-400); 
-            --wfp-link-hover:var(--wf-blue-500); 
+            --wfp-link: var(--wf-dark-gray-400);
+            --wfp-link-hover:var(--wf-blue-500);
             /* --wfp-card-hover-background:var(--wf-blue-700); */
             --wfp-card-hover-background:var(--wf-dark-blue-500);
             --wfp-card-border:var(--wf-gray-700);
@@ -515,12 +515,12 @@ function initThemeObserver() {
             --wfp-toggle-background:var(--wf-gray-0);
             --wfp-toggle-text:var(--wf-gray-800);
             --wfp-input-background:var(--wf-gray-800);
-            --wfp-input-background-hover:var(--wf-dark-gray-700); 
+            --wfp-input-background-hover:var(--wf-dark-gray-700);
             --wfp-button-secondary-text:var(--wf-dark-gray-200);
             --wfp-button-secondary-bg:var(--wf-dark-gray-600);
             --wfp-button-secondary-hover-bg:var(--wf-dark-blue-500);
             --wfp-button-secondary-hover-text:var(--wfp-text-main);
-            
+
         }
 
         :root[data-theme="light"] {
@@ -538,8 +538,8 @@ function initThemeObserver() {
             --wfp-button-text-hover: var(--wf-gray-0);
             --wfp-button-hover-background:var(--wf-gray-400);
             --wfp-border:var(--wf-gray-400);
-            --wfp-link:var(--wf-gray-400); 
-            --wfp-link-hover:var(--wf-blue-500); 
+            --wfp-link:var(--wf-gray-400);
+            --wfp-link-hover:var(--wf-blue-500);
             /* --wfp-card-hover-background:var(--wf-blue-100); */
             --wfp-card-hover-background:var(--wf-blue-200);
             --wfp-card-border:var(--wf-gray-200);
@@ -547,12 +547,12 @@ function initThemeObserver() {
             --wfp-toggle-background:var(--wf-gray-800);
             --wfp-toggle-text:var(--wf-gray-200);
             --wfp-input-background:var(--wf-gray-0);
-            --wfp-input-background-hover:var(--wf-gray-100); 
+            --wfp-input-background-hover:var(--wf-gray-100);
             --wfp-button-secondary-text:var(--wf-gray-700);
-            --wfp-button-secondary-bg:var(--wf-gray-100);  
+            --wfp-button-secondary-bg:var(--wf-gray-100);
             --wfp-button-secondary-hover-bg:var(--wf-blue-400);
             --wfp-button-secondary-hover-text:var(--wf-gray-0);
-            
+
 
             /* 新增侧边栏相关样式 */
             --sidebar-bg: #ffffff;
@@ -1021,7 +1021,7 @@ function initThemeObserver() {
 
         .collector-tasks .children-content{
             white-space: pre-wrap;
-            
+
             font-size: 14px;
             line-height: 1.2;
             margin-left: 22px;
@@ -1029,7 +1029,7 @@ function initThemeObserver() {
 
         .children-content{
             white-space: pre-wrap;
-            
+
             font-size: 14px;
             line-height: 1.2;
         }
@@ -1674,7 +1674,7 @@ function initThemeObserver() {
             background: var(--wfp-button-secondary-hover-bg);
             color: var(--wfp-button-secondary-hover-text);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            
+
         }
     `);
 
@@ -1694,7 +1694,7 @@ function initThemeObserver() {
     }
 
     // 主题切换函数
-    
+
 
     // 添加快捷键处理函数
     function handleKeyPress(e) {
@@ -1984,7 +1984,7 @@ function initThemeObserver() {
             <div class="config-panel">
                 <div class="config-panel-header">
                     <h3 class="config-panel-title">设置</h3>
-                    
+
                 </div>
                 <div class="config-panel-content">
                     <!-- 基本设置 -->
@@ -1996,8 +1996,8 @@ function initThemeObserver() {
                                 <h3>基本设置</h3>
                             </div>
                             <div class="config-group">
-                                
-                                
+
+
                                 <div class="config-item">
                                     <label>刷新间隔</label>
                                     <input type="number" id="refresh-interval" placeholder="毫秒">
@@ -2006,7 +2006,7 @@ function initThemeObserver() {
                                     <label>排除标签</label>
                                     <input type="text" id="exclude-tags" placeholder="输入要排除的标签，多个用逗号分隔">
                                 </div>
-                                
+
                             </div>
                         </div>
 
@@ -2044,7 +2044,7 @@ function initThemeObserver() {
                             <h3>Target 设置</h3>
                         </div>
 
-                        
+
                         <!-- 工作任务 -->
                         <div class="config-group">
                             <div class="group-header">
@@ -2134,8 +2134,8 @@ function initThemeObserver() {
                         </div>
                     </div>
 
-                    
-                    
+
+
                 </div>
                 <div class="config-buttons">
                     <button class="config-btn config-save">保存设置</button>
@@ -3440,7 +3440,7 @@ function initThemeObserver() {
         const configPanel = panel.querySelector('.config-panel');
         const configClose = panel.querySelector('.config-panel-close');
         const saveBtn = panel.querySelector('.config-save');
-    
+
         // 为已存在的weekly report按钮添加事件监听
         const weeklyReportBtn = panel.querySelector('.weekly-report-btn');
         if (weeklyReportBtn) {
@@ -3453,7 +3453,7 @@ function initThemeObserver() {
                 }
             });
         }
-    
+
         // 配置面板显示/隐藏
         configTrigger.addEventListener('click', () => {
             configPanel.classList.add('visible');
@@ -3545,15 +3545,15 @@ function initThemeObserver() {
 
                     // 更新界面
                     loadConfig();
-                    
+
                     // 刷新当前视图
                     const currentMode = localStorage.getItem('wf_current_mode') || 'daily';
                     switchMode(currentMode);
                     updateLinks(currentMode);
-                    
+
                     // 关闭配置面板
                     panel.querySelector('.config-panel').classList.remove('visible');
-                    
+
                     showToast('配置已保存');
                 } else {
                     showToast('保存失败，请重试', true);
@@ -3581,16 +3581,16 @@ function initThemeObserver() {
     }
 
     // 改进日期节点处理
-    
+
 
     // Update Today's Plan initialization
     function initTodayPlan() {
         const todayLink = document.querySelector('.today-link');
         if (!todayLink) return;
-    
+
         todayLink.addEventListener('click', async (e) => {
             e.preventDefault();
-    
+
             try {
                 const config = ConfigManager.getConfig();
                 // 检查日历节点配置
@@ -3598,24 +3598,24 @@ function initThemeObserver() {
                     showToast('请先配置日历节点', true);
                     return;
                 }
-    
+
                 const calendarNode = WF.getItemById(config.dailyPlanner.calendarNodeId);
                 if (!calendarNode) {
                     showToast('未找到日历节点', true);
                     return;
                 }
-    
+
                 // 查找今天的日期节点
                 const today = new Date();
                 const dateNode = findDateNode(today);
-                
+
                 if (dateNode) {
                     WF.zoomTo(dateNode);
                     showToast('已跳转到今天的日期节点');
                 } else {
                     showToast('未找到今天的日期节点', true);
                 }
-    
+
             } catch (error) {
                 console.error('导航失败:', error);
                 showToast('导航失败: ' + error.message, true);
@@ -3650,12 +3650,12 @@ const DateNodeCache = {
     get(date) {
         const key = this.makeKey(date);
         const cached = this.storage.getItem(key);
-        
+
         if (!cached) return null;
 
         try {
             const data = JSON.parse(cached);
-            
+
             // 检查缓存是否过期
             if (Date.now() - data.timestamp > this.maxAge) {
                 this.remove(date);
@@ -3697,39 +3697,39 @@ const DateNodeCache = {
             .forEach(key => this.storage.removeItem(key));
     }
 };
-    
+
     // 改进日期节点查找函数
     function findDateNode(targetDate) {
         try {
             const config = ConfigManager.getConfig();
             const calendarNodeId = config.dailyPlanner.calendarNodeId;
             if (!calendarNodeId) return null;
-    
+
             const calendarNode = WF.getItemById(calendarNodeId);
             if (!calendarNode) return null;
-    
+
             // 标准化目标日期
             const today = new Date(targetDate);
             today.setHours(0, 0, 0, 0);
-    
+
             // 检查缓存
             const cachedNode = DateNodeCache.get(today);
             if (cachedNode) {
                 console.log('使用缓存的日期节点');
                 return cachedNode;
             }
-    
+
             // 未找到缓存,执行查找
             const found = findNode(calendarNode, today);
-            
+
             if (found) {
                 // 更新缓存
                 DateNodeCache.set(today, found);
                 return found;
             }
-    
+
             return null;
-    
+
         } catch (error) {
             console.error('查找日期节点失败:', error);
             return null;
@@ -3771,15 +3771,12 @@ const DateNodeCache = {
     function processCollectorContent(node) {
         try {
             const config = ConfigManager.getConfig();
-            const shouldCopyTags = config.collector.copyTags; // 从配置中获取是否复制标签的设置
+            const shouldCopyTags = config.collector.copyTags;
 
             function processText(text) {
                 if (!text) return '';
+                text = text.replace(/#[^\s#]+/g, '').trim();
                 text = text.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/, '');
-                // 只在需要时移除标签
-                if (!shouldCopyTags) {
-                    text = text.replace(/#[^\s#]+/g, '');
-                }
                 return text.trim();
             }
 
@@ -3787,40 +3784,98 @@ const DateNodeCache = {
             const plainName = node.getNameInPlainText();
             const children = node.getChildren();
 
+
             // 单节点处理
             if (children.length === 0) {
+
                 // 检查是否包含URL
                 const urlMatch = plainName.match(/(https?:\/\/[^\s]+)/);
+
+                
                 if (urlMatch) {
                     const url = urlMatch[1];
                     const title = processText(plainName.replace(url, '')).trim();
                     // 如果只有链接没有标题，将链接作为标题
                     return title ? createOPML(title, url) : createOPML(url, url);
                 }
-
                 return processText(plainName);
             }
 
             // 多节点处理
-            let formattedContent = '';
+            console.log('进入多节点处理');
 
             // 查找标题和链接节点
-            const titleNode = children.find(child =>
-                child.getNameInPlainText().startsWith('标题:') ||
-                child.getNameInPlainText().startsWith('标题：')
-            );
+            const titleNode = children.find(child => {
+                const text = child.getNameInPlainText();
+                console.log('检查标题节点:', text);
+                
+                // 检查是否是小红书或B站格式
+                if (text.includes('xhslink.com') || text.includes('b23.tv')) {
+                    console.log('发现特殊格式节点');
+                    return true;
+                }
+                
+                return text.startsWith('标题:') || text.startsWith('标题：');
+            });
 
-            const linkNode = children.find(child =>
-                child.getNameInPlainText().startsWith('链接:') ||
-                child.getNameInPlainText().startsWith('链接：')
-            );
+            const linkNode = children.find(child => {
+                const text = child.getNameInPlainText();
+                console.log('检查链接节点:', text);
+                
+                // 检查是否是小红书或B站格式
+                if (text.includes('xhslink.com') || text.includes('b23.tv')) {
+                    console.log('发现特殊格式节点');
+                    return true;
+                }
+                
+                return text.startsWith('链接:') || text.startsWith('链接：');
+            });
 
-            // 如果找到标题和链接节点,创建OPML格式
+           
+
+            // 如果找到节点，创建OPML格式
             if (titleNode && linkNode) {
-                const title = processText(titleNode.getNameInPlainText().replace(/^标题[：:]\s*/, ''));
-                const titleWithTag = title + (shouldCopyTags ? ' ' + config.collector.tags : ''); // 修改：添加标签
-                const url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
-                return createOPML(titleWithTag, url);
+                const nodeText = titleNode.getNameInPlainText();
+                let title, url;
+                
+                // 处理小红书格式
+                if (nodeText.includes('xhslink.com')) {
+                    const urlMatch = nodeText.match(/(https?:\/\/xhslink\.com\/[^\s,，]+)/);
+                    if (urlMatch) {
+                        url = urlMatch[1];
+                        const titleMatch = nodeText.match(/^\d+\s+([^发]+)发布了一篇小红书笔记/);
+                        if (titleMatch && titleMatch[1]) {
+                            title = titleMatch[1].trim();
+                        }
+                    }
+                }
+                // 处理B站格式
+                else if (nodeText.includes('b23.tv')) {
+                    const urlMatch = nodeText.match(/(https?:\/\/b23\.tv\/[^\s,，]+)/);
+                    if (urlMatch) {
+                        url = urlMatch[1];
+                        // 尝试从【】中提取标题
+                        const titleMatch = nodeText.match(/【([^】]+)】/);
+                        if (titleMatch && titleMatch[1]) {
+                            title = titleMatch[1].trim();
+                        } else {
+                            // 如果没有【】，提取链接前的所有文本
+                            title = nodeText.split(url)[0].trim();
+                        }
+                    }
+                }
+                else {
+                    // 处理标准格式
+                    title = processText(nodeText.replace(/^标题[：:]\s*/, ''));
+                    url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
+                }
+                
+                if (title && url) {
+                    const titleWithTag = title + (shouldCopyTags ? ' ' + config.collector.tags : '');
+                    console.log('处理后的标题:', titleWithTag);
+                    console.log('处理后的URL:', url);
+                    return createOPML(titleWithTag, url);
+                }
             }
 
             // 获取相关子节点
@@ -3872,7 +3927,7 @@ const DateNodeCache = {
                 .replace(/[ \t]+/g, ' ')      // 规范化空格
                 .trim();                      // 移除首尾空白
 
-               
+
         } catch (error) {
             console.error('处理收集器内容失败:', error);
             return node.getNameInPlainText();
@@ -4225,11 +4280,11 @@ const DateNodeCache = {
     // 在 findDateNode 函数前添加 findNode 函数的定义
     function findNode(calendarNode, targetDate) {
         const parser = new DOMParser();
-        
+
         // 解析节点中的日期
         function parseNodeDate(node) {
             const name = node.getName();
-            
+
             // 处理 <time> 标签格式
             if (name.includes('<time')) {
                 try {
@@ -4302,5 +4357,5 @@ const DateNodeCache = {
         return searchNode(calendarNode);
     }
 
-    
+
 })();
