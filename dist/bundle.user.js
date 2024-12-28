@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      1.0.5
+// @version      1.0.4
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
