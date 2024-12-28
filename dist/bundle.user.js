@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      1.0.4
+// @version      1.0.5
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -10,6 +10,7 @@
 // @updateURL    https://raw.githubusercontent.com/leekitleung/workflowy-forwarder/main/dist/bundle.user.js
 // @downloadURL  https://raw.githubusercontent.com/leekitleung/workflowy-forwarder/main/dist/bundle.user.js
 // ==/UserScript==
+
 
 // 更新版本号
 const SCRIPT_VERSION = GM_info.script.version;
@@ -2748,7 +2749,7 @@ function initThemeObserver() {
                     const taskId = taskItem?.dataset.id;
                     if (!taskId) {
                         console.error('Task ID not found');
-                        showToast('复制失败：无法获取任务ID');
+                        showToast('���制失败：无法获取任务ID');
                         return;
                     }
 
@@ -3788,65 +3789,52 @@ const DateNodeCache = {
 
             function processText(text) {
                 if (!text) return '';
+                
+                // 只移除开头的时间戳
+                text = text.replace(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s*/, '');
+                
+                // 只移除开头的破折号和空格
+                text = text.replace(/^-\s*/, '');
+                
+                // 移除标签但保留其他内容
                 text = text.replace(/#[^\s#]+/g, '').trim();
-                text = text.replace(/\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}/, '');
-                return text.trim();
+                
+                return text;
             }
 
             const name = node.getName();
             const plainName = node.getNameInPlainText();
             const children = node.getChildren();
 
-
             // 单节点处理
             if (children.length === 0) {
-
                 // 检查是否包含URL
                 const urlMatch = plainName.match(/(https?:\/\/[^\s]+)/);
-
-                
                 if (urlMatch) {
                     const url = urlMatch[1];
                     const title = processText(plainName.replace(url, '')).trim();
-                    // 如果只有链接没有标题，将链接作为标题
                     return title ? createOPML(title, url) : createOPML(url, url);
                 }
                 return processText(plainName);
             }
 
             // 多节点处理
-            console.log('进入多节点处理');
+            let formattedContent = '';
 
             // 查找标题和链接节点
             const titleNode = children.find(child => {
                 const text = child.getNameInPlainText();
-                console.log('检查标题节点:', text);
-                
-                // 检查是否是小红书或B站格式
-                if (text.includes('xhslink.com') || text.includes('b23.tv')) {
-                    console.log('发现特殊格式节点');
-                    return true;
-                }
-                
-                return text.startsWith('标题:') || text.startsWith('标题：');
+                return text.startsWith('标题:') || text.startsWith('标题：') ||
+                       text.includes('xhslink.com') || text.includes('b23.tv');
             });
 
             const linkNode = children.find(child => {
                 const text = child.getNameInPlainText();
-                console.log('检查链接节点:', text);
-                
-                // 检查是否是小红书或B站格式
-                if (text.includes('xhslink.com') || text.includes('b23.tv')) {
-                    console.log('发现特殊格式节点');
-                    return true;
-                }
-                
-                return text.startsWith('链接:') || text.startsWith('链接：');
+                return text.startsWith('链接:') || text.startsWith('链接：') ||
+                       text.includes('xhslink.com') || text.includes('b23.tv');
             });
 
-           
-
-            // 如果找到节点，创建OPML格式
+            // 如果找到标题和链接节点，创建OPML格式
             if (titleNode && linkNode) {
                 const nodeText = titleNode.getNameInPlainText();
                 let title, url;
@@ -3867,26 +3855,22 @@ const DateNodeCache = {
                     const urlMatch = nodeText.match(/(https?:\/\/b23\.tv\/[^\s,，]+)/);
                     if (urlMatch) {
                         url = urlMatch[1];
-                        // 尝试从【】中提取标题
                         const titleMatch = nodeText.match(/【([^】]+)】/);
                         if (titleMatch && titleMatch[1]) {
                             title = titleMatch[1].trim();
                         } else {
-                            // 如果没有【】，提取链接前的所有文本
                             title = nodeText.split(url)[0].trim();
                         }
                     }
                 }
+                // 处理标准格式
                 else {
-                    // 处理标准格式
                     title = processText(nodeText.replace(/^标题[：:]\s*/, ''));
                     url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
                 }
                 
                 if (title && url) {
                     const titleWithTag = title + (shouldCopyTags ? ' ' + config.collector.tags : '');
-                    console.log('处理后的标题:', titleWithTag);
-                    console.log('处理后的URL:', url);
                     return createOPML(titleWithTag, url);
                 }
             }
@@ -3901,37 +3885,67 @@ const DateNodeCache = {
 
             // 处理子节点内容
             const processChildren = (nodes, level = 1) => {
+                const processedContent = new Set(); // 用于追踪已处理的内容
+                
                 return nodes.map(child => {
-                    const content = processText(child.getNameInPlainText());
-                    if (!content) return '';
-
+                    const childName = child.getNameInPlainText();
+                    
+                    // 检查是否是链接节点
+                    const urlMatch = childName.match(/(https?:\/\/[^\s]+)/);
+                    if (urlMatch) {
+                        const url = urlMatch[1];
+                        const title = processText(childName.replace(url, '')).trim();
+                        return url;  // 只返回链接
+                    }
+                    
+                    // 处理普通文本节点
+                    const processedText = processText(childName);
+                    if (!processedText) return '';
+                    
+                    // 如果文本以"链接:"或"标题:"开头，跳过
+                    if (processedText.startsWith('链接:') || 
+                        processedText.startsWith('链接：') ||
+                        processedText.startsWith('标题:') ||
+                        processedText.startsWith('标题：')) {
+                        return '';
+                    }
+                    
+                    // 添加缩进和破折号
                     const indent = '  '.repeat(level);
-                    const childContent = `${indent}- ${content}`;
-
-                    // 处理子节点的注释
+                    let childContent = `${indent}- ${processedText}`;
+                    
+                    // 处理注释内容
                     const note = child.getNoteInPlainText();
                     if (note) {
                         const processedNote = processText(note);
-                        if (processedNote) {
+                        if (processedNote && !processedContent.has(processedNote)) {
                             childContent += `\n${indent}  ${processedNote}`;
+                            processedContent.add(processedNote);
                         }
                     }
-
-                    // 递归处理孙节点
+                    
+                    // 处理嵌套内容
                     const grandChildren = child.getChildren();
                     if (grandChildren.length > 0) {
                         const nestedContent = processChildren(grandChildren, level + 1);
-                        return nestedContent ? `${childContent}\n${nestedContent}` : childContent;
+                        if (nestedContent) {
+                            childContent += '\n' + nestedContent;
+                        }
                     }
-
+                    
                     return childContent;
-                }).filter(line => line.trim()).join('\n');
+                    
+                }).filter(text => text.trim()).join('\n');
             };
 
             // 添加子节点内容
             const childrenContent = processChildren(relevantChildren);
             if (childrenContent) {
-                formattedContent += childrenContent;
+                formattedContent = childrenContent;
+                // 添加标签（如果需要）
+                if (shouldCopyTags && config.collector.tags) {
+                    formattedContent = formattedContent.trim() + ' ' + config.collector.tags;
+                }
             }
 
             // 移除多余的空行并规范化空格
@@ -3939,7 +3953,6 @@ const DateNodeCache = {
                 .replace(/\n{3,}/g, '\n\n')  // 将3个以上的换行符替换为2个
                 .replace(/[ \t]+/g, ' ')      // 规范化空格
                 .trim();                      // 移除首尾空白
-
 
         } catch (error) {
             console.error('处理收集器内容失败:', error);
