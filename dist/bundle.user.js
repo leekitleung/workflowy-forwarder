@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      1.0.6
+// @version      1.0.4
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -10,7 +10,6 @@
 // @updateURL    https://raw.githubusercontent.com/leekitleung/workflowy-forwarder/main/dist/bundle.user.js
 // @downloadURL  https://raw.githubusercontent.com/leekitleung/workflowy-forwarder/main/dist/bundle.user.js
 // ==/UserScript==
-
 
 
 // 更新版本号
