@@ -3776,20 +3776,11 @@ const DateNodeCache = {
 
             function processText(text) {
                 if (!text) return '';
-                
-                // 只移除开头的时间戳
                 text = text.replace(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s*/, '');
-                
-                // 只移除开头的破折号和空格
-                text = text.replace(/^-\s*/, '');
-                
-                // 移除所有标签（子节点处理时总是移除标签）
-                text = text.replace(/#[^\s#]+/g, '');
-                
+                text = text.replace(/#[^\s#]+/g, '');  // Remove tags here
                 return text.trim();
             }
 
-            // 提取文本中的标签
             function extractTags(text) {
                 const tags = [];
                 const tagRegex = /#[^\s#]+/g;
@@ -3802,153 +3793,164 @@ const DateNodeCache = {
 
             const name = node.getName();
             const plainName = node.getNameInPlainText();
+            const note = node.getNoteInPlainText();
             const children = node.getChildren();
-            // 只从父节点提取标签
             const parentTags = shouldCopyTags ? extractTags(plainName) : [];
 
-            // 单节点处理
-            if (children.length === 0) {
-                const urlMatch = plainName.match(/(https?:\/\/[^\s]+)/);
-                if (urlMatch) {
-                    const url = urlMatch[1];
-                    const title = processText(plainName.replace(url, '')).trim();
-                    // 只在最终结果添加标签
-                    const titleWithTags = title + (parentTags.length > 0 ? ' ' + parentTags.join(' ') : '');
-                    return titleWithTags ? createOPML(titleWithTags, url) : createOPML(url, url);
-                }
-                // 只在最终结果添加标签
-                const processedText = processText(plainName);
-                return processedText + (parentTags.length > 0 ? ' ' + parentTags.join(' ') : '');
-            }
+            // First check single node cases
+            if (children.length === 0 || (children.length === 1 && children[0].getNameInPlainText().match(/(https?:\/\/[^\s]+)/))) {
+                let title = processText(plainName);
+                let url;
 
-            // 多节点处理
-            let formattedContent = '';
-
-            // 查找标题和链接节点
-            const titleNode = children.find(child => {
-                const text = child.getNameInPlainText();
-                return text.startsWith('标题:') || text.startsWith('标题：') ||
-                       text.includes('xhslink.com') || text.includes('b23.tv');
-            });
-
-            const linkNode = children.find(child => {
-                const text = child.getNameInPlainText();
-                return text.startsWith('链接:') || text.startsWith('链接：') ||
-                       text.includes('xhslink.com') || text.includes('b23.tv');
-            });
-
-            // 如果找到标题和链接节点，创建OPML格式
-            if (titleNode && linkNode) {
-                const nodeText = titleNode.getNameInPlainText();
-                let title, url;
-                
-                // 处理小红书格式
-                if (nodeText.includes('xhslink.com')) {
-                    const urlMatch = nodeText.match(/(https?:\/\/xhslink\.com\/[^\s,，]+)/);
+                // 检查子节点中的URL
+                if (children.length === 1) {
+                    const childText = children[0].getNameInPlainText();
+                    const urlMatch = childText.match(/(https?:\/\/[^\s]+)/);
                     if (urlMatch) {
                         url = urlMatch[1];
-                        const titleMatch = nodeText.match(/^\d+\s+([^发]+)发布了一篇小红书笔记/);
-                        if (titleMatch && titleMatch[1]) {
-                            title = titleMatch[1].trim();
-                        }
+                        // 使用OPML格式，标签只添加在title后
+                        return createOPML(title, url, parentTags.join(' '));
                     }
                 }
-                // 处理B站格式
-                else if (nodeText.includes('b23.tv')) {
-                    const urlMatch = nodeText.match(/(https?:\/\/b23\.tv\/[^\s,，]+)/);
+                // 检查注释中的URL
+                else if (note) {
+                    const urlMatch = note.match(/(https?:\/\/[^\s]+)/);
                     if (urlMatch) {
                         url = urlMatch[1];
-                        const titleMatch = nodeText.match(/【([^】]+)】/);
-                        if (titleMatch && titleMatch[1]) {
-                            title = titleMatch[1].trim();
-                        } else {
-                            title = nodeText.split(url)[0].trim();
+                        // 使用OPML格式，标签只添加在title后
+                        return createOPML(title, url, parentTags.join(' '));
+                    }
+                    // 如果没有URL，使用普通格式
+                    return title + (parentTags.length > 0 ? ' ' + parentTags.join(' ') : '') + '\n' + note;
+                }
+
+                // 如果没有URL和注释，只返回带标签的标题
+                return title + (parentTags.length > 0 ? ' ' + parentTags.join(' ') : '');
+            }
+
+            // Then check for special formats in multi-node case
+            if (children.length > 0) {
+                // Look for title and link nodes
+                const titleNode = children.find(child => {
+                    const text = child.getNameInPlainText();
+                    return text.startsWith('标题:') || text.startsWith('标题：') ||
+                           text.includes('xhslink.com') || text.includes('b23.tv');
+                });
+
+                const linkNode = children.find(child => {
+                    const text = child.getNameInPlainText();
+                    return text.startsWith('链接:') || text.startsWith('链接：') ||
+                           text.includes('xhslink.com') || text.includes('b23.tv');
+                });
+
+                // Handle special formats if found
+                if (titleNode && linkNode) {
+                    const nodeText = titleNode.getNameInPlainText();
+                    let title, url;
+                    
+                    // Handle Xiaohongshu format
+                    if (nodeText.includes('xhslink.com')) {
+                        const urlMatch = nodeText.match(/(https?:\/\/xhslink\.com\/[^\s,，]+)/);
+                        if (urlMatch) {
+                            url = urlMatch[1];
+                            const titleMatch = nodeText.match(/^\d+\s+([^发]+)发布了一篇小红书笔记/);
+                            if (titleMatch && titleMatch[1]) {
+                                title = titleMatch[1].trim();
+                            }
                         }
                     }
-                }
-                // 处理标准格式
-                else {
-                    title = processText(nodeText.replace(/^标题[：:]\s*/, ''));
-                    url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
-                }
-                
-                if (title && url) {
-                    // 只在最终结果添加标签
-                    const titleWithTags = title + (parentTags.length > 0 ? ' ' + parentTags.join(' ') : '');
-                    return createOPML(titleWithTags, url);
+                    // Handle Bilibili format
+                    else if (nodeText.includes('b23.tv')) {
+                        const urlMatch = nodeText.match(/(https?:\/\/b23\.tv\/[^\s,，]+)/);
+                        if (urlMatch) {
+                            url = urlMatch[1];
+                            const titleMatch = nodeText.match(/【([^】]+)】/);
+                            if (titleMatch && titleMatch[1]) {
+                                title = titleMatch[1].trim();
+                            } else {
+                                title = nodeText.split(url)[0].trim();
+                            }
+                        }
+                    }
+                    // Handle standard format
+                    else {
+                        title = processText(nodeText.replace(/^标题[：:]\s*/, ''));
+                        url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
+                    }
+                    
+                    if (title && url) {
+                        // 直接传递标签给createOPML，不在title中添加
+                        return createOPML(title, url, parentTags.join(' '));
+                    }
                 }
             }
 
-            // 获取相关子节点
-            const relevantChildren = children.filter(child => {
-                const childName = child.getNameInPlainText();
-                return childName &&
-                       !childName.includes('#已处理') &&
-                       !childName.includes('#忽略');
-            });
+            // Fall back to general content processing
+            let content = processText(plainName);
+            if (note) {
+                content += '\n' + processText(note);
+            }
 
-            // 处理子节点内容
-            const processChildren = (nodes, level = 1) => {
-                const processedContent = new Set();
-                
-                return nodes.map(child => {
-                    const childName = child.getNameInPlainText();
+            // Process child nodes
+            if (children.length > 0) {
+                const processChildren = (nodes, level = 1) => {
+                    const processedContent = new Set();
                     
-                    const urlMatch = childName.match(/(https?:\/\/[^\s]+)/);
-                    if (urlMatch) {
-                        const url = urlMatch[1];
-                        // 子节点只处理文本，不处理标签
-                        const title = processText(childName.replace(url, ''));
-                        return url;
-                    }
-                    
-                    // 子节点只处理文本，不处理标签
-                    const processedText = processText(childName);
-                    if (!processedText) return '';
-                    
-                    if (processedText.startsWith('链接:') || 
-                        processedText.startsWith('链接：') ||
-                        processedText.startsWith('标题:') ||
-                        processedText.startsWith('标题：')) {
-                        return '';
-                    }
-                    
-                    const indent = '  '.repeat(level);
-                    let childContent = `${indent}- ${processedText}`;
-                    
-                    const note = child.getNoteInPlainText();
-                    if (note) {
-                        // 注释也只处理文本，不处理标签
-                        const processedNote = processText(note);
-                        if (processedNote && !processedContent.has(processedNote)) {
-                            childContent += `\n${indent}  ${processedNote}`;
-                            processedContent.add(processedNote);
+                    return nodes.map(child => {
+                        const childName = child.getNameInPlainText();
+                        const childNote = child.getNoteInPlainText();
+                        
+                        const urlMatch = childName.match(/(https?:\/\/[^\s]+)/);
+                        if (urlMatch) {
+                            const url = urlMatch[1];
+                            const title = processText(childName.replace(url, ''));
+                            return url;
                         }
-                    }
-                    
-                    const grandChildren = child.getChildren();
-                    if (grandChildren.length > 0) {
-                        const nestedContent = processChildren(grandChildren, level + 1);
-                        if (nestedContent) {
-                            childContent += '\n' + nestedContent;
+                        
+                        const processedText = processText(childName);
+                        if (!processedText) return '';
+                        
+                        if (processedText.startsWith('链接:') || 
+                            processedText.startsWith('链接：') ||
+                            processedText.startsWith('标题:') ||
+                            processedText.startsWith('标题：')) {
+                            return '';
                         }
-                    }
-                    
-                    return childContent;
-                }).filter(text => text.trim()).join('\n');
-            };
+                        
+                        const indent = '  '.repeat(level);
+                        let childContent = `${indent}- ${processedText}`;
+                        
+                        if (childNote) {
+                            const processedNote = processText(childNote);
+                            if (processedNote && !processedContent.has(processedNote)) {
+                                childContent += `\n${indent}  ${processedNote}`;
+                                processedContent.add(processedNote);
+                            }
+                        }
+                        
+                        const grandChildren = child.getChildren();
+                        if (grandChildren.length > 0) {
+                            const nestedContent = processChildren(grandChildren, level + 1);
+                            if (nestedContent) {
+                                childContent += '\n' + nestedContent;
+                            }
+                        }
+                        
+                        return childContent;
+                    }).filter(text => text.trim()).join('\n');
+                };
 
-            // 添加子节点内容
-            const childrenContent = processChildren(relevantChildren);
-            if (childrenContent) {
-                formattedContent = childrenContent;
-                // 只在最终内容末尾添加一次父节点标签
-                if (parentTags.length > 0) {
-                    formattedContent = formattedContent.trim() + ' ' + parentTags.join(' ');
+                const childrenContent = processChildren(children);
+                if (childrenContent) {
+                    content += '\n' + childrenContent;
                 }
             }
 
-            return formattedContent
+            if (parentTags.length > 0) {
+                content = content.trim() + ' ' + parentTags.join(' ');
+            }
+
+            return content
                 .replace(/\n{3,}/g, '\n\n')
                 .replace(/[ \t]+/g, ' ')
                 .trim();
@@ -3959,8 +3961,8 @@ const DateNodeCache = {
         }
     }
 
-    // 创建OPML格式内容
-    function createOPML(title, url) {
+    // 修改createOPML格式化函数
+    function createOPML(title, url, tags = '') {
         // 转义特殊字符
         const escapeXml = (str) => {
             return str
@@ -3971,18 +3973,20 @@ const DateNodeCache = {
                 .replace(/'/g, '&apos;');
         };
 
-        // 转义标题和URL
+        // 处理标题和标签
         const safeTitle = escapeXml(title);
+        const safeTags = escapeXml(tags);
+        const titleWithTags = safeTags ? `${safeTitle} ${safeTags}` : safeTitle;
         const safeUrl = escapeXml(url);
 
-        // 创建OPML格式,将URL作为节点的note属性
+        // 创建OPML格式，将标签放在第一个节点内容后
         return `<?xml version="1.0"?>
 <opml version="2.0">
     <head>
-        <title>${safeTitle}</title>
+        <title>${titleWithTags}</title>
     </head>
     <body>
-        <outline text="${safeTitle}" _note="&lt;a href=&quot;${safeUrl}&quot;&gt;${safeUrl}&lt;/a&gt;"/>
+        <outline text="${titleWithTags}" _note="&lt;a href=&quot;${safeUrl}&quot;&gt;${safeUrl}&lt;/a&gt;"/>
     </body>
 </opml>`;
     }
