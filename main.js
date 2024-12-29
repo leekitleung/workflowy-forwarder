@@ -3783,26 +3783,42 @@ const DateNodeCache = {
                 // 只移除开头的破折号和空格
                 text = text.replace(/^-\s*/, '');
                 
-                // 移除标签但保留其他内容
-                text = text.replace(/#[^\s#]+/g, '').trim();
+                // 移除所有标签（子节点处理时总是移除标签）
+                text = text.replace(/#[^\s#]+/g, '');
                 
-                return text;
+                return text.trim();
+            }
+
+            // 提取文本中的标签
+            function extractTags(text) {
+                const tags = [];
+                const tagRegex = /#[^\s#]+/g;
+                let match;
+                while ((match = tagRegex.exec(text)) !== null) {
+                    tags.push(match[0]);
+                }
+                return tags;
             }
 
             const name = node.getName();
             const plainName = node.getNameInPlainText();
             const children = node.getChildren();
+            // 只从父节点提取标签
+            const parentTags = shouldCopyTags ? extractTags(plainName) : [];
 
             // 单节点处理
             if (children.length === 0) {
-                // 检查是否包含URL
                 const urlMatch = plainName.match(/(https?:\/\/[^\s]+)/);
                 if (urlMatch) {
                     const url = urlMatch[1];
                     const title = processText(plainName.replace(url, '')).trim();
-                    return title ? createOPML(title, url) : createOPML(url, url);
+                    // 只在最终结果添加标签
+                    const titleWithTags = title + (parentTags.length > 0 ? ' ' + parentTags.join(' ') : '');
+                    return titleWithTags ? createOPML(titleWithTags, url) : createOPML(url, url);
                 }
-                return processText(plainName);
+                // 只在最终结果添加标签
+                const processedText = processText(plainName);
+                return processedText + (parentTags.length > 0 ? ' ' + parentTags.join(' ') : '');
             }
 
             // 多节点处理
@@ -3857,8 +3873,9 @@ const DateNodeCache = {
                 }
                 
                 if (title && url) {
-                    const titleWithTag = title + (shouldCopyTags ? ' ' + config.collector.tags : '');
-                    return createOPML(titleWithTag, url);
+                    // 只在最终结果添加标签
+                    const titleWithTags = title + (parentTags.length > 0 ? ' ' + parentTags.join(' ') : '');
+                    return createOPML(titleWithTags, url);
                 }
             }
 
@@ -3872,24 +3889,23 @@ const DateNodeCache = {
 
             // 处理子节点内容
             const processChildren = (nodes, level = 1) => {
-                const processedContent = new Set(); // 用于追踪已处理的内容
+                const processedContent = new Set();
                 
                 return nodes.map(child => {
                     const childName = child.getNameInPlainText();
                     
-                    // 检查是否是链接节点
                     const urlMatch = childName.match(/(https?:\/\/[^\s]+)/);
                     if (urlMatch) {
                         const url = urlMatch[1];
-                        const title = processText(childName.replace(url, '')).trim();
-                        return url;  // 只返回链接
+                        // 子节点只处理文本，不处理标签
+                        const title = processText(childName.replace(url, ''));
+                        return url;
                     }
                     
-                    // 处理普通文本节点
+                    // 子节点只处理文本，不处理标签
                     const processedText = processText(childName);
                     if (!processedText) return '';
                     
-                    // 如果文本以"链接:"或"标题:"开头，跳过
                     if (processedText.startsWith('链接:') || 
                         processedText.startsWith('链接：') ||
                         processedText.startsWith('标题:') ||
@@ -3897,13 +3913,12 @@ const DateNodeCache = {
                         return '';
                     }
                     
-                    // 添加缩进和破折号
                     const indent = '  '.repeat(level);
                     let childContent = `${indent}- ${processedText}`;
                     
-                    // 处理注释内容
                     const note = child.getNoteInPlainText();
                     if (note) {
+                        // 注释也只处理文本，不处理标签
                         const processedNote = processText(note);
                         if (processedNote && !processedContent.has(processedNote)) {
                             childContent += `\n${indent}  ${processedNote}`;
@@ -3911,7 +3926,6 @@ const DateNodeCache = {
                         }
                     }
                     
-                    // 处理嵌套内容
                     const grandChildren = child.getChildren();
                     if (grandChildren.length > 0) {
                         const nestedContent = processChildren(grandChildren, level + 1);
@@ -3921,7 +3935,6 @@ const DateNodeCache = {
                     }
                     
                     return childContent;
-                    
                 }).filter(text => text.trim()).join('\n');
             };
 
@@ -3929,17 +3942,16 @@ const DateNodeCache = {
             const childrenContent = processChildren(relevantChildren);
             if (childrenContent) {
                 formattedContent = childrenContent;
-                // 添加标签（如果需要）
-                if (shouldCopyTags && config.collector.tags) {
-                    formattedContent = formattedContent.trim() + ' ' + config.collector.tags;
+                // 只在最终内容末尾添加一次父节点标签
+                if (parentTags.length > 0) {
+                    formattedContent = formattedContent.trim() + ' ' + parentTags.join(' ');
                 }
             }
 
-            // 移除多余的空行并规范化空格
             return formattedContent
-                .replace(/\n{3,}/g, '\n\n')  // 将3个以上的换行符替换为2个
-                .replace(/[ \t]+/g, ' ')      // 规范化空格
-                .trim();                      // 移除首尾空白
+                .replace(/\n{3,}/g, '\n\n')
+                .replace(/[ \t]+/g, ' ')
+                .trim();
 
         } catch (error) {
             console.error('处理收集器内容失败:', error);
