@@ -5,7 +5,7 @@ const path = require('path');
 const metadata = `// ==UserScript==
 // @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      ${process.env.npm_package_version || '1.0.7'}
+// @version      ${process.env.npm_package_version || '1.0.8'}
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*

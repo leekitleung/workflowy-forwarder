@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         workflowy forwarder Plus
 // @namespace    http://tampermonkey.net/
-// @version      1.0.4
+// @version      1.0.8
 // @description  workflowy forwarder Plus
 // @author       Namkit
 // @match        https://workflowy.com/*
@@ -3789,8 +3789,10 @@ const DateNodeCache = {
 
             function processText(text) {
                 if (!text) return '';
+                // 标准化日期格式
+                text = standardizeDateFormat(text);
                 text = text.replace(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\s*/, '');
-                text = text.replace(/#[^\s#]+/g, '');  // Remove tags here
+                text = text.replace(/#[^\s#]+/g, '');
                 return text.trim();
             }
 
@@ -3860,7 +3862,7 @@ const DateNodeCache = {
                 if (titleNode && linkNode) {
                     const nodeText = titleNode.getNameInPlainText();
                     let title, url;
-                    
+
                     // Handle Xiaohongshu format
                     if (nodeText.includes('xhslink.com')) {
                         const urlMatch = nodeText.match(/(https?:\/\/xhslink\.com\/[^\s,，]+)/);
@@ -3890,7 +3892,7 @@ const DateNodeCache = {
                         title = processText(nodeText.replace(/^标题[：:]\s*/, ''));
                         url = linkNode.getNameInPlainText().replace(/^链接[：:]\s*/, '').trim();
                     }
-                    
+
                     if (title && url) {
                         // 直接传递标签给createOPML，不在title中添加
                         return createOPML(title, url, parentTags.join(' '));
@@ -3908,31 +3910,31 @@ const DateNodeCache = {
             if (children.length > 0) {
                 const processChildren = (nodes, level = 1) => {
                     const processedContent = new Set();
-                    
+
                     return nodes.map(child => {
                         const childName = child.getNameInPlainText();
                         const childNote = child.getNoteInPlainText();
-                        
+
                         const urlMatch = childName.match(/(https?:\/\/[^\s]+)/);
                         if (urlMatch) {
                             const url = urlMatch[1];
                             const title = processText(childName.replace(url, ''));
                             return url;
                         }
-                        
+
                         const processedText = processText(childName);
                         if (!processedText) return '';
-                        
-                        if (processedText.startsWith('链接:') || 
+
+                        if (processedText.startsWith('链接:') ||
                             processedText.startsWith('链接：') ||
                             processedText.startsWith('标题:') ||
                             processedText.startsWith('标题：')) {
                             return '';
                         }
-                        
+
                         const indent = '  '.repeat(level);
                         let childContent = `${indent}- ${processedText}`;
-                        
+
                         if (childNote) {
                             const processedNote = processText(childNote);
                             if (processedNote && !processedContent.has(processedNote)) {
@@ -3940,7 +3942,7 @@ const DateNodeCache = {
                                 processedContent.add(processedNote);
                             }
                         }
-                        
+
                         const grandChildren = child.getChildren();
                         if (grandChildren.length > 0) {
                             const nestedContent = processChildren(grandChildren, level + 1);
@@ -3948,7 +3950,7 @@ const DateNodeCache = {
                                 childContent += '\n' + nestedContent;
                             }
                         }
-                        
+
                         return childContent;
                     }).filter(text => text.trim()).join('\n');
                 };
@@ -4399,5 +4401,16 @@ const DateNodeCache = {
         return searchNode(calendarNode);
     }
 
+    // 在 processCollectorContent 函数中添加日期格式标准化函数
+    function standardizeDateFormat(text) {
+        // 匹配两种格式的日期
+        const dateRegex = /(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{2}):(\d{2})/;
+        return text.replace(dateRegex, (match, year, month, day, hour, minute) => {
+            // 确保月和日都是两位数格式
+            const paddedMonth = month.padStart(2, '0');
+            const paddedDay = day.padStart(2, '0');
+            return `${year}-${paddedMonth}-${paddedDay} ${hour}:${minute}`;
+        });
+    }
 
 })();
